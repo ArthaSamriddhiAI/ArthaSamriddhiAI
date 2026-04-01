@@ -55,6 +55,10 @@ def create_app() -> FastAPI:
 
         @app.get("/")
         async def root():
+            return FileResponse("static/landing.html")
+
+        @app.get("/app")
+        async def app_root():
             return FileResponse("static/index.html")
 
     return app
