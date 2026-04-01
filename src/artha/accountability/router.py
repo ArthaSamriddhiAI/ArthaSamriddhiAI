@@ -27,6 +27,43 @@ async def list_decisions(
     return await service.list_decisions(limit)
 
 
+@router.get("/decisions/summary")
+async def list_decisions_summary(
+    limit: int = 50,
+    session: AsyncSession = Depends(get_session),
+):
+    """Return rich decision summaries with status, type, timestamps, and client info."""
+    import json
+    from sqlalchemy import select
+    from artha.governance.models import GovernanceDecisionRow
+
+    stmt = (
+        select(GovernanceDecisionRow)
+        .order_by(GovernanceDecisionRow.created_at.desc())
+        .limit(limit)
+    )
+    result = await session.execute(stmt)
+    rows = result.scalars().all()
+
+    summaries = []
+    for row in rows:
+        result_data = json.loads(row.result_json) if row.result_json else {}
+        params = result_data.get("parameters", {})
+        summaries.append({
+            "decision_id": row.id,
+            "intent_type": row.intent_type,
+            "status": row.status,
+            "initiator": result_data.get("initiator", ""),
+            "client_name": params.get("client_name", ""),
+            "portfolio_value": params.get("portfolio_value_inr", ""),
+            "agent_count": result_data.get("agent_count", 0),
+            "rule_count": result_data.get("rule_count", 0),
+            "created_at": row.created_at.isoformat() if row.created_at else None,
+            "completed_at": row.completed_at.isoformat() if row.completed_at else None,
+        })
+    return summaries
+
+
 @router.get("/decisions/{decision_id}/trace", response_model=DecisionTrace)
 async def get_trace(
     decision_id: str,

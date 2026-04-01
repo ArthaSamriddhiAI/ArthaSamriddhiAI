@@ -153,7 +153,41 @@ class GovernancePipeline:
             state["status"] = "error"
             state["error"] = str(e)
 
+        # Step 9: Persist decision record
+        try:
+            await self._save_decision_record(state, intent)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Failed to save decision record: {e}")
+
         return state
+
+    async def _save_decision_record(
+        self, state: OrchestratorState, intent: GovernanceIntent
+    ) -> None:
+        """Persist the decision to governance_decisions table."""
+        from artha.governance.models import GovernanceDecisionRow
+        snapshot = state.get("evidence_snapshot")
+        rule_set = state.get("rule_set")
+        result_data = {
+            "agent_count": len(state.get("agent_outputs", [])),
+            "rule_count": len(state.get("rule_evaluations", [])),
+            "initiator": intent.initiator,
+            "parameters": intent.parameters,
+        }
+        row = GovernanceDecisionRow(
+            id=state["decision_id"],
+            intent_id=intent.id,
+            intent_type=intent.intent_type.value,
+            status=state["status"],
+            rule_set_version_id=rule_set.version_id if rule_set else None,
+            evidence_snapshot_id=snapshot.id if snapshot else None,
+            result_json=json.dumps(result_data, default=str),
+            created_at=intent.created_at,
+            completed_at=get_clock().now(),
+        )
+        self._session.add(row)
+        await self._session.flush()
 
     async def _build_evidence_context(
         self, artifact_ids: dict[str, str]

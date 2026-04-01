@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m venv .venv)",
+      "Bash(.venv/Scripts/pip install:*)",
+      "Bash(.venv/Scripts/python -m pytest tests/ -v)",
+      "Bash(gh auth:*)",
+      "Bash(gh api:*)",
+      "Bash(gh repo:*)",
+      "Bash(ssh -i \"D:/Downloads/ArthaSamriddhiAI.pem\" ubuntu@13.204.187.25 \"cd /home/ubuntu && rm -rf ArthaSamriddhiAI && git clone https://github.com/ArthaSamriddhiAI/ArthaSamriddhiAI.git 2>&1 && cd ArthaSamriddhiAI && python3 -m venv .venv && source .venv/bin/activate && pip install --quiet . 2>&1 | tail -10\")",
+      "Bash(ssh -i \"D:/Downloads/ArthaSamriddhiAI.pem\" ubuntu@13.204.187.25 \"ls /home/ubuntu/ArthaSamriddhiAI/.venv/bin/uvicorn 2>&1 && /home/ubuntu/ArthaSamriddhiAI/.venv/bin/python -c ''import artha; print\\(\"\"artha imported OK\"\"\\)'' 2>&1\")",
+      "Bash(ssh -i \"D:/Downloads/ArthaSamriddhiAI.pem\" ubuntu@13.204.187.25 \"cd /home/ubuntu/ArthaSamriddhiAI && cp .env.example .env && mkdir -p data\")",
+      "Bash(ssh -i:*)",
+      "WebFetch(domain:imt.edu)"
+    ]
+  }
+}

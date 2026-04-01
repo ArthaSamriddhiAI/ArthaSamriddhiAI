@@ -121,11 +121,18 @@
               <h3 class="font-semibold mb-3">Recent Decisions</h3>
               <div x-show="decisions.length===0" class="text-sm text-slate-400 py-4">No decisions yet. Submit a governance intent to get started.</div>
               <div class="space-y-2">
-                <template x-for="d in decisions.slice(0,10)" :key="d">
-                  <a @click.prevent="$root.navigate('decision/'+d)" href="#"
-                     class="flex items-center justify-between p-2 rounded hover:bg-slate-50 text-sm">
-                    <code class="text-blue-600" x-text="utils.truncateId(d)+'...'"></code>
-                    <span class="text-slate-400 text-xs">View &rarr;</span>
+                <template x-for="d in decisions.slice(0,10)" :key="d.decision_id||d">
+                  <a @click.prevent="$root.navigate('decision/'+(d.decision_id||d))" href="#"
+                     class="flex items-center justify-between p-2.5 rounded hover:bg-slate-50 text-sm border border-transparent hover:border-slate-200">
+                    <div>
+                      <div class="font-medium" x-text="d.client_name||utils.truncateId(d.decision_id||d)"></div>
+                      <div class="text-xs text-slate-400 mt-0.5">
+                        <span x-text="d.intent_type||''"></span>
+                        <span x-show="d.portfolio_value"> &middot; <span x-text="d.portfolio_value"></span></span>
+                        <span x-show="d.created_at"> &middot; <span x-text="utils.relativeTime(d.created_at)"></span></span>
+                      </div>
+                    </div>
+                    <span class="badge" :class="utils.statusBadge(d.status||'')" x-text="utils.statusLabel(d.status||'')"></span>
                   </a>
                 </template>
               </div>
@@ -277,17 +284,35 @@
           <h2 class="text-2xl font-bold mb-6">Decision History</h2>
           <div class="card">
             <div class="p-4 border-b">
-              <input type="text" x-model="search" placeholder="Search by decision ID..." class="w-full px-3 py-2 border rounded-lg text-sm">
+              <input type="text" x-model="search" placeholder="Search by client name, intent type, or ID..." class="w-full px-3 py-2 border rounded-lg text-sm">
             </div>
             <div x-show="filtered.length===0" class="p-8 text-center text-slate-400">No decisions found.</div>
-            <table class="w-full" x-show="filtered.length>0">
-              <thead class="bg-slate-50 text-xs text-slate-500 uppercase"><tr><th class="px-4 py-3 text-left">Decision ID</th><th class="px-4 py-3 text-right">Actions</th></tr></thead>
+            <table class="w-full text-sm" x-show="filtered.length>0">
+              <thead class="bg-slate-50 text-xs text-slate-500 uppercase"><tr>
+                <th class="px-4 py-3 text-left">Client / Decision</th>
+                <th class="px-4 py-3 text-left">Intent Type</th>
+                <th class="px-4 py-3 text-left">Portfolio</th>
+                <th class="px-4 py-3 text-left">Status</th>
+                <th class="px-4 py-3 text-left">Agents</th>
+                <th class="px-4 py-3 text-left">Rules</th>
+                <th class="px-4 py-3 text-left">Time</th>
+                <th class="px-4 py-3 text-right">Actions</th>
+              </tr></thead>
               <tbody>
-                <template x-for="d in filtered" :key="d">
-                  <tr class="border-t hover:bg-slate-50">
-                    <td class="px-4 py-3"><code class="text-sm text-blue-600" x-text="d"></code></td>
+                <template x-for="d in filtered" :key="d.decision_id">
+                  <tr class="border-t hover:bg-slate-50 cursor-pointer" @click="$root.navigate('decision/'+d.decision_id)">
+                    <td class="px-4 py-3">
+                      <div class="font-medium" x-text="d.client_name||'N/A'"></div>
+                      <div class="text-xs text-slate-400 font-mono" x-text="utils.truncateId(d.decision_id)"></div>
+                    </td>
+                    <td class="px-4 py-3 capitalize" x-text="d.intent_type?.replace('_',' ')"></td>
+                    <td class="px-4 py-3 text-xs" x-text="d.portfolio_value||'-'"></td>
+                    <td class="px-4 py-3"><span class="badge" :class="utils.statusBadge(d.status)" x-text="utils.statusLabel(d.status)"></span></td>
+                    <td class="px-4 py-3 text-center" x-text="d.agent_count||0"></td>
+                    <td class="px-4 py-3 text-center" x-text="d.rule_count||0"></td>
+                    <td class="px-4 py-3 text-xs text-slate-500" x-text="utils.relativeTime(d.created_at)"></td>
                     <td class="px-4 py-3 text-right">
-                      <button @click="$root.navigate('decision/'+d)" class="text-sm text-blue-600 hover:underline">View &rarr;</button>
+                      <button class="text-blue-600 hover:underline">View &rarr;</button>
                     </td>
                   </tr>
                 </template>
@@ -718,7 +743,7 @@
 <!-- Screen components -->
 <script>
 function dashboardScreen() {
-  return { decisions: [], async load() { const d = await api.listDecisions(10); if (!d.error) this.decisions = d; } };
+  return { decisions: [], async load() { const d = await api.listDecisionsSummary(10); if (!d.error) this.decisions = d; } };
 }
 
 function intentScreen() {
@@ -752,8 +777,17 @@ function intentScreen() {
 function historyScreen() {
   return {
     decisions: [], search: '',
-    get filtered() { return this.decisions.filter(d => d.includes(this.search)); },
-    async load() { const d = await api.listDecisions(100); if (!d.error) this.decisions = d; }
+    get filtered() {
+      if (!this.search) return this.decisions;
+      const q = this.search.toLowerCase();
+      return this.decisions.filter(d =>
+        (d.client_name||'').toLowerCase().includes(q) ||
+        (d.intent_type||'').toLowerCase().includes(q) ||
+        (d.decision_id||'').toLowerCase().includes(q) ||
+        (d.status||'').toLowerCase().includes(q)
+      );
+    },
+    async load() { const d = await api.listDecisionsSummary(100); if (!d.error) this.decisions = d; }
   };
 }
 
