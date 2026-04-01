@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 from artha.common.db.base import Base
 from artha.common.db.engine import get_engine, dispose_engine
+import artha.data.models  # noqa: F401 — register data pipeline tables
 from artha.evidence.router import router as evidence_router
 from artha.governance.router import router as governance_router
 from artha.accountability.router import router as accountability_router

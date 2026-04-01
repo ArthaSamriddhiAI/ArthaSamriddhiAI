@@ -30,6 +30,9 @@ class EvidenceService:
         data_source: DataSource
         if source == "mock":
             data_source = MockDataSource()
+        elif source == "yahoo":
+            from artha.evidence.ingestion.adapters.yahoo import YahooFinanceSource
+            data_source = YahooFinanceSource(self._session)
         else:
             raise ValueError(f"Unknown data source: {source}")
 
