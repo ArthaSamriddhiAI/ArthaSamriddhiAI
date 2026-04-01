@@ -64,6 +64,43 @@ async def list_decisions_summary(
     return summaries
 
 
+@router.get("/decisions/{decision_id}/detail")
+async def get_decision_detail(
+    decision_id: str,
+    session: AsyncSession = Depends(get_session),
+):
+    """Return full decision detail including agent outputs, rules, permissions."""
+    import json as json_mod
+    from sqlalchemy import select
+    from artha.governance.models import GovernanceDecisionRow
+
+    stmt = select(GovernanceDecisionRow).where(GovernanceDecisionRow.id == decision_id)
+    result = await session.execute(stmt)
+    row = result.scalar_one_or_none()
+    if row is None:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Decision not found")
+
+    result_data = json_mod.loads(row.result_json) if row.result_json else {}
+    return {
+        "decision_id": row.id,
+        "intent_id": row.intent_id,
+        "intent_type": row.intent_type,
+        "status": row.status,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "completed_at": row.completed_at.isoformat() if row.completed_at else None,
+        "evidence_snapshot_id": row.evidence_snapshot_id,
+        "initiator": result_data.get("initiator", ""),
+        "client_name": result_data.get("parameters", {}).get("client_name", ""),
+        "portfolio_value": result_data.get("parameters", {}).get("portfolio_value_inr", ""),
+        "parameters": result_data.get("parameters", {}),
+        "symbols": result_data.get("symbols", []),
+        "agent_outputs": result_data.get("agent_outputs", []),
+        "rule_evaluations": result_data.get("rule_evaluations", []),
+        "permission_outcome": result_data.get("permission_outcome"),
+    }
+
+
 @router.get("/decisions/{decision_id}/trace", response_model=DecisionTrace)
 async def get_trace(
     decision_id: str,

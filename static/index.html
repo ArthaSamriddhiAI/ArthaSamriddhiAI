@@ -793,37 +793,44 @@ function historyScreen() {
 
 function decisionScreen() {
   return {
-    loading: false, error: null, audit: null, result: null, tab: 'agents',
+    loading: false, error: null, result: null, tab: 'agents',
     agentOutputs: [], ruleEvals: [], permission: null, traceNodes: [], evidenceArtifacts: [],
     approvalForm: { approver: '', action: 'approve', rationale: '' },
     async load(id) {
       if (!id) return;
       this.loading = true; this.error = null;
-      const audit = await api.getAudit(id);
+
+      // Fetch decision detail (agent outputs, rules, permissions)
+      const detail = await api.getDecisionDetail(id);
+      if (detail.error) {
+        // Fallback to audit endpoint for older decisions
+        const audit = await api.getAudit(id);
+        this.loading = false;
+        if (audit.error) { this.error = 'Decision not found: ' + (detail.error || audit.error); return; }
+        this.traceNodes = audit.trace?.nodes || [];
+        this.evidenceArtifacts = audit.evidence_artifacts || [];
+        this.result = { decision_id: id, status: 'unknown' };
+        this.agentOutputs = [];
+        this.ruleEvals = [];
+        this.permission = null;
+        return;
+      }
+
+      this.result = detail;
+      this.agentOutputs = detail.agent_outputs || [];
+      this.ruleEvals = detail.rule_evaluations || [];
+      this.permission = detail.permission_outcome || null;
+
+      // Also fetch trace and evidence for those tabs
+      const [audit] = await Promise.all([api.getAudit(id)]);
       this.loading = false;
-      if (audit.error) { this.error = audit.error; return; }
-      this.audit = audit;
-      this.traceNodes = audit.trace?.nodes || [];
-      this.evidenceArtifacts = audit.evidence_artifacts || [];
-
-      // Extract agent outputs and rule evaluations from trace nodes
-      this.agentOutputs = this.traceNodes.filter(n => n.node_type === 'agent_output').map(n => n.data).filter(Boolean);
-      this.ruleEvals = this.traceNodes.filter(n => n.node_type === 'rule_evaluated').map(n => n.data).filter(Boolean);
-
-      // If no data in trace nodes, try to infer status
-      const permNodes = this.traceNodes.filter(n => ['permission_granted','permission_denied','escalation_required'].includes(n.node_type));
-
-      // Build a minimal result object
-      const hasRejected = permNodes.some(n => n.node_type === 'permission_denied');
-      const hasEscalation = permNodes.some(n => n.node_type === 'escalation_required');
-      this.result = { decision_id: id, status: hasRejected ? 'rejected' : (hasEscalation ? 'escalation_required' : 'approved') };
-
-      // If audit came from intent submission (has full data), the trace nodes may not contain embedded agent data
-      // In that case, agentOutputs will be empty — that's okay, the user can see trace
-      this.permission = { overall_status: this.result.status, permissions: [], requires_human_approval: hasEscalation };
+      if (!audit.error) {
+        this.traceNodes = audit.trace?.nodes || [];
+        this.evidenceArtifacts = audit.evidence_artifacts || [];
+      }
     },
     async submitApproval() {
-      const res = await api.submitApproval({ decision_id: this.audit?.decision_id, ...this.approvalForm });
+      const res = await api.submitApproval({ decision_id: this.result?.decision_id, ...this.approvalForm });
       if (res.error) { Alpine.store('notifications').add('error', res.error); return; }
       Alpine.store('notifications').add('success', 'Approval recorded');
       this.approvalForm = { approver: '', action: 'approve', rationale: '' };

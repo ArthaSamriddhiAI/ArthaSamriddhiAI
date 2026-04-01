@@ -169,11 +169,20 @@ class GovernancePipeline:
         from artha.governance.models import GovernanceDecisionRow
         snapshot = state.get("evidence_snapshot")
         rule_set = state.get("rule_set")
+        # Serialize full result for retrieval
+        agent_outputs = [a.model_dump(mode="json") for a in state.get("agent_outputs", [])]
+        rule_evals = [r.model_dump(mode="json") for r in state.get("rule_evaluations", [])]
+        perm = state.get("permission_outcome")
         result_data = {
-            "agent_count": len(state.get("agent_outputs", [])),
-            "rule_count": len(state.get("rule_evaluations", [])),
+            "agent_count": len(agent_outputs),
+            "rule_count": len(rule_evals),
             "initiator": intent.initiator,
             "parameters": intent.parameters,
+            "symbols": intent.symbols,
+            "holdings": intent.holdings,
+            "agent_outputs": agent_outputs,
+            "rule_evaluations": rule_evals,
+            "permission_outcome": perm.model_dump(mode="json") if perm else None,
         }
         row = GovernanceDecisionRow(
             id=state["decision_id"],

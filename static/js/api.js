@@ -26,6 +26,7 @@ window.api = {
   // Accountability
   listDecisions: (limit = 50) => request('GET', `/accountability/decisions?limit=${limit}`),
   listDecisionsSummary: (limit = 50) => request('GET', `/accountability/decisions/summary?limit=${limit}`),
+  getDecisionDetail: (id) => request('GET', `/accountability/decisions/${id}/detail`),
   getTrace: (id) => request('GET', `/accountability/decisions/${id}/trace`),
   getAudit: (id) => request('GET', `/accountability/decisions/${id}/audit`),
   getApprovals: (id) => request('GET', `/accountability/decisions/${id}/approvals`),
