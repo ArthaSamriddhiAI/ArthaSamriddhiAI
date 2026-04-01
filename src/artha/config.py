@@ -14,6 +14,7 @@ class Environment(str, Enum):
 class LLMProviderName(str, Enum):
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
+    MISTRAL = "mistral"
     MOCK = "mock"
 
 
@@ -26,6 +27,7 @@ class Settings(BaseSettings):
     # LLM
     anthropic_api_key: str = ""
     openai_api_key: str = ""
+    mistral_api_key: str = ""
     default_llm_provider: LLMProviderName = LLMProviderName.MOCK
 
     # Application

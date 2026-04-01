@@ -24,6 +24,9 @@ def get_provider(name: str | None = None) -> LLMProvider:
     elif provider_name == LLMProviderName.OPENAI.value:
         from artha.llm.providers.openai import OpenAIProvider
         provider = OpenAIProvider(api_key=settings.openai_api_key)
+    elif provider_name == LLMProviderName.MISTRAL.value:
+        from artha.llm.providers.mistral import MistralProvider
+        provider = MistralProvider(api_key=settings.mistral_api_key)
     elif provider_name == LLMProviderName.MOCK.value:
         from artha.llm.providers.mock import MockProvider
         provider = MockProvider()
