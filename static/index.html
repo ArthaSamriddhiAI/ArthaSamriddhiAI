@@ -325,7 +325,7 @@
 
     <!-- Decision Detail View -->
     <div x-show="screen==='decision'" x-cloak>
-      <div x-data="decisionScreen()" x-effect="if(screen==='decision'&&params.id)load(params.id)">
+      <div x-data="decisionScreen()" x-init="$watch('$root.params', p => { if($root.screen==='decision' && p.id) load(p.id) })" x-effect="if($root.screen==='decision' && $root.params.id && !result && !loading) load($root.params.id)">
         <div class="p-6" x-show="!loading&&!error">
           <!-- Header -->
           <div class="flex items-center gap-4 mb-6">
@@ -334,7 +334,7 @@
             <span class="badge text-sm" :class="utils.statusBadge(audit?.trace?.nodes?.[0]?.data?.status||result?.status)" x-text="utils.statusLabel(result?.status||'')"></span>
           </div>
           <div class="text-sm text-slate-500 mb-6">
-            ID: <code class="text-blue-600" x-text="params.id"></code>
+            ID: <code class="text-blue-600" x-text="result?.decision_id"></code>
           </div>
 
           <!-- Tabs -->
