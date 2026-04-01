@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./rules:/app/rules
+      - ./data:/app/data
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/artha.db
+      - DEFAULT_LLM_PROVIDER=mock
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=development

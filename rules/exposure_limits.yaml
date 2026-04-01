@@ -1,0 +1,24 @@
+rules:
+  - name: max_single_position
+    description: No single position may exceed 25% of portfolio value
+    category: exposure_limit
+    severity: hard
+    condition: "action_target_weight <= max_single_position"
+    parameters:
+      max_single_position: 0.25
+
+  - name: max_sector_exposure
+    description: No single sector may exceed 40% of portfolio value
+    category: exposure_limit
+    severity: hard
+    condition: "sector_weight_after <= max_sector_exposure"
+    parameters:
+      max_sector_exposure: 0.40
+
+  - name: min_diversification
+    description: Portfolio must hold at least 5 positions
+    category: exposure_limit
+    severity: soft
+    condition: "position_count >= min_positions"
+    parameters:
+      min_positions: 5

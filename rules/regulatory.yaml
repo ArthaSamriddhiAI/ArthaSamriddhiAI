@@ -1,0 +1,16 @@
+rules:
+  - name: restricted_list_check
+    description: Cannot trade securities on the restricted list
+    category: regulatory
+    severity: hard
+    condition: "symbol not in restricted_symbols"
+    parameters:
+      restricted_symbols: []
+
+  - name: trading_window_check
+    description: Trades must occur within permitted trading windows
+    category: regulatory
+    severity: hard
+    condition: "trading_window_open"
+    parameters:
+      trading_window_open: true

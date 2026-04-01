@@ -1,0 +1,24 @@
+rules:
+  - name: max_portfolio_risk
+    description: Portfolio aggregate risk score must not exceed threshold
+    category: risk_constraint
+    severity: hard
+    condition: "portfolio_risk_score <= max_risk_score"
+    parameters:
+      max_risk_score: 0.7
+
+  - name: high_risk_position_limit
+    description: High-risk individual positions must not exceed 10% weight
+    category: risk_constraint
+    severity: hard
+    condition: "not (symbol_risk_level == 'high' and action_target_weight > high_risk_max_weight)"
+    parameters:
+      high_risk_max_weight: 0.10
+
+  - name: volatility_regime_caution
+    description: In volatile regime, new positions must not exceed 15% weight
+    category: risk_constraint
+    severity: soft
+    condition: "not (regime == 'volatile' and is_new_position and action_target_weight > volatile_max_new_weight)"
+    parameters:
+      volatile_max_new_weight: 0.15
