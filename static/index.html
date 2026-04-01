@@ -325,7 +325,7 @@
 
     <!-- Decision Detail View -->
     <div x-show="screen==='decision'" x-cloak>
-      <div x-data="decisionScreen()" x-init="$watch('$root.params', p => { if($root.screen==='decision' && p.id) load(p.id) })" x-effect="if($root.screen==='decision' && $root.params.id && !result && !loading) load($root.params.id)">
+      <div x-data="decisionScreen()" x-init="initRouteListener()">
         <div class="p-6" x-show="!loading&&!error">
           <!-- Header -->
           <div class="flex items-center gap-4 mb-6">
@@ -796,6 +796,21 @@ function decisionScreen() {
     loading: false, error: null, result: null, tab: 'agents',
     agentOutputs: [], ruleEvals: [], permission: null, traceNodes: [], evidenceArtifacts: [],
     approvalForm: { approver: '', action: 'approve', rationale: '' },
+    _currentId: null,
+    initRouteListener() {
+      const self = this;
+      const check = () => {
+        const hash = window.location.hash.replace('#/', '');
+        const parts = hash.split('/');
+        if (parts[0] === 'decision' && parts[1] && parts[1] !== self._currentId) {
+          self._currentId = parts[1];
+          self.load(parts[1]);
+        }
+      };
+      window.addEventListener('route-change', check);
+      // Also check on init in case we landed directly on a decision URL
+      check();
+    },
     async load(id) {
       if (!id) return;
       this.loading = true; this.error = null;

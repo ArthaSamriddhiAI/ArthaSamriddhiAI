@@ -18,6 +18,10 @@ function app() {
       const parts = hash.split('/');
       this.screen = parts[0];
       this.params = parts[1] ? { id: parts[1] } : {};
+      // Dispatch event for screens that need route params
+      window.dispatchEvent(new CustomEvent('route-change', {
+        detail: { screen: this.screen, params: this.params }
+      }));
     },
 
     navigate(path) {
