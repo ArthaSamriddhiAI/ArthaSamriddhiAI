@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArthaSamriddhiAI — Portfolio Operating System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { artha: { primary: '#1e3a5f', accent: '#f59e0b', surface: '#f8fafc' } } } }
+    }
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/utils.js"></script>
+  <script src="/static/js/stores.js"></script>
+  <script src="/static/js/router.js"></script>
+  <script src="/static/help/content.js"></script>
+</head>
+<body class="h-full bg-slate-50 text-slate-800" x-data="app()">
+
+<!-- Notification toasts -->
+<div class="fixed top-4 right-4 z-50 space-y-2" x-data>
+  <template x-for="n in $store.notifications.items" :key="n.id">
+    <div class="px-4 py-2 rounded-lg shadow-lg text-white text-sm"
+         :class="n.type==='error'?'bg-red-600':'bg-green-600'" x-text="n.message"
+         x-transition></div>
+  </template>
+</div>
+
+<div class="flex h-full">
+  <!-- Sidebar -->
+  <aside class="w-56 bg-slate-800 text-white flex flex-col flex-shrink-0">
+    <div class="p-4 border-b border-slate-700">
+      <h1 class="text-lg font-bold text-amber-400">ArthaSamriddhi</h1>
+      <p class="text-xs text-slate-400 mt-0.5">Portfolio Operating System</p>
+    </div>
+    <nav class="flex-1 py-3 space-y-0.5 px-2">
+      <a @click.prevent="navigate('dashboard')" href="#/dashboard"
+         class="sidebar-link flex items-center gap-2 px-3 py-2 rounded text-sm"
+         :class="isActive('dashboard')&&'active'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Dashboard
+      </a>
+      <a @click.prevent="navigate('intent')" href="#/intent"
+         class="sidebar-link flex items-center gap-2 px-3 py-2 rounded text-sm"
+         :class="isActive('intent')&&'active'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        New Intent
+      </a>
+      <a @click.prevent="navigate('history')" href="#/history"
+         class="sidebar-link flex items-center gap-2 px-3 py-2 rounded text-sm"
+         :class="isActive('history')&&'active'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Decisions
+      </a>
+      <a @click.prevent="navigate('evidence')" href="#/evidence"
+         class="sidebar-link flex items-center gap-2 px-3 py-2 rounded text-sm"
+         :class="isActive('evidence')&&'active'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Evidence
+      </a>
+      <a @click.prevent="navigate('control')" href="#/control"
+         class="sidebar-link flex items-center gap-2 px-3 py-2 rounded text-sm"
+         :class="isActive('control')&&'active'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        System
+      </a>
+      <a @click.prevent="navigate('help')" href="#/help"
+         class="sidebar-link flex items-center gap-2 px-3 py-2 rounded text-sm"
+         :class="isActive('help')&&'active'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Help & Docs
+      </a>
+    </nav>
+    <div class="p-3 border-t border-slate-700 text-xs" x-data>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="w-2 h-2 rounded-full" :class="$store.system.health?.status==='ok'?'bg-green-400 pulse-green':'bg-red-400 pulse-red'"></span>
+        <span class="text-slate-400" x-text="$store.system.health?.status==='ok'?'System Healthy':'Unhealthy'"></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full" :class="$store.system.killSwitch?.enabled?'bg-red-400 pulse-red':'bg-green-400'"></span>
+        <span class="text-slate-400" x-text="$store.system.killSwitch?.enabled?'Kill Switch ACTIVE':'Kill Switch Off'"></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 overflow-y-auto">
+    <!-- Dashboard -->
+    <div x-show="screen==='dashboard'" x-cloak>
+      <div x-data="dashboardScreen()" x-init="load()">
+        <div class="p-6">
+          <h2 class="text-2xl font-bold mb-6">Dashboard</h2>
+          <!-- Status cards -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="card p-4">
+              <p class="text-xs text-slate-500 uppercase tracking-wide">System Health</p>
+              <p class="text-2xl font-bold mt-1" :class="$store.system.health?.status==='ok'?'text-green-600':'text-red-600'"
+                 x-text="$store.system.health?.status==='ok'?'Healthy':'Down'"></p>
+            </div>
+            <div class="card p-4">
+              <p class="text-xs text-slate-500 uppercase tracking-wide">Kill Switch</p>
+              <p class="text-2xl font-bold mt-1" :class="$store.system.killSwitch?.enabled?'text-red-600':'text-green-600'"
+                 x-text="$store.system.killSwitch?.enabled?'ACTIVE':'Inactive'"></p>
+            </div>
+            <div class="card p-4">
+              <p class="text-xs text-slate-500 uppercase tracking-wide">LLM Provider</p>
+              <p class="text-2xl font-bold mt-1 text-blue-600">Mistral</p>
+            </div>
+            <div class="card p-4">
+              <p class="text-xs text-slate-500 uppercase tracking-wide">Total Decisions</p>
+              <p class="text-2xl font-bold mt-1" x-text="decisions.length"></p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Recent Decisions -->
+            <div class="card p-5">
+              <h3 class="font-semibold mb-3">Recent Decisions</h3>
+              <div x-show="decisions.length===0" class="text-sm text-slate-400 py-4">No decisions yet. Submit a governance intent to get started.</div>
+              <div class="space-y-2">
+                <template x-for="d in decisions.slice(0,10)" :key="d">
+                  <a @click.prevent="$root.navigate('decision/'+d)" href="#"
+                     class="flex items-center justify-between p-2 rounded hover:bg-slate-50 text-sm">
+                    <code class="text-blue-600" x-text="utils.truncateId(d)+'...'"></code>
+                    <span class="text-slate-400 text-xs">View &rarr;</span>
+                  </a>
+                </template>
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card p-5">
+              <h3 class="font-semibold mb-3">Quick Actions</h3>
+              <div class="grid grid-cols-1 gap-2">
+                <button @click="$root.navigate('intent')" class="w-full text-left px-4 py-3 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-medium">
+                  + New Rebalance Intent
+                </button>
+                <button @click="$root.navigate('evidence')" class="w-full text-left px-4 py-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium">
+                  Explore Evidence Artifacts
+                </button>
+                <button @click="$root.navigate('help')" class="w-full text-left px-4 py-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium">
+                  EGA Architecture Guide
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Governance Intent -->
+    <div x-show="screen==='intent'" x-cloak>
+      <div x-data="intentScreen()" x-init="init()">
+        <div class="p-6 max-w-4xl mx-auto">
+          <h2 class="text-2xl font-bold mb-6">New Governance Intent</h2>
+
+          <div class="card p-6" x-show="!result">
+            <!-- Intent Type -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium mb-2">Intent Type</label>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <template x-for="t in intentTypes" :key="t.value">
+                  <button @click="form.intent_type=t.value"
+                          class="p-3 rounded-lg border-2 text-sm text-left"
+                          :class="form.intent_type===t.value?'border-blue-500 bg-blue-50':'border-slate-200 hover:border-slate-300'">
+                    <div class="font-medium" x-text="t.label"></div>
+                    <div class="text-xs text-slate-500 mt-0.5" x-text="t.desc"></div>
+                  </button>
+                </template>
+              </div>
+            </div>
+
+            <!-- Symbols -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium mb-2">Symbols</label>
+              <div class="flex flex-wrap gap-1 mb-2">
+                <template x-for="(s,i) in form.symbols" :key="i">
+                  <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">
+                    <span x-text="s"></span>
+                    <button @click="form.symbols.splice(i,1)" class="text-blue-500 hover:text-blue-700">&times;</button>
+                  </span>
+                </template>
+              </div>
+              <div class="flex gap-2">
+                <input type="text" x-model="newSymbol" @keydown.enter.prevent="addSymbol()"
+                       placeholder="Type ticker and press Enter" class="flex-1 px-3 py-2 border rounded-lg text-sm">
+                <button @click="addSymbol()" class="px-4 py-2 bg-slate-100 rounded-lg text-sm">Add</button>
+              </div>
+            </div>
+
+            <!-- Holdings -->
+            <div class="mb-6" x-show="form.intent_type==='rebalance'||form.intent_type==='trade_proposal'">
+              <label class="block text-sm font-medium mb-2">Current Holdings (shares)</label>
+              <div class="space-y-2">
+                <template x-for="(s,i) in form.symbols" :key="'h'+i">
+                  <div class="flex items-center gap-3">
+                    <span class="w-16 text-sm font-mono" x-text="s"></span>
+                    <input type="number" x-model.number="form.holdings[s]" min="0" step="1"
+                           class="w-32 px-3 py-1.5 border rounded text-sm" placeholder="0">
+                    <span class="text-xs text-slate-400">shares</span>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Submit -->
+            <button @click="submit()" :disabled="loading||form.symbols.length===0"
+                    class="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">
+              <span x-show="!loading">Submit Intent</span>
+              <span x-show="loading">Processing...</span>
+            </button>
+          </div>
+
+          <!-- Result -->
+          <div x-show="result" class="space-y-4">
+            <div class="card p-5">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-lg">Decision Result</h3>
+                <span class="badge" :class="utils.statusBadge(result?.status)" x-text="utils.statusLabel(result?.status)"></span>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+                <div><p class="text-slate-500">Decision ID</p><code class="text-blue-600" x-text="utils.truncateId(result?.decision_id)"></code></div>
+                <div><p class="text-slate-500">Intent Type</p><p x-text="result?.intent_type"></p></div>
+                <div><p class="text-slate-500">Agents Consulted</p><p x-text="result?.agent_outputs?.length||0"></p></div>
+                <div><p class="text-slate-500">Rules Evaluated</p><p x-text="result?.rule_evaluations?.length||0"></p></div>
+              </div>
+              <div class="flex gap-2">
+                <button @click="$root.navigate('decision/'+result.decision_id)" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">View Full Analysis</button>
+                <button @click="result=null" class="px-4 py-2 bg-slate-100 rounded-lg text-sm">Submit Another</button>
+              </div>
+            </div>
+
+            <!-- Inline Agent Outputs -->
+            <div class="card p-5" x-show="result?.agent_outputs?.length">
+              <h3 class="font-semibold mb-3">Agent Outputs</h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <template x-for="agent in result?.agent_outputs||[]" :key="agent.agent_id">
+                  <div class="border rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="font-medium text-sm" x-text="agent.agent_name"></span>
+                      <span class="badge" :class="utils.riskBadge(agent.risk_level)" x-text="agent.risk_level"></span>
+                    </div>
+                    <div class="mb-2">
+                      <div class="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                        <span>Confidence:</span>
+                        <span x-text="(agent.confidence*100).toFixed(0)+'%'"></span>
+                      </div>
+                      <div class="w-full bg-slate-100 rounded-full h-2">
+                        <div class="bg-blue-500 rounded-full h-2 confidence-bar" :style="'width:'+agent.confidence*100+'%'"></div>
+                      </div>
+                    </div>
+                    <div x-show="agent.drivers?.length" class="mb-2">
+                      <p class="text-xs text-slate-500 mb-1">Key Drivers:</p>
+                      <ul class="text-xs space-y-0.5">
+                        <template x-for="d in (agent.drivers||[]).slice(0,3)"><li class="text-slate-600" x-text="'- '+d"></li></template>
+                      </ul>
+                    </div>
+                    <div x-show="agent.proposed_actions?.length" class="text-xs">
+                      <p class="text-slate-500 mb-1">Proposed Actions: <span class="font-medium" x-text="agent.proposed_actions?.length"></span></p>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Decision History -->
+    <div x-show="screen==='history'" x-cloak>
+      <div x-data="historyScreen()" x-init="load()">
+        <div class="p-6">
+          <h2 class="text-2xl font-bold mb-6">Decision History</h2>
+          <div class="card">
+            <div class="p-4 border-b">
+              <input type="text" x-model="search" placeholder="Search by decision ID..." class="w-full px-3 py-2 border rounded-lg text-sm">
+            </div>
+            <div x-show="filtered.length===0" class="p-8 text-center text-slate-400">No decisions found.</div>
+            <table class="w-full" x-show="filtered.length>0">
+              <thead class="bg-slate-50 text-xs text-slate-500 uppercase"><tr><th class="px-4 py-3 text-left">Decision ID</th><th class="px-4 py-3 text-right">Actions</th></tr></thead>
+              <tbody>
+                <template x-for="d in filtered" :key="d">
+                  <tr class="border-t hover:bg-slate-50">
+                    <td class="px-4 py-3"><code class="text-sm text-blue-600" x-text="d"></code></td>
+                    <td class="px-4 py-3 text-right">
+                      <button @click="$root.navigate('decision/'+d)" class="text-sm text-blue-600 hover:underline">View &rarr;</button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Decision Detail View -->
+    <div x-show="screen==='decision'" x-cloak>
+      <div x-data="decisionScreen()" x-effect="if(screen==='decision'&&params.id)load(params.id)">
+        <div class="p-6" x-show="!loading&&!error">
+          <!-- Header -->
+          <div class="flex items-center gap-4 mb-6">
+            <button @click="$root.navigate('history')" class="text-slate-400 hover:text-slate-600">&larr; Back</button>
+            <h2 class="text-2xl font-bold">Decision Analysis</h2>
+            <span class="badge text-sm" :class="utils.statusBadge(audit?.trace?.nodes?.[0]?.data?.status||result?.status)" x-text="utils.statusLabel(result?.status||'')"></span>
+          </div>
+          <div class="text-sm text-slate-500 mb-6">
+            ID: <code class="text-blue-600" x-text="params.id"></code>
+          </div>
+
+          <!-- Tabs -->
+          <div class="flex gap-0 border-b mb-6">
+            <button @click="tab='agents'" class="tab" :class="tab==='agents'&&'active'">Agents</button>
+            <button @click="tab='rules'" class="tab" :class="tab==='rules'&&'active'">Rules</button>
+            <button @click="tab='permissions'" class="tab" :class="tab==='permissions'&&'active'">Permissions</button>
+            <button @click="tab='trace'" class="tab" :class="tab==='trace'&&'active'">Trace DAG</button>
+            <button @click="tab='evidence'" class="tab" :class="tab==='evidence'&&'active'">Evidence</button>
+          </div>
+
+          <!-- Agent Collaboration Tab -->
+          <div x-show="tab==='agents'">
+            <!-- Agent flow diagram -->
+            <div class="card p-4 mb-4">
+              <div class="flex items-center justify-center gap-2 text-sm flex-wrap">
+                <span class="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg font-medium">Intent</span>
+                <span class="text-slate-400">&rarr;</span>
+                <span class="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg font-medium">Evidence Freeze</span>
+                <span class="text-slate-400">&rarr;</span>
+                <span class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg font-medium">Allocation Agent</span>
+                <span class="text-slate-400">&rarr;</span>
+                <span class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg font-medium">Risk Agent</span>
+                <span class="text-slate-400">&rarr;</span>
+                <span class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg font-medium">Review Agent</span>
+                <span class="text-slate-400">&rarr;</span>
+                <span class="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg font-medium">Rule Engine</span>
+                <span class="text-slate-400">&rarr;</span>
+                <span class="px-3 py-1.5 rounded-lg font-medium" :class="result?.status==='approved'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'" x-text="utils.statusLabel(result?.status)"></span>
+              </div>
+              <p class="text-xs text-center text-slate-400 mt-2">Agents surface risk. They do NOT decide. Rules enforce constraints. Humans decide.</p>
+            </div>
+
+            <!-- Agent Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <template x-for="agent in agentOutputs" :key="agent.agent_id">
+                <div class="card p-5">
+                  <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-semibold" x-text="agent.agent_name"></h4>
+                    <span class="badge" :class="utils.riskBadge(agent.risk_level)" x-text="agent.risk_level"></span>
+                  </div>
+
+                  <!-- Confidence -->
+                  <div class="mb-4">
+                    <div class="flex justify-between text-xs text-slate-500 mb-1">
+                      <span>Confidence</span><span x-text="(agent.confidence*100).toFixed(0)+'%'"></span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2.5">
+                      <div class="rounded-full h-2.5 confidence-bar" :style="'width:'+agent.confidence*100+'%;background:'+utils.riskColor(agent.risk_level)"></div>
+                    </div>
+                  </div>
+
+                  <!-- Drivers -->
+                  <div x-show="agent.drivers?.length" class="mb-3">
+                    <p class="text-xs font-medium text-slate-500 mb-1">Key Drivers</p>
+                    <ul class="space-y-1">
+                      <template x-for="d in agent.drivers"><li class="text-sm text-slate-700 flex gap-1.5"><span class="text-slate-400 mt-0.5">&#8226;</span><span x-text="d"></span></li></template>
+                    </ul>
+                  </div>
+
+                  <!-- Flags -->
+                  <div x-show="agent.flags?.length" class="mb-3">
+                    <p class="text-xs font-medium text-slate-500 mb-1">Flags</p>
+                    <template x-for="f in agent.flags">
+                      <div class="flex items-start gap-1 text-sm text-amber-700 bg-amber-50 px-2 py-1 rounded mb-1">
+                        <span>&#9888;</span><span x-text="f"></span>
+                      </div>
+                    </template>
+                  </div>
+
+                  <!-- Proposed Actions -->
+                  <div x-show="agent.proposed_actions?.length">
+                    <p class="text-xs font-medium text-slate-500 mb-1">Proposed Actions</p>
+                    <div class="space-y-1">
+                      <template x-for="a in agent.proposed_actions">
+                        <div class="bg-slate-50 rounded p-2 text-xs">
+                          <div class="flex justify-between"><span class="font-mono font-bold" x-text="a.symbol"></span><span class="font-medium" x-text="a.action"></span></div>
+                          <div x-show="a.target_weight" class="text-slate-500">Target: <span x-text="utils.formatPercent(a.target_weight)"></span></div>
+                          <div x-show="a.rationale" class="text-slate-600 mt-1" x-text="a.rationale"></div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+
+                  <!-- Reasoning Summary -->
+                  <details class="mt-3" x-show="agent.reasoning_summary">
+                    <summary class="text-xs text-blue-600 cursor-pointer">Reasoning Summary</summary>
+                    <p class="text-xs text-slate-600 mt-1 leading-relaxed" x-text="agent.reasoning_summary"></p>
+                  </details>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Rules Tab -->
+          <div x-show="tab==='rules'">
+            <div class="card overflow-hidden">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50"><tr>
+                  <th class="px-4 py-3 text-left">Status</th>
+                  <th class="px-4 py-3 text-left">Rule</th>
+                  <th class="px-4 py-3 text-left">Severity</th>
+                  <th class="px-4 py-3 text-left">Condition</th>
+                  <th class="px-4 py-3 text-left">Message</th>
+                </tr></thead>
+                <tbody>
+                  <template x-for="r in ruleEvals" :key="r.rule_id">
+                    <tr class="border-t" :class="!r.passed&&r.severity==='hard'?'bg-red-50':(!r.passed&&r.severity==='soft'?'bg-amber-50':'')">
+                      <td class="px-4 py-3"><span x-text="r.passed?'&#10003;':'&#10007;'" :class="r.passed?'text-green-600':'text-red-600'" class="font-bold"></span></td>
+                      <td class="px-4 py-3 font-medium" x-text="r.rule_name"></td>
+                      <td class="px-4 py-3"><span class="badge" :class="utils.severityBadge(r.severity)" x-text="r.severity"></span></td>
+                      <td class="px-4 py-3"><code class="text-xs bg-slate-100 px-1 py-0.5 rounded" x-text="r.condition"></code></td>
+                      <td class="px-4 py-3 text-xs text-slate-600" x-text="r.message||'-'"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+              <div x-show="ruleEvals.length===0" class="p-8 text-center text-slate-400">No rule evaluations (no proposed actions).</div>
+            </div>
+          </div>
+
+          <!-- Permissions Tab -->
+          <div x-show="tab==='permissions'">
+            <div class="card p-5">
+              <div class="flex items-center gap-3 mb-4">
+                <h3 class="font-semibold">Permission Outcome</h3>
+                <span class="badge" :class="utils.statusBadge(permission?.overall_status)" x-text="utils.statusLabel(permission?.overall_status||'')"></span>
+                <span x-show="permission?.requires_human_approval" class="text-sm text-amber-600 font-medium">&#9888; Requires Human Approval</span>
+              </div>
+
+              <div x-show="permission?.permissions?.length">
+                <table class="w-full text-sm">
+                  <thead class="bg-slate-50"><tr>
+                    <th class="px-4 py-2 text-left">Symbol</th><th class="px-4 py-2 text-left">Action</th>
+                    <th class="px-4 py-2 text-left">Weight</th><th class="px-4 py-2 text-left">Status</th>
+                    <th class="px-4 py-2 text-left">Reasons</th>
+                  </tr></thead>
+                  <tbody>
+                    <template x-for="p in permission?.permissions||[]" :key="p.action?.symbol">
+                      <tr class="border-t">
+                        <td class="px-4 py-2 font-mono" x-text="p.action?.symbol"></td>
+                        <td class="px-4 py-2" x-text="p.action?.action"></td>
+                        <td class="px-4 py-2" x-text="utils.formatPercent(p.action?.target_weight)"></td>
+                        <td class="px-4 py-2"><span class="badge" :class="utils.statusBadge(p.status)" x-text="utils.statusLabel(p.status)"></span></td>
+                        <td class="px-4 py-2 text-xs text-slate-600" x-text="[...(p.rejection_reasons||[]),...(p.escalation_reasons||[])].join('; ')||'-'"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+              <div x-show="!permission?.permissions?.length" class="text-sm text-slate-400 py-4">No actions were proposed by agents.</div>
+
+              <!-- Approval form for escalated decisions -->
+              <div x-show="permission?.requires_human_approval" class="mt-6 border-t pt-4">
+                <h4 class="font-medium mb-3">Submit Approval</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <input type="text" x-model="approvalForm.approver" placeholder="Your name" class="px-3 py-2 border rounded text-sm">
+                  <select x-model="approvalForm.action" class="px-3 py-2 border rounded text-sm">
+                    <option value="approve">Approve</option><option value="reject">Reject</option><option value="override">Override</option>
+                  </select>
+                  <textarea x-model="approvalForm.rationale" placeholder="Rationale..." class="px-3 py-2 border rounded text-sm md:col-span-2" rows="2"></textarea>
+                </div>
+                <button @click="submitApproval()" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Submit Approval</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trace DAG Tab -->
+          <div x-show="tab==='trace'">
+            <div class="card p-5">
+              <h3 class="font-semibold mb-4">Decision Trace (Causal Graph)</h3>
+              <div class="space-y-2">
+                <template x-for="(node,i) in traceNodes" :key="node.id">
+                  <div class="flex items-start gap-3">
+                    <div class="flex flex-col items-center">
+                      <div class="w-4 h-4 rounded-full border-2" :style="'background:'+utils.traceNodeColor(node.node_type)+';border-color:'+utils.traceNodeColor(node.node_type)"></div>
+                      <div x-show="i<traceNodes.length-1" class="w-0.5 h-8 bg-slate-200"></div>
+                    </div>
+                    <div class="flex-1 -mt-0.5">
+                      <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium" x-text="utils.traceNodeLabel(node.node_type)"></span>
+                        <span class="text-xs text-slate-400" x-text="utils.formatTime(node.created_at)"></span>
+                      </div>
+                      <details class="mt-1">
+                        <summary class="text-xs text-blue-600 cursor-pointer">View Data</summary>
+                        <pre class="json-viewer text-xs mt-1 p-2 bg-slate-50 rounded max-h-40 overflow-auto" x-text="JSON.stringify(node.data,null,2)"></pre>
+                      </details>
+                    </div>
+                  </div>
+                </template>
+              </div>
+              <div x-show="traceNodes.length===0" class="text-sm text-slate-400 py-4">No trace data available.</div>
+            </div>
+          </div>
+
+          <!-- Evidence Tab -->
+          <div x-show="tab==='evidence'">
+            <div class="card p-5">
+              <h3 class="font-semibold mb-4">Evidence Snapshot at Decision Time</h3>
+              <div x-show="evidenceArtifacts.length">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <template x-for="a in evidenceArtifacts" :key="a.id">
+                    <div class="border rounded-lg p-4">
+                      <div class="flex items-center justify-between mb-2">
+                        <span class="badge badge-info" x-text="a.artifact_type"></span>
+                        <span class="text-xs text-slate-400" x-text="'v'+a.version"></span>
+                      </div>
+                      <details>
+                        <summary class="text-xs text-blue-600 cursor-pointer">View Data</summary>
+                        <pre class="json-viewer text-xs mt-1 p-2 bg-slate-50 rounded max-h-60 overflow-auto" x-text="JSON.stringify(a.data,null,2)"></pre>
+                      </details>
+                    </div>
+                  </template>
+                </div>
+              </div>
+              <div x-show="!evidenceArtifacts.length" class="text-sm text-slate-400 py-4">No evidence artifacts captured.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading/Error -->
+        <div x-show="loading" class="p-6"><div class="skeleton h-8 w-48 mb-4"></div><div class="skeleton h-64 w-full"></div></div>
+        <div x-show="error" class="p-6"><div class="card p-8 text-center text-red-600" x-text="error"></div></div>
+      </div>
+    </div>
+
+    <!-- Evidence Explorer -->
+    <div x-show="screen==='evidence'" x-cloak>
+      <div x-data="evidenceScreen()" x-init="init()">
+        <div class="p-6">
+          <h2 class="text-2xl font-bold mb-6">Evidence Explorer</h2>
+          <div class="flex gap-6">
+            <div class="w-56 flex-shrink-0 space-y-1">
+              <template x-for="t in types" :key="t.value">
+                <button @click="selectType(t.value)" class="w-full text-left px-3 py-2 rounded-lg text-sm"
+                        :class="selected===t.value?'bg-blue-50 text-blue-700 font-medium':'hover:bg-slate-100'">
+                  <span x-text="t.label"></span>
+                </button>
+              </template>
+            </div>
+            <div class="flex-1">
+              <div x-show="loading" class="skeleton h-48 w-full"></div>
+              <div x-show="!loading&&!artifact" class="card p-8 text-center text-slate-400">
+                <p>Select an artifact type to view the latest evidence.</p>
+              </div>
+              <div x-show="!loading&&artifact" class="card p-5">
+                <div class="flex items-center justify-between mb-4">
+                  <div>
+                    <span class="badge badge-info" x-text="artifact?.artifact_type"></span>
+                    <span class="text-xs text-slate-400 ml-2" x-text="'v'+(artifact?.version||'')"></span>
+                  </div>
+                  <span class="text-xs text-slate-400" x-text="utils.formatTime(artifact?.created_at)"></span>
+                </div>
+                <pre class="json-viewer p-3 bg-slate-50 rounded max-h-96 overflow-auto text-xs" x-text="JSON.stringify(artifact?.data,null,2)"></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Control -->
+    <div x-show="screen==='control'" x-cloak>
+      <div x-data="controlScreen()" x-init="load()">
+        <div class="p-6 max-w-2xl">
+          <h2 class="text-2xl font-bold mb-6">System Control</h2>
+
+          <!-- Kill Switch -->
+          <div class="card p-6 mb-6">
+            <h3 class="font-semibold mb-4">Emergency Kill Switch</h3>
+            <div class="flex items-center gap-4 mb-4">
+              <span class="w-4 h-4 rounded-full" :class="ks?.enabled?'bg-red-500 pulse-red':'bg-green-500'"></span>
+              <span class="text-lg font-bold" :class="ks?.enabled?'text-red-600':'text-green-600'" x-text="ks?.enabled?'ACTIVE — All execution halted':'Inactive'"></span>
+            </div>
+            <p class="text-sm text-slate-500 mb-4" x-show="ks?.toggled_at">
+              Last toggled: <span x-text="utils.formatTime(ks?.toggled_at)"></span> by <span x-text="ks?.toggled_by||'unknown'"></span>
+            </p>
+
+            <div x-show="!confirmMode">
+              <button x-show="!ks?.enabled" @click="confirmMode='activate'" class="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700">Activate Kill Switch</button>
+              <button x-show="ks?.enabled" @click="confirmMode='deactivate'" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">Deactivate Kill Switch</button>
+            </div>
+            <div x-show="confirmMode" class="border border-amber-300 bg-amber-50 rounded-lg p-4">
+              <p class="text-sm font-medium mb-2" x-text="confirmMode==='activate'?'Type CONFIRM to activate the kill switch:':'Type CONFIRM to deactivate:'"></p>
+              <div class="flex gap-2">
+                <input type="text" x-model="confirmText" class="px-3 py-2 border rounded text-sm" placeholder="CONFIRM">
+                <button @click="toggleKillSwitch()" :disabled="confirmText!=='CONFIRM'"
+                        class="px-4 py-2 rounded text-white text-sm disabled:opacity-50"
+                        :class="confirmMode==='activate'?'bg-red-600':'bg-green-600'">Confirm</button>
+                <button @click="confirmMode='';confirmText=''" class="px-4 py-2 bg-slate-200 rounded text-sm">Cancel</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Health -->
+          <div class="card p-6">
+            <h3 class="font-semibold mb-4">System Health</h3>
+            <div class="flex items-center gap-3">
+              <span class="w-3 h-3 rounded-full" :class="$store.system.health?.status==='ok'?'bg-green-500 pulse-green':'bg-red-500'"></span>
+              <span class="font-medium" x-text="$store.system.health?.status==='ok'?'All systems operational':'System unavailable'"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Help & Documentation -->
+    <div x-show="screen==='help'" x-cloak>
+      <div x-data="helpScreen()">
+        <div class="p-6 max-w-5xl mx-auto">
+          <h2 class="text-2xl font-bold mb-6">Help & Documentation</h2>
+
+          <!-- Tabs -->
+          <div class="flex gap-0 border-b mb-6">
+            <button @click="tab='ega'" class="tab" :class="tab==='ega'&&'active'">EGA Architecture</button>
+            <button @click="tab='howto'" class="tab" :class="tab==='howto'&&'active'">How to Use</button>
+            <button @click="tab='glossary'" class="tab" :class="tab==='glossary'&&'active'">Glossary</button>
+          </div>
+
+          <!-- EGA Architecture -->
+          <div x-show="tab==='ega'" class="space-y-6">
+            <!-- Three Layer Diagram -->
+            <div class="card p-6">
+              <h3 class="font-semibold text-lg mb-4">The Three-Layer Mental Model</h3>
+              <p class="text-sm text-slate-600 mb-6">Any system that allows agents to act under uncertainty must separate three questions without collapsing them:</p>
+              <div class="space-y-3">
+                <div class="flex items-stretch gap-4 p-4 rounded-lg bg-blue-50 border-l-4 border-blue-500">
+                  <div class="flex-shrink-0 w-8 h-8 rounded bg-blue-500 text-white flex items-center justify-center font-bold">1</div>
+                  <div><h4 class="font-semibold text-blue-800">Evidence Layer</h4>
+                  <p class="text-sm text-blue-700 mt-1">"What does the system believe about the world?" Market observations, risk estimates, regime inference, model-derived outputs with uncertainty. ML belongs here as evidence generation, not authority. <strong>Produces beliefs, not decisions.</strong></p></div>
+                </div>
+                <div class="flex items-stretch gap-4 p-4 rounded-lg bg-amber-50 border-l-4 border-amber-500">
+                  <div class="flex-shrink-0 w-8 h-8 rounded bg-amber-500 text-white flex items-center justify-center font-bold">2</div>
+                  <div><h4 class="font-semibold text-amber-800">Governance Layer</h4>
+                  <p class="text-sm text-amber-700 mt-1">"What actions are permitted right now?" The control plane. Encodes mandates, constraints, policies, limits. Deterministic, executable, versioned. <strong>Real-time permissioning, not retrospective compliance.</strong></p></div>
+                </div>
+                <div class="flex items-stretch gap-4 p-4 rounded-lg bg-green-50 border-l-4 border-green-500">
+                  <div class="flex-shrink-0 w-8 h-8 rounded bg-green-500 text-white flex items-center justify-center font-bold">3</div>
+                  <div><h4 class="font-semibold text-green-800">Accountability Layer</h4>
+                  <p class="text-sm text-green-700 mt-1">"Who acted, under what authority, and how is it recorded?" Preserves institutional memory. Every action has a clear initiator, is linked to contemporaneous evidence, is evaluated under rules in force at the time. <strong>Causal lineage, not just logs.</strong></p></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pipeline Flow -->
+            <div class="card p-6">
+              <h3 class="font-semibold text-lg mb-4">Governance Pipeline Flow</h3>
+              <div class="flex flex-wrap items-center justify-center gap-2 text-sm mb-4">
+                <span class="px-3 py-2 bg-blue-100 text-blue-800 rounded font-medium">Intent</span><span>&rarr;</span>
+                <span class="px-3 py-2 bg-blue-100 text-blue-800 rounded font-medium">Evidence Compute & Freeze</span><span>&rarr;</span>
+                <span class="px-3 py-2 bg-purple-100 text-purple-800 rounded font-medium">Supervisor Dispatch</span><span>&rarr;</span>
+                <span class="px-3 py-2 bg-purple-100 text-purple-800 rounded font-medium">Agent Consultation Loop</span><span>&rarr;</span>
+                <span class="px-3 py-2 bg-yellow-100 text-yellow-800 rounded font-medium">Rule Engine (Deterministic)</span><span>&rarr;</span>
+                <span class="px-3 py-2 bg-green-100 text-green-800 rounded font-medium">Permission Filter</span><span>&rarr;</span>
+                <span class="px-3 py-2 bg-slate-100 text-slate-800 rounded font-medium">Decision Record</span>
+              </div>
+              <p class="text-xs text-slate-500 text-center">The orchestrator has bounded authority: cannot place trades, cannot override rules, cannot invent objectives.</p>
+            </div>
+
+            <!-- Principles -->
+            <div class="card p-6">
+              <h3 class="font-semibold text-lg mb-4">Cross-Cutting Design Principles</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Agents surface risk; they do NOT decide</p><p class="text-xs text-slate-500 mt-1">Decision authority is always explicit and human.</p></div>
+                <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Synthesis &#8800; Decision</p><p class="text-xs text-slate-500 mt-1">Aggregation layers clarify the landscape; they don't remove responsibility.</p></div>
+                <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Governance is real-time permissioning</p><p class="text-xs text-slate-500 mt-1">Not retrospective compliance. Deterministic, versioned, executable.</p></div>
+                <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Decision telemetry > model telemetry</p><p class="text-xs text-slate-500 mt-1">The system of record captures human judgment and intent.</p></div>
+                <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Learning is governed and explicit</p><p class="text-xs text-slate-500 mt-1">No silent drift. Judgment evolves like policy: slowly, versioned, with traceability.</p></div>
+                <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Off-system judgment is a feature</p><p class="text-xs text-slate-500 mt-1">Humans may incorporate experience and discretion no model can encode.</p></div>
+                <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Agentic &#8800; Autonomous</p><p class="text-xs text-slate-500 mt-1">Agents coordinate reasoning under explicit mandates.</p></div>
+                <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">The instant a decision is made, it becomes history</p><p class="text-xs text-slate-500 mt-1">A serious system must reason across both present and past states.</p></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- How to Use -->
+          <div x-show="tab==='howto'" class="space-y-4">
+            <template x-for="step in howToSteps" :key="step.title">
+              <div class="card p-5">
+                <h4 class="font-semibold flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold" x-text="step.num"></span>
+                  <span x-text="step.title"></span>
+                </h4>
+                <p class="text-sm text-slate-600 mt-2" x-text="step.desc"></p>
+              </div>
+            </template>
+          </div>
+
+          <!-- Glossary -->
+          <div x-show="tab==='glossary'">
+            <div class="card">
+              <template x-for="term in glossary" :key="term.term">
+                <div class="p-4 border-b last:border-b-0">
+                  <dt class="font-semibold text-sm" x-text="term.term"></dt>
+                  <dd class="text-sm text-slate-600 mt-1" x-text="term.def"></dd>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Screen components -->
+<script>
+function dashboardScreen() {
+  return { decisions: [], async load() { const d = await api.listDecisions(10); if (!d.error) this.decisions = d; } };
+}
+
+function intentScreen() {
+  return {
+    intentTypes: [
+      { value: 'rebalance', label: 'Rebalance', desc: 'Adjust portfolio weights' },
+      { value: 'risk_review', label: 'Risk Review', desc: 'Assess current risk' },
+      { value: 'trade_proposal', label: 'Trade Proposal', desc: 'Evaluate specific trades' },
+      { value: 'scheduled_evaluation', label: 'Scheduled Eval', desc: 'Periodic review' },
+    ],
+    form: { intent_type: 'rebalance', symbols: [], holdings: {}, parameters: {} },
+    newSymbol: '', loading: false, result: null,
+    init() {},
+    addSymbol() {
+      const s = this.newSymbol.trim().toUpperCase();
+      if (s && !this.form.symbols.includes(s)) { this.form.symbols.push(s); this.form.holdings[s] = 0; }
+      this.newSymbol = '';
+    },
+    async submit() {
+      this.loading = true;
+      const data = { intent_type: this.form.intent_type, symbols: this.form.symbols, holdings: this.form.holdings, parameters: this.form.parameters };
+      const res = await api.submitIntent(data);
+      this.loading = false;
+      if (res.error) { Alpine.store('notifications').add('error', res.error); return; }
+      this.result = res;
+      Alpine.store('notifications').add('success', 'Intent processed: ' + res.status);
+    }
+  };
+}
+
+function historyScreen() {
+  return {
+    decisions: [], search: '',
+    get filtered() { return this.decisions.filter(d => d.includes(this.search)); },
+    async load() { const d = await api.listDecisions(100); if (!d.error) this.decisions = d; }
+  };
+}
+
+function decisionScreen() {
+  return {
+    loading: false, error: null, audit: null, result: null, tab: 'agents',
+    agentOutputs: [], ruleEvals: [], permission: null, traceNodes: [], evidenceArtifacts: [],
+    approvalForm: { approver: '', action: 'approve', rationale: '' },
+    async load(id) {
+      if (!id) return;
+      this.loading = true; this.error = null;
+      const audit = await api.getAudit(id);
+      this.loading = false;
+      if (audit.error) { this.error = audit.error; return; }
+      this.audit = audit;
+      this.traceNodes = audit.trace?.nodes || [];
+      this.evidenceArtifacts = audit.evidence_artifacts || [];
+
+      // Extract agent outputs and rule evaluations from trace nodes
+      this.agentOutputs = this.traceNodes.filter(n => n.node_type === 'agent_output').map(n => n.data).filter(Boolean);
+      this.ruleEvals = this.traceNodes.filter(n => n.node_type === 'rule_evaluated').map(n => n.data).filter(Boolean);
+
+      // If no data in trace nodes, try to infer status
+      const permNodes = this.traceNodes.filter(n => ['permission_granted','permission_denied','escalation_required'].includes(n.node_type));
+
+      // Build a minimal result object
+      const hasRejected = permNodes.some(n => n.node_type === 'permission_denied');
+      const hasEscalation = permNodes.some(n => n.node_type === 'escalation_required');
+      this.result = { decision_id: id, status: hasRejected ? 'rejected' : (hasEscalation ? 'escalation_required' : 'approved') };
+
+      // If audit came from intent submission (has full data), the trace nodes may not contain embedded agent data
+      // In that case, agentOutputs will be empty — that's okay, the user can see trace
+      this.permission = { overall_status: this.result.status, permissions: [], requires_human_approval: hasEscalation };
+    },
+    async submitApproval() {
+      const res = await api.submitApproval({ decision_id: this.audit?.decision_id, ...this.approvalForm });
+      if (res.error) { Alpine.store('notifications').add('error', res.error); return; }
+      Alpine.store('notifications').add('success', 'Approval recorded');
+      this.approvalForm = { approver: '', action: 'approve', rationale: '' };
+    }
+  };
+}
+
+function evidenceScreen() {
+  return {
+    types: [
+      { value: 'market_snapshot', label: 'Market Snapshot' },
+      { value: 'feature_set', label: 'Feature Set' },
+      { value: 'risk_estimate', label: 'Risk Estimate' },
+      { value: 'volatility_estimate', label: 'Volatility Estimate' },
+      { value: 'regime_classification', label: 'Regime Classification' },
+      { value: 'portfolio_state', label: 'Portfolio State' },
+    ],
+    selected: null, artifact: null, loading: false,
+    init() {},
+    async selectType(type) {
+      this.selected = type; this.loading = true;
+      const res = await api.getLatestEvidence(type);
+      this.loading = false;
+      this.artifact = res.error ? null : res;
+    }
+  };
+}
+
+function controlScreen() {
+  return {
+    ks: null, confirmMode: '', confirmText: '',
+    async load() { this.ks = await api.getKillSwitch(); },
+    async toggleKillSwitch() {
+      const res = this.confirmMode === 'activate' ? await api.activateKillSwitch('ui') : await api.deactivateKillSwitch('ui');
+      if (!res.error) { this.ks = res; Alpine.store('system').killSwitch = res; }
+      this.confirmMode = ''; this.confirmText = '';
+      Alpine.store('notifications').add('success', 'Kill switch ' + (this.ks?.enabled ? 'activated' : 'deactivated'));
+    }
+  };
+}
+
+function helpScreen() {
+  return {
+    tab: 'ega',
+    howToSteps: [
+      { num: 1, title: 'Check the Dashboard', desc: 'Start on the Dashboard to see system health, kill switch status, and recent decisions. This gives you an overview of the system state.' },
+      { num: 2, title: 'Submit a Governance Intent', desc: 'Navigate to "New Intent" to submit a rebalance, risk review, or trade proposal. Enter your symbols and holdings, then submit. The system will compute evidence, consult agents, evaluate rules, and return a decision.' },
+      { num: 3, title: 'Analyze the Decision', desc: 'View the decision result to see agent collaboration (who recommended what and why), rule evaluations (which passed/failed), and the permission outcome (approved, rejected, or escalation required).' },
+      { num: 4, title: 'Review the Decision Trace', desc: 'The trace tab shows the complete causal graph of the decision: what evidence was frozen, which agents were invoked, what they said, how rules were evaluated, and the final permission outcome.' },
+      { num: 5, title: 'Approve Escalated Decisions', desc: 'When soft rules are violated, the system requires human approval. Use the Permissions tab to review reasons and submit your approval, rejection, or override with rationale.' },
+      { num: 6, title: 'Explore Evidence', desc: 'The Evidence Explorer shows the latest market data, features, risk estimates, volatility, regime classification, and portfolio state. All evidence is append-only and immutable.' },
+      { num: 7, title: 'Emergency Kill Switch', desc: 'Navigate to System Control to activate the kill switch in emergencies. This halts all execution. Requires typing CONFIRM to prevent accidental activation.' },
+    ],
+    glossary: [
+      { term: 'Agent', def: 'A specialized AI reasoning module that analyzes a specific aspect of the portfolio (allocation, risk, review). Agents surface risk — they do NOT decide.' },
+      { term: 'AgentOutput', def: 'Structured JSON output from an agent containing risk level, confidence, drivers, proposed actions, and flags. No chain-of-thought stored.' },
+      { term: 'Causal DAG', def: 'Directed acyclic graph recording the causal chain of a decision: what led to what. Auditors traverse backwards from any outcome to understand "why."' },
+      { term: 'Confidence', def: 'A 0.0 to 1.0 score indicating how certain an agent is about its assessment.' },
+      { term: 'Decision Boundary', def: 'The moment evidence and rules are atomically frozen for a decision. After this point, both become immutable historical references.' },
+      { term: 'Decision Trace', def: 'The complete causal graph of a governance decision, from intent receipt through agent consultation, rule evaluation, and permission outcome.' },
+      { term: 'EGA', def: 'Evidence-Governance-Accountability: the three-layer architecture separating beliefs, permissions, and records.' },
+      { term: 'Escalation', def: 'When a soft rule is violated, the decision requires human review. The system pauses and waits for approval.' },
+      { term: 'Evidence Artifact', def: 'An immutable, timestamped piece of evidence (market data, risk estimate, etc.) stored in the append-only artifact store.' },
+      { term: 'Evidence Snapshot', def: 'A frozen set of evidence artifact references captured at decision time. Enables reconstruction of what the system believed when a decision was made.' },
+      { term: 'Governance Intent', def: 'A request for the system to evaluate and act: rebalance, risk review, trade proposal, or scheduled evaluation.' },
+      { term: 'Kill Switch', def: 'Emergency control that halts all order execution immediately.' },
+      { term: 'Permission Filter', def: 'Transforms rule evaluation results into action permissions: approved, rejected, or escalation required.' },
+      { term: 'ProposedAction', def: 'An agent\'s recommendation for a specific symbol: buy, sell, hold, reduce, or increase to a target weight.' },
+      { term: 'Regime', def: 'The current market state classification: bull, bear, volatile, or stable.' },
+      { term: 'Risk Level', def: 'Agent assessment of risk: low, medium, high, or critical.' },
+      { term: 'Rule (Hard)', def: 'A governance rule whose violation blocks the action entirely. No override without explicit human action.' },
+      { term: 'Rule (Soft)', def: 'A governance rule whose violation triggers escalation for human review, but does not outright block.' },
+      { term: 'RuleSet', def: 'A versioned collection of governance rules in effect at a point in time. Versioned for audit trail.' },
+      { term: 'Skill.md', def: 'A versioned markdown file defining an agent\'s behavior, heuristics, and constraints. Updated through governed learning cycles.' },
+      { term: 'Supervisor', def: 'The orchestrator component that decides which agents to consult. Has bounded authority — cannot trade, override rules, or invent objectives.' },
+    ].sort((a, b) => a.term.localeCompare(b.term)),
+  };
+}
+</script>
+</body>
+</html>

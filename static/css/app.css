@@ -1,0 +1,66 @@
+/* ArthaSamriddhiAI Custom Styles */
+
+/* Pulse animation for kill switch active */
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.pulse-red { animation: pulse-red 1.5s ease-in-out infinite; }
+
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+}
+.pulse-green { animation: pulse-green 2s infinite; }
+
+/* JSON viewer */
+.json-viewer { font-family: 'Courier New', monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-all; }
+
+/* Confidence bar */
+.confidence-bar { transition: width 0.6s ease-out; }
+
+/* Trace DAG */
+.trace-node { cursor: pointer; transition: transform 0.15s; }
+.trace-node:hover { transform: scale(1.05); }
+.trace-line { stroke-width: 2; fill: none; }
+
+/* Sidebar */
+.sidebar-link { transition: background-color 0.15s, border-color 0.15s; }
+.sidebar-link.active { background-color: rgba(255,255,255,0.1); border-left: 3px solid #f59e0b; }
+
+/* Cards */
+.card { background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+/* Status badges */
+.badge { display: inline-flex; align-items: center; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+.badge-approved { background: #dcfce7; color: #166534; }
+.badge-rejected { background: #fee2e2; color: #991b1b; }
+.badge-escalation { background: #fef3c7; color: #92400e; }
+.badge-error { background: #fee2e2; color: #991b1b; }
+.badge-low { background: #dcfce7; color: #166534; }
+.badge-medium { background: #fef9c3; color: #854d0e; }
+.badge-high { background: #fed7aa; color: #9a3412; }
+.badge-critical { background: #fee2e2; color: #991b1b; }
+.badge-hard { background: #fee2e2; color: #991b1b; }
+.badge-soft { background: #fef3c7; color: #92400e; }
+.badge-info { background: #dbeafe; color: #1e40af; }
+
+/* Loading skeleton */
+.skeleton { background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 0.25rem; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Tab styles */
+.tab { padding: 0.5rem 1rem; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 500; color: #64748b; }
+.tab:hover { color: #334155; }
+.tab.active { color: #1e40af; border-bottom-color: #1e40af; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Help icon */
+.help-icon { width: 1.25rem; height: 1.25rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: #e2e8f0; color: #475569; font-size: 0.7rem; font-weight: 700; cursor: pointer; }
+.help-icon:hover { background: #cbd5e1; }

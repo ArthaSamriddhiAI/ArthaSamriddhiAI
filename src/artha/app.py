@@ -5,7 +5,11 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from artha.common.db.base import Base
 from artha.common.db.engine import get_engine, dispose_engine
@@ -43,6 +47,15 @@ def create_app() -> FastAPI:
     @app.get("/api/v1/health")
     async def health():
         return {"status": "ok", "service": "ArthaSamriddhiAI"}
+
+    # Static files and SPA root
+    static_dir = Path("static")
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory="static"), name="static")
+
+        @app.get("/")
+        async def root():
+            return FileResponse("static/index.html")
 
     return app
 
