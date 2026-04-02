@@ -1,0 +1,28 @@
+rules:
+  - name: investor_volatility_limit
+    description: Portfolio risk must not exceed investor's maximum volatility tolerance
+    category: risk_constraint
+    severity: hard
+    condition: "portfolio_risk_score <= investor_max_volatility"
+    parameters: {}
+
+  - name: investor_drawdown_limit
+    description: Action target weight must respect investor's drawdown tolerance
+    category: risk_constraint
+    severity: soft
+    condition: "action_target_weight <= investor_max_drawdown + 0.10"
+    parameters: {}
+
+  - name: investor_equity_ceiling
+    description: Individual position weight must not exceed investor's equity allocation ceiling
+    category: exposure_limit
+    severity: hard
+    condition: "action_target_weight <= investor_equity_ceiling"
+    parameters: {}
+
+  - name: family_office_committee_approval
+    description: Family offices with complexity >= 3 require committee approval for large positions
+    category: concentration
+    severity: soft
+    condition: "not (family_complexity_score >= 3 and action_target_weight > 0.15)"
+    parameters: {}

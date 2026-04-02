@@ -100,6 +100,26 @@ class GovernancePipeline:
             evidence_context["intent_parameters"] = intent.parameters
             if intent.holdings:
                 evidence_context["current_holdings"] = intent.holdings
+
+            # Inject investor risk profile if investor_id provided
+            investor_id = intent.parameters.get("investor_id")
+            if investor_id:
+                try:
+                    from artha.investor.service import InvestorService
+                    inv_svc = InvestorService(self._session)
+                    profile = await inv_svc.get_profile(investor_id)
+                    if profile:
+                        evidence_context["investor_risk_profile"] = {
+                            "investor_id": investor_id,
+                            "overall_score": profile.overall_score,
+                            "risk_category": profile.risk_category.value,
+                            "constraints": profile.effective_constraints.model_dump(),
+                            "family_complexity_score": profile.family_complexity_score,
+                            "category_scores": profile.category_scores,
+                        }
+                except Exception:
+                    pass  # Non-critical — proceed without profile
+
             state["evidence_context"] = evidence_context
 
             # Step 3: Snapshot rules
@@ -249,5 +269,20 @@ class GovernancePipeline:
             "max_single_position": portfolio_data.get("risk_metrics", {}).get(
                 "max_single_position", 0.0
             ),
+            # Investor risk profile constraints (for investor-specific rules)
+            **self._get_investor_constraints(evidence_context),
             # Rule parameters are merged by the engine
+        }
+
+    def _get_investor_constraints(self, evidence_context: dict[str, Any]) -> dict[str, Any]:
+        """Extract investor constraints for rule evaluation context."""
+        profile = evidence_context.get("investor_risk_profile", {})
+        constraints = profile.get("constraints", {})
+        return {
+            "investor_risk_category": profile.get("risk_category", "moderate"),
+            "investor_max_volatility": constraints.get("max_volatility", 0.20),
+            "investor_max_drawdown": constraints.get("max_drawdown", 0.25),
+            "investor_equity_ceiling": constraints.get("equity_allocation_max", 0.70),
+            "investor_horizon": constraints.get("investment_horizon", "medium"),
+            "family_complexity_score": profile.get("family_complexity_score", 0),
         }
