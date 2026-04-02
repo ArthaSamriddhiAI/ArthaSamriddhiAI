@@ -567,13 +567,25 @@
       </div>
     </div>
 
-    <!-- Evidence Explorer -->
+    <!-- Evidence Explorer (Real Data) -->
     <div x-show="screen==='evidence'" x-cloak>
       <div x-data="evidenceScreen()" x-init="init()">
         <div class="p-6">
-          <h2 class="text-2xl font-bold mb-6">Evidence Explorer</h2>
+          <h2 class="text-2xl font-bold mb-4">Evidence Explorer</h2>
+
+          <!-- Data Summary Cards -->
+          <div x-show="summary" class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+            <template x-for="[key, val] in Object.entries(summary||{})" :key="key">
+              <div x-show="val?.records!==undefined" class="card p-3">
+                <p class="text-xs text-slate-400 capitalize" x-text="key.replace(/_/g,' ')"></p>
+                <p class="text-lg font-bold" x-text="(val?.records||0).toLocaleString()"></p>
+                <p class="text-xs text-slate-400" x-text="(val?.symbols||0)+' items'"></p>
+              </div>
+            </template>
+          </div>
+
           <div class="flex gap-6">
-            <div class="w-56 flex-shrink-0 space-y-1">
+            <div class="w-48 flex-shrink-0 space-y-1">
               <template x-for="t in types" :key="t.value">
                 <button @click="selectType(t.value)" class="w-full text-left px-3 py-2 rounded-lg text-sm"
                         :class="selected===t.value?'bg-blue-50 text-blue-700 font-medium':'hover:bg-slate-100'">
@@ -583,188 +595,24 @@
             </div>
             <div class="flex-1">
               <div x-show="loading" class="skeleton h-48 w-full"></div>
-              <div x-show="!loading&&!artifact" class="card p-8 text-center text-slate-400">
-                <p>Select an artifact type to view the latest evidence.</p>
-              </div>
-              <div x-show="!loading&&artifact" class="space-y-4">
-                <!-- Header -->
-                <div class="card p-4 flex items-center justify-between">
-                  <div class="flex items-center gap-3">
-                    <span class="badge badge-info" x-text="artifact?.artifact_type"></span>
-                    <span class="text-xs text-slate-400" x-text="'Version '+(artifact?.version||'')"></span>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <span class="text-xs text-slate-400" x-text="utils.formatTime(artifact?.created_at)"></span>
-                    <button @click="showRaw=!showRaw" class="text-xs px-2 py-1 rounded border" :class="showRaw?'bg-slate-700 text-white':'bg-white text-slate-600'" x-text="showRaw?'Formatted':'Raw JSON'"></button>
-                  </div>
-                </div>
-
-                <!-- Raw JSON (toggle) -->
-                <div x-show="showRaw" class="card p-4">
-                  <pre class="json-viewer p-3 bg-slate-50 rounded max-h-96 overflow-auto text-xs" x-text="JSON.stringify(artifact?.data,null,2)"></pre>
-                </div>
-
-                <!-- Formatted: Market Snapshot -->
-                <div x-show="!showRaw && selected==='market_snapshot'" class="card p-5">
-                  <h3 class="font-semibold mb-3">Market Prices</h3>
-                  <div class="text-xs text-slate-400 mb-3" x-text="'Source: '+(artifact?.data?.source||'N/A')+' | Symbols: '+(artifact?.data?.symbols?.length||0)"></div>
-                  <table class="w-full text-sm">
-                    <thead class="bg-slate-50"><tr><th class="px-3 py-2 text-left">Symbol</th><th class="px-3 py-2 text-right">Price</th><th class="px-3 py-2 text-right">Change</th><th class="px-3 py-2 text-right">Volume</th><th class="px-3 py-2 text-right">52W High</th><th class="px-3 py-2 text-right">52W Low</th></tr></thead>
-                    <tbody>
-                      <template x-for="[sym, d] in Object.entries(artifact?.data?.prices||{})" :key="sym">
-                        <tr class="border-t">
-                          <td class="px-3 py-2 font-mono font-bold" x-text="sym"></td>
-                          <td class="px-3 py-2 text-right" x-text="d.price?.toFixed(2)"></td>
-                          <td class="px-3 py-2 text-right" :class="d.change_pct>=0?'text-green-600':'text-red-600'" x-text="(d.change_pct>=0?'+':'')+(d.change_pct*100).toFixed(2)+'%'"></td>
-                          <td class="px-3 py-2 text-right text-slate-500" x-text="(d.volume||0).toLocaleString()"></td>
-                          <td class="px-3 py-2 text-right text-slate-500" x-text="d.high_52w?.toFixed(2)"></td>
-                          <td class="px-3 py-2 text-right text-slate-500" x-text="d.low_52w?.toFixed(2)"></td>
-                        </tr>
-                      </template>
-                    </tbody>
-                  </table>
-                </div>
-
-                <!-- Formatted: Risk Estimate -->
-                <div x-show="!showRaw && selected==='risk_estimate'" class="space-y-4">
-                  <div class="card p-5">
-                    <h3 class="font-semibold mb-3">Portfolio Risk</h3>
-                    <div class="flex items-center gap-4">
-                      <div class="text-3xl font-bold" :class="(artifact?.data?.portfolio_risk_score||0)>0.5?'text-red-600':(artifact?.data?.portfolio_risk_score||0)>0.3?'text-amber-600':'text-green-600'" x-text="artifact?.data?.portfolio_risk_score?.toFixed(4)"></div>
-                      <div>
-                        <div class="w-48 bg-slate-100 rounded-full h-3"><div class="h-3 rounded-full confidence-bar" :style="'width:'+Math.min((artifact?.data?.portfolio_risk_score||0)*100/0.7*100,100)+'%'" :class="(artifact?.data?.portfolio_risk_score||0)>0.5?'bg-red-500':(artifact?.data?.portfolio_risk_score||0)>0.3?'bg-amber-500':'bg-green-500'"></div></div>
-                        <div class="text-xs text-slate-400 mt-1">Threshold: 0.70</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="card p-5">
-                    <h3 class="font-semibold mb-3">Per-Symbol Risk</h3>
-                    <table class="w-full text-sm">
-                      <thead class="bg-slate-50"><tr><th class="px-3 py-2 text-left">Symbol</th><th class="px-3 py-2 text-left">Risk Level</th><th class="px-3 py-2 text-right">Score</th><th class="px-3 py-2 text-right">Volatility</th><th class="px-3 py-2 text-right">Position</th><th class="px-3 py-2 text-right">Drawdown</th></tr></thead>
-                      <tbody>
-                        <template x-for="[sym, d] in Object.entries(artifact?.data?.per_symbol||{})" :key="sym">
-                          <tr class="border-t">
-                            <td class="px-3 py-2 font-mono font-bold" x-text="sym"></td>
-                            <td class="px-3 py-2"><span class="badge" :class="utils.riskBadge(d.risk_level)" x-text="d.risk_level"></span></td>
-                            <td class="px-3 py-2 text-right font-medium" x-text="d.risk_score?.toFixed(4)"></td>
-                            <td class="px-3 py-2 text-right text-slate-500" x-text="d.components?.volatility_contribution?.toFixed(4)"></td>
-                            <td class="px-3 py-2 text-right text-slate-500" x-text="d.components?.position_contribution?.toFixed(4)"></td>
-                            <td class="px-3 py-2 text-right text-slate-500" x-text="d.components?.drawdown_contribution?.toFixed(4)"></td>
-                          </tr>
+              <div x-show="!loading&&!data.length" class="card p-8 text-center text-slate-400">Select a data category to browse.</div>
+              <div x-show="!loading&&data.length" class="card overflow-hidden">
+                <table class="w-full text-sm">
+                  <thead class="bg-slate-50"><tr>
+                    <template x-for="col in columns" :key="col"><th class="px-3 py-2 text-left text-xs" x-text="col"></th></template>
+                  </tr></thead>
+                  <tbody>
+                    <template x-for="(row, i) in data" :key="i">
+                      <tr class="border-t hover:bg-slate-50">
+                        <template x-for="col in columns" :key="col">
+                          <td class="px-3 py-2" :class="col==='symbol'||col==='pair'||col==='commodity'||col==='coin'||col==='indicator'||col==='scheme_code'?'font-mono font-bold':''"
+                              x-text="typeof row[col]==='number'?row[col].toLocaleString(undefined,{maximumFractionDigits:4}):row[col]"></td>
                         </template>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <!-- Formatted: Regime Classification -->
-                <div x-show="!showRaw && selected==='regime_classification'" class="card p-5">
-                  <h3 class="font-semibold mb-4">Market Regime</h3>
-                  <div class="flex items-center gap-4 mb-6">
-                    <div class="px-6 py-3 rounded-xl text-xl font-bold uppercase"
-                         :class="{'bg-green-100 text-green-800': artifact?.data?.regime==='bull', 'bg-red-100 text-red-800': artifact?.data?.regime==='bear', 'bg-amber-100 text-amber-800': artifact?.data?.regime==='volatile', 'bg-blue-100 text-blue-800': artifact?.data?.regime==='stable'}"
-                         x-text="artifact?.data?.regime"></div>
-                    <div>
-                      <div class="text-sm text-slate-500">Confidence</div>
-                      <div class="flex items-center gap-2">
-                        <div class="w-32 bg-slate-100 rounded-full h-2.5"><div class="h-2.5 rounded-full bg-blue-500 confidence-bar" :style="'width:'+(artifact?.data?.confidence||0)*100+'%'"></div></div>
-                        <span class="text-sm font-medium" x-text="((artifact?.data?.confidence||0)*100).toFixed(0)+'%'"></span>
-                      </div>
-                    </div>
-                  </div>
-                  <h4 class="text-sm font-medium text-slate-500 mb-2">Indicators</h4>
-                  <div class="grid grid-cols-3 gap-3">
-                    <template x-for="[key, val] in Object.entries(artifact?.data?.indicators||{})" :key="key">
-                      <div class="bg-slate-50 rounded-lg p-3">
-                        <div class="text-xs text-slate-400" x-text="key.replace(/_/g,' ')"></div>
-                        <div class="text-lg font-semibold mt-1" x-text="typeof val==='number'?val.toFixed(4):val"></div>
-                      </div>
+                      </tr>
                     </template>
-                  </div>
-                </div>
-
-                <!-- Formatted: Volatility Estimate -->
-                <div x-show="!showRaw && selected==='volatility_estimate'" class="space-y-4">
-                  <div class="card p-5">
-                    <h3 class="font-semibold mb-3">Portfolio Volatility</h3>
-                    <div class="text-3xl font-bold" :class="(artifact?.data?.portfolio_avg_volatility||0)>0.3?'text-red-600':'text-blue-600'" x-text="artifact?.data?.portfolio_avg_volatility?.toFixed(4)"></div>
-                    <div class="text-xs text-slate-400 mt-1">Average realized volatility proxy</div>
-                  </div>
-                  <div class="card p-5">
-                    <h3 class="font-semibold mb-3">Per-Symbol Volatility</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      <template x-for="[sym, d] in Object.entries(artifact?.data?.per_symbol||{})" :key="sym">
-                        <div class="bg-slate-50 rounded-lg p-3">
-                          <div class="flex items-center justify-between mb-1">
-                            <span class="font-mono font-bold text-sm" x-text="sym"></span>
-                            <span class="badge" :class="d.vol_regime==='high'?'badge-high':d.vol_regime==='normal'?'badge-medium':'badge-low'" x-text="d.vol_regime"></span>
-                          </div>
-                          <div class="text-lg font-semibold" x-text="d.realized_vol_proxy?.toFixed(4)"></div>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Formatted: Feature Set -->
-                <div x-show="!showRaw && selected==='feature_set'" class="card p-5">
-                  <h3 class="font-semibold mb-3">Computed Features</h3>
-                  <table class="w-full text-sm">
-                    <thead class="bg-slate-50"><tr><th class="px-3 py-2 text-left">Symbol</th><th class="px-3 py-2 text-right">Price</th><th class="px-3 py-2 text-right">1D Return</th><th class="px-3 py-2 text-right">52W Position</th><th class="px-3 py-2 text-right">From High</th><th class="px-3 py-2 text-right">Vol Proxy</th></tr></thead>
-                    <tbody>
-                      <template x-for="[sym, d] in Object.entries(artifact?.data?.features||{})" :key="sym">
-                        <tr class="border-t">
-                          <td class="px-3 py-2 font-mono font-bold" x-text="sym"></td>
-                          <td class="px-3 py-2 text-right" x-text="d.price?.toFixed(2)"></td>
-                          <td class="px-3 py-2 text-right" :class="d.return_1d>=0?'text-green-600':'text-red-600'" x-text="(d.return_1d>=0?'+':'')+(d.return_1d*100).toFixed(2)+'%'"></td>
-                          <td class="px-3 py-2 text-right">
-                            <div class="inline-flex items-center gap-1"><div class="w-16 bg-slate-100 rounded-full h-1.5"><div class="h-1.5 rounded-full bg-blue-500" :style="'width:'+(d.position_in_52w_range||0)*100+'%'"></div></div><span class="text-xs" x-text="((d.position_in_52w_range||0)*100).toFixed(0)+'%'"></span></div>
-                          </td>
-                          <td class="px-3 py-2 text-right text-slate-500" x-text="d.distance_from_high_pct?.toFixed(1)+'%'"></td>
-                          <td class="px-3 py-2 text-right" x-text="d.volatility_proxy?.toFixed(4)"></td>
-                        </tr>
-                      </template>
-                    </tbody>
-                  </table>
-                </div>
-
-                <!-- Formatted: Portfolio State -->
-                <div x-show="!showRaw && selected==='portfolio_state'" class="space-y-4">
-                  <div class="card p-5">
-                    <h3 class="font-semibold mb-3">Portfolio Overview</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-400">Total Value</div><div class="text-xl font-bold mt-1" x-text="(artifact?.data?.total_value||0).toLocaleString()"></div></div>
-                      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-400">Positions</div><div class="text-xl font-bold mt-1" x-text="artifact?.data?.risk_metrics?.position_count||0"></div></div>
-                      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-400">Max Position</div><div class="text-xl font-bold mt-1" x-text="utils.formatPercent(artifact?.data?.risk_metrics?.max_single_position)"></div></div>
-                      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-400">HHI (Concentration)</div><div class="text-xl font-bold mt-1" x-text="artifact?.data?.risk_metrics?.herfindahl_index?.toFixed(4)"></div></div>
-                    </div>
-                  </div>
-                  <div class="card p-5">
-                    <h3 class="font-semibold mb-3">Holdings Weights</h3>
-                    <div class="space-y-2">
-                      <template x-for="[sym, wt] in Object.entries(artifact?.data?.holdings||{}).sort((a,b)=>b[1]-a[1])" :key="sym">
-                        <div class="flex items-center gap-3">
-                          <span class="w-24 font-mono text-sm font-bold" x-text="sym"></span>
-                          <div class="flex-1 bg-slate-100 rounded-full h-4"><div class="h-4 rounded-full bg-blue-500 confidence-bar" :style="'width:'+wt*100+'%'"></div></div>
-                          <span class="w-14 text-right text-sm font-medium" x-text="(wt*100).toFixed(1)+'%'"></span>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-                  <div class="card p-5" x-show="artifact?.data?.sector_exposure">
-                    <h3 class="font-semibold mb-3">Sector Exposure</h3>
-                    <div class="space-y-2">
-                      <template x-for="[sec, wt] in Object.entries(artifact?.data?.sector_exposure||{}).sort((a,b)=>b[1]-a[1])" :key="sec">
-                        <div class="flex items-center gap-3">
-                          <span class="w-32 text-sm" x-text="sec"></span>
-                          <div class="flex-1 bg-slate-100 rounded-full h-3"><div class="h-3 rounded-full bg-indigo-500 confidence-bar" :style="'width:'+wt*100+'%'"></div></div>
-                          <span class="w-14 text-right text-sm" x-text="(wt*100).toFixed(1)+'%'"></span>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-                </div>
-
+                  </tbody>
+                </table>
+                <div class="p-3 text-xs text-slate-400 border-t" x-text="data.length+' rows shown'"></div>
               </div>
             </div>
           </div>
@@ -1301,20 +1149,29 @@ function decisionScreen() {
 function evidenceScreen() {
   return {
     types: [
-      { value: 'market_snapshot', label: 'Market Snapshot' },
-      { value: 'feature_set', label: 'Feature Set' },
-      { value: 'risk_estimate', label: 'Risk Estimate' },
-      { value: 'volatility_estimate', label: 'Volatility Estimate' },
-      { value: 'regime_classification', label: 'Regime Classification' },
-      { value: 'portfolio_state', label: 'Portfolio State' },
+      { value: 'stocks', label: 'Stocks (Nifty 500)' },
+      { value: 'mf', label: 'Mutual Funds' },
+      { value: 'commodities', label: 'Commodities' },
+      { value: 'forex', label: 'Forex Rates' },
+      { value: 'macro', label: 'Macro Indicators' },
+      { value: 'crypto', label: 'Crypto' },
     ],
-    selected: null, artifact: null, loading: false, showRaw: false,
-    init() {},
+    selected: null, data: [], columns: [], loading: false, summary: null,
+    async init() {
+      const s = await api.dataSummary();
+      if (!s.error) this.summary = s;
+    },
     async selectType(type) {
-      this.selected = type; this.loading = true; this.showRaw = false;
-      const res = await api.getLatestEvidence(type);
+      this.selected = type; this.loading = true; this.data = []; this.columns = [];
+      let res;
+      if (type === 'stocks') { res = await api.stocksLatest(100); this.columns = ['symbol','date','adj_close','volume']; }
+      else if (type === 'mf') { res = await api.mfLatest(100); this.columns = ['scheme_code','scheme_name','date','nav']; }
+      else if (type === 'commodities') { res = await api.commodities(); this.columns = ['commodity','date','price_usd','unit']; }
+      else if (type === 'forex') { res = await api.forex(); this.columns = ['pair','date','rate']; }
+      else if (type === 'macro') { res = await api.macro(); this.columns = ['indicator','date','value','unit']; }
+      else if (type === 'crypto') { res = await api.crypto(); this.columns = ['coin','date','price_usd']; }
       this.loading = false;
-      this.artifact = res.error ? null : res;
+      this.data = (res && !res.error) ? res : [];
     }
   };
 }

@@ -49,6 +49,19 @@ window.api = {
   getAssessmentDetail: (id) => request('GET', `/investor/assessments/${id}`),
   createFamilyOffice: (data) => request('POST', '/investor/family-offices', data),
 
+  // Data Explorer
+  dataSummary: () => request('GET', '/data/summary'),
+  stocksLatest: (limit = 50) => request('GET', `/data/stocks/latest?limit=${limit}`),
+  stockSearch: (q) => request('GET', `/data/stocks/search?q=${q}`),
+  stockPrices: (sym, days = 30) => request('GET', `/data/stocks?symbol=${sym}&days=${days}`),
+  mfLatest: (limit = 50) => request('GET', `/data/mf/latest?limit=${limit}`),
+  mfSearch: (q) => request('GET', `/data/mf/search?q=${q}`),
+  mfHistory: (code, days = 365) => request('GET', `/data/mf/${code}?days=${days}`),
+  commodities: () => request('GET', '/data/commodities'),
+  forex: () => request('GET', '/data/forex'),
+  macro: () => request('GET', '/data/macro'),
+  crypto: () => request('GET', '/data/crypto'),
+
   // Execution
   getKillSwitch: () => request('GET', '/execution/killswitch'),
   activateKillSwitch: (by = 'ui') => request('POST', `/execution/killswitch/activate?by=${by}`),
