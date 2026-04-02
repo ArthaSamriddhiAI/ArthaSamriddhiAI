@@ -54,6 +54,15 @@ window.api = {
   portfolioHoldings: (investorId) => request('GET', `/portfolio/${investorId}/holdings`),
   addHolding: (investorId, data) => request('POST', `/portfolio/${investorId}/holdings`, data),
   deleteHolding: (id) => request('DELETE', `/portfolio/holdings/${id}`),
+  portfolioPerformance: (id) => request('GET', `/portfolio/${id}/performance`),
+  portfolioRebalance: (id) => request('GET', `/portfolio/${id}/rebalance-check`),
+  portfolioScenario: (id, type) => request('GET', `/portfolio/${id}/scenario?type=${type}`),
+  portfolioTax: (id) => request('GET', `/portfolio/${id}/tax-summary`),
+  portfolioGoals: (id) => request('GET', `/portfolio/${id}/goals`),
+  addGoal: (id, data) => request('POST', `/portfolio/${id}/goals`, data),
+  advisorDashboard: () => request('GET', '/portfolio/advisor/dashboard'),
+  scenariosList: () => request('GET', '/portfolio/scenarios/list'),
+  marketBrief: () => request('GET', '/data/market-brief'),
 
   // Data Explorer
   dataSummary: () => request('GET', '/data/summary'),

@@ -218,3 +218,10 @@ async def get_crypto_prices(
         """)
         rows = (await session.execute(sql)).all()
     return [{"coin": r[0], "date": str(r[1]), "price_usd": r[2]} for r in rows]
+
+
+@router.get("/market-brief")
+async def get_market_brief(session: AsyncSession = Depends(get_session)):
+    """AI-generated daily market brief."""
+    from artha.data.market_brief import generate_market_brief
+    return await generate_market_brief(session)

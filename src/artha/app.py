@@ -28,6 +28,7 @@ from artha.investor.router import router as investor_router
 from artha.data.upload import router as data_upload_router
 from artha.data.router import router as data_explorer_router
 import artha.portfolio.models  # noqa: F401 — register portfolio tables
+import artha.portfolio.goals  # noqa: F401 — register goals table
 from artha.portfolio.router import router as portfolio_router
 
 
