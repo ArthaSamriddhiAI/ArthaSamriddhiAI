@@ -61,11 +61,17 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
         Investors
       </a>
+      <a @click.prevent="navigate('market')" href="#/market"
+         class="sidebar-link flex items-center gap-2 px-3 py-2 rounded text-sm"
+         :class="isActive('market')&&'active'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        Markets
+      </a>
       <a @click.prevent="navigate('evidence')" href="#/evidence"
          class="sidebar-link flex items-center gap-2 px-3 py-2 rounded text-sm"
          :class="isActive('evidence')&&'active'">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-        Evidence
+        Data Explorer
       </a>
       <a @click.prevent="navigate('control')" href="#/control"
          class="sidebar-link flex items-center gap-2 px-3 py-2 rounded text-sm"
@@ -567,6 +573,199 @@
       </div>
     </div>
 
+    <!-- ══════ Client Portfolio ══════ -->
+    <div x-show="screen==='portfolio'" x-cloak>
+      <div x-data="portfolioScreen()" x-init="initRouteListener()">
+        <div x-show="!loading && portfolio" class="p-6">
+          <!-- Header -->
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-4">
+              <button @click="window.location.hash='#/investors'" class="text-slate-400 hover:text-slate-600">&larr;</button>
+              <div>
+                <h2 class="text-2xl font-bold" x-text="portfolio?.investor_name"></h2>
+                <p class="text-sm text-slate-400">Client Portfolio</p>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <label class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm cursor-pointer">
+                Import CSV
+                <input type="file" accept=".csv" class="hidden" @change="importCSV($event)">
+              </label>
+            </div>
+          </div>
+
+          <!-- Summary Cards -->
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <div class="card p-4">
+              <p class="text-xs text-slate-400 uppercase">Total Invested</p>
+              <p class="text-xl font-bold mt-1" x-text="'Rs '+formatINR(portfolio?.total_invested)"></p>
+            </div>
+            <div class="card p-4">
+              <p class="text-xs text-slate-400 uppercase">Current Value</p>
+              <p class="text-xl font-bold mt-1 text-blue-600" x-text="'Rs '+formatINR(portfolio?.current_value)"></p>
+            </div>
+            <div class="card p-4">
+              <p class="text-xs text-slate-400 uppercase">Total Gain/Loss</p>
+              <p class="text-xl font-bold mt-1" :class="portfolio?.total_gain_loss>=0?'text-green-600':'text-red-600'" x-text="(portfolio?.total_gain_loss>=0?'+':'')+formatINR(portfolio?.total_gain_loss)+' ('+portfolio?.total_gain_loss_pct?.toFixed(1)+'%)'"></p>
+            </div>
+            <div class="card p-4">
+              <p class="text-xs text-slate-400 uppercase">Holdings</p>
+              <p class="text-xl font-bold mt-1" x-text="portfolio?.holdings_count"></p>
+            </div>
+            <div class="card p-4">
+              <p class="text-xs text-slate-400 uppercase">Asset Classes</p>
+              <p class="text-xl font-bold mt-1" x-text="portfolio?.asset_classes_count"></p>
+            </div>
+          </div>
+
+          <!-- Allocation -->
+          <div class="card p-5 mb-6">
+            <h3 class="font-semibold mb-4">Asset Allocation</h3>
+            <!-- Stacked bar -->
+            <div class="flex rounded-lg overflow-hidden h-8 mb-4">
+              <template x-for="a in portfolio?.allocation||[]" :key="a.asset_class">
+                <div class="h-full flex items-center justify-center text-xs text-white font-medium"
+                     :style="'width:'+a.percentage+'%;background:'+allocationColor(a.asset_class)"
+                     :title="a.label+': '+a.percentage+'%'"
+                     x-text="a.percentage>5?a.percentage.toFixed(0)+'%':''"></div>
+              </template>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <template x-for="a in portfolio?.allocation||[]" :key="a.asset_class">
+                <div class="flex items-center gap-2 text-sm">
+                  <div class="w-3 h-3 rounded-sm" :style="'background:'+allocationColor(a.asset_class)"></div>
+                  <span x-text="a.label"></span>
+                  <span class="ml-auto font-medium" x-text="a.percentage.toFixed(1)+'%'"></span>
+                  <span class="text-slate-400 text-xs" x-text="'Rs '+formatINR(a.current_value)"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Holdings Table -->
+          <div class="card overflow-hidden">
+            <div class="p-4 border-b flex items-center justify-between">
+              <h3 class="font-semibold">Holdings</h3>
+              <input type="text" x-model="searchHoldings" placeholder="Search holdings..." class="px-3 py-1.5 border rounded text-sm w-64">
+            </div>
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50"><tr>
+                <th class="px-3 py-2 text-left text-xs">Asset Class</th>
+                <th class="px-3 py-2 text-left text-xs">Symbol</th>
+                <th class="px-3 py-2 text-left text-xs">Description</th>
+                <th class="px-3 py-2 text-right text-xs">Qty</th>
+                <th class="px-3 py-2 text-right text-xs">Avg Cost</th>
+                <th class="px-3 py-2 text-right text-xs">Current</th>
+                <th class="px-3 py-2 text-right text-xs">Value</th>
+                <th class="px-3 py-2 text-right text-xs">Gain/Loss</th>
+                <th class="px-3 py-2 text-right text-xs">Return %</th>
+              </tr></thead>
+              <tbody>
+                <template x-for="h in filteredHoldings" :key="h.id">
+                  <tr class="border-t hover:bg-slate-50">
+                    <td class="px-3 py-2"><span class="badge badge-info text-xs" x-text="h.asset_class_label"></span></td>
+                    <td class="px-3 py-2 font-mono font-bold text-xs" x-text="h.symbol_or_id"></td>
+                    <td class="px-3 py-2 text-xs" x-text="h.description"></td>
+                    <td class="px-3 py-2 text-right text-xs" x-text="h.quantity.toLocaleString()"></td>
+                    <td class="px-3 py-2 text-right text-xs" x-text="h.acquisition_price?.toLocaleString(undefined,{maximumFractionDigits:2})"></td>
+                    <td class="px-3 py-2 text-right text-xs" x-text="h.current_price?.toLocaleString(undefined,{maximumFractionDigits:2})||'-'"></td>
+                    <td class="px-3 py-2 text-right text-xs font-medium" x-text="formatINR(h.current_value)"></td>
+                    <td class="px-3 py-2 text-right text-xs" :class="h.gain_loss>=0?'text-green-600':'text-red-600'" x-text="(h.gain_loss>=0?'+':'')+formatINR(h.gain_loss)"></td>
+                    <td class="px-3 py-2 text-right text-xs font-medium" :class="h.gain_loss_pct>=0?'text-green-600':'text-red-600'" x-text="(h.gain_loss_pct>=0?'+':'')+h.gain_loss_pct?.toFixed(1)+'%'"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div x-show="loading" class="p-6"><div class="skeleton h-8 w-48 mb-4"></div><div class="skeleton h-64 w-full"></div></div>
+        <div x-show="!loading && !portfolio?.holdings_count" class="p-6">
+          <div class="card p-8 text-center">
+            <p class="text-slate-400 mb-4">No portfolio data yet for this client.</p>
+            <label class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm cursor-pointer">
+              Import CSV to get started
+              <input type="file" accept=".csv" class="hidden" @change="importCSV($event)">
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ Market Dashboard ══════ -->
+    <div x-show="screen==='market'" x-cloak>
+      <div x-data="marketScreen()" x-init="load()">
+        <div class="p-6">
+          <h2 class="text-2xl font-bold mb-6">Market Dashboard</h2>
+
+          <!-- Macro snapshot cards -->
+          <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+            <template x-for="m in macroData" :key="m.indicator">
+              <div class="card p-3">
+                <p class="text-xs text-slate-400" x-text="m.indicator.replace(/_/g,' ')"></p>
+                <p class="text-lg font-bold mt-1" x-text="m.value?.toLocaleString(undefined,{maximumFractionDigits:2})"></p>
+                <p class="text-xs text-slate-400" x-text="m.date"></p>
+              </div>
+            </template>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Commodities -->
+            <div class="card p-5">
+              <h3 class="font-semibold mb-3">Commodities</h3>
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50"><tr><th class="px-3 py-2 text-left">Commodity</th><th class="px-3 py-2 text-right">Price (USD)</th><th class="px-3 py-2 text-right">Unit</th><th class="px-3 py-2 text-right">Date</th></tr></thead>
+                <tbody>
+                  <template x-for="c in commodityData" :key="c.commodity">
+                    <tr class="border-t"><td class="px-3 py-2 font-medium" x-text="c.commodity"></td><td class="px-3 py-2 text-right" x-text="c.price_usd?.toLocaleString(undefined,{maximumFractionDigits:2})"></td><td class="px-3 py-2 text-right text-slate-400 text-xs" x-text="c.unit"></td><td class="px-3 py-2 text-right text-xs text-slate-400" x-text="c.date"></td></tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Forex -->
+            <div class="card p-5">
+              <h3 class="font-semibold mb-3">Forex Rates</h3>
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50"><tr><th class="px-3 py-2 text-left">Pair</th><th class="px-3 py-2 text-right">Rate</th><th class="px-3 py-2 text-right">Date</th></tr></thead>
+                <tbody>
+                  <template x-for="f in forexData" :key="f.pair">
+                    <tr class="border-t"><td class="px-3 py-2 font-medium" x-text="f.pair"></td><td class="px-3 py-2 text-right" x-text="f.rate?.toFixed(4)"></td><td class="px-3 py-2 text-right text-xs text-slate-400" x-text="f.date"></td></tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Crypto -->
+            <div class="card p-5">
+              <h3 class="font-semibold mb-3">Crypto Prices</h3>
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50"><tr><th class="px-3 py-2 text-left">Coin</th><th class="px-3 py-2 text-right">Price (USD)</th><th class="px-3 py-2 text-right">Date</th></tr></thead>
+                <tbody>
+                  <template x-for="c in cryptoData" :key="c.coin">
+                    <tr class="border-t"><td class="px-3 py-2 font-medium capitalize" x-text="c.coin"></td><td class="px-3 py-2 text-right" x-text="'$'+c.price_usd?.toLocaleString(undefined,{maximumFractionDigits:2})"></td><td class="px-3 py-2 text-right text-xs text-slate-400" x-text="c.date"></td></tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Data Summary -->
+            <div class="card p-5">
+              <h3 class="font-semibold mb-3">Data Coverage</h3>
+              <template x-for="[key, val] in Object.entries(summary||{})" :key="key">
+                <div x-show="val?.records!==undefined" class="flex items-center justify-between py-2 border-b last:border-0">
+                  <span class="text-sm capitalize" x-text="key.replace(/_/g,' ')"></span>
+                  <div class="text-right">
+                    <span class="text-sm font-medium" x-text="(val?.records||0).toLocaleString()+' records'"></span>
+                    <span class="text-xs text-slate-400 ml-2" x-text="val?.to_date||''"></span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Evidence Explorer (Real Data) -->
     <div x-show="screen==='evidence'" x-cloak>
       <div x-data="evidenceScreen()" x-init="init()">
@@ -808,6 +1007,7 @@
                     </td>
                     <td class="px-4 py-3 text-right font-mono" x-text="inv.risk_profile?.overall_score?.toFixed(1)||'-'"></td>
                     <td class="px-4 py-3 text-right space-x-2">
+                      <button @click="window.location.hash='#/portfolio/'+inv.id" class="text-indigo-600 hover:underline text-xs">Portfolio</button>
                       <button @click="window.location.hash='#/investor/'+inv.id" class="text-blue-600 hover:underline text-xs">Profile</button>
                       <button @click="window.location.hash='#/questionnaire/'+inv.id" class="text-green-600 hover:underline text-xs">Assess</button>
                     </td>
@@ -1142,6 +1342,70 @@ function decisionScreen() {
       if (res.error) { Alpine.store('notifications').add('error', res.error); return; }
       Alpine.store('notifications').add('success', 'Approval recorded');
       this.approvalForm = { approver: '', action: 'approve', rationale: '' };
+    }
+  };
+}
+
+function portfolioScreen() {
+  const COLORS = {equity:'#3b82f6',mutual_fund:'#8b5cf6',gold:'#f59e0b',silver:'#94a3b8',fd:'#22c55e',bond:'#06b6d4',pms:'#ec4899',aif:'#f97316',real_estate:'#84cc16',insurance:'#6366f1',crypto:'#eab308',ppf:'#14b8a6',nps:'#e11d48',other:'#64748b'};
+  return {
+    portfolio: null, loading: false, searchHoldings: '', _currentId: null,
+    initRouteListener() {
+      const self = this;
+      const check = () => {
+        const hash = window.location.hash.replace('#/', '');
+        const parts = hash.split('/');
+        if (parts[0] === 'portfolio' && parts[1] && parts[1] !== self._currentId) {
+          self._currentId = parts[1];
+          self.load(parts[1]);
+        }
+      };
+      window.addEventListener('route-change', check);
+      check();
+    },
+    async load(id) {
+      if (!id) return;
+      this.loading = true;
+      const res = await api.portfolioSummary(id);
+      this.loading = false;
+      this.portfolio = res.error ? null : res;
+    },
+    get filteredHoldings() {
+      const h = this.portfolio?.holdings || [];
+      if (!this.searchHoldings) return h;
+      const q = this.searchHoldings.toLowerCase();
+      return h.filter(x => x.description?.toLowerCase().includes(q) || x.symbol_or_id?.toLowerCase().includes(q) || x.asset_class_label?.toLowerCase().includes(q));
+    },
+    allocationColor(ac) { return COLORS[ac] || '#94a3b8'; },
+    formatINR(v) { if (v == null) return '0'; const abs = Math.abs(v); if (abs >= 10000000) return (v/10000000).toFixed(2)+' Cr'; if (abs >= 100000) return (v/100000).toFixed(2)+' L'; return v.toLocaleString(undefined,{maximumFractionDigits:0}); },
+    async importCSV(event) {
+      const file = event.target.files[0];
+      if (!file || !this._currentId) return;
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const res = await fetch(`/api/v1/portfolio/${this._currentId}/import-csv`, { method: 'POST', body: formData });
+        const data = await res.json();
+        Alpine.store('notifications').add('success', `Imported ${data.added} holdings`);
+        await this.load(this._currentId);
+      } catch (e) { Alpine.store('notifications').add('error', e.message); }
+      event.target.value = '';
+    },
+  };
+}
+
+function marketScreen() {
+  return {
+    summary: null, macroData: [], commodityData: [], forexData: [], cryptoData: [],
+    async load() {
+      const [s, m, c, f, cr] = await Promise.all([
+        api.dataSummary(), api.macro(), api.commodities(), api.forex(), api.crypto()
+      ]);
+      this.summary = s.error ? {} : s;
+      this.macroData = m.error ? [] : m;
+      this.commodityData = c.error ? [] : c;
+      this.forexData = f.error ? [] : f;
+      this.cryptoData = cr.error ? [] : cr;
     }
   };
 }

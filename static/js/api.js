@@ -49,6 +49,12 @@ window.api = {
   getAssessmentDetail: (id) => request('GET', `/investor/assessments/${id}`),
   createFamilyOffice: (data) => request('POST', '/investor/family-offices', data),
 
+  // Portfolio
+  portfolioSummary: (investorId) => request('GET', `/portfolio/${investorId}/summary`),
+  portfolioHoldings: (investorId) => request('GET', `/portfolio/${investorId}/holdings`),
+  addHolding: (investorId, data) => request('POST', `/portfolio/${investorId}/holdings`, data),
+  deleteHolding: (id) => request('DELETE', `/portfolio/holdings/${id}`),
+
   // Data Explorer
   dataSummary: () => request('GET', '/data/summary'),
   stocksLatest: (limit = 50) => request('GET', `/data/stocks/latest?limit=${limit}`),

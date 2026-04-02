@@ -27,6 +27,8 @@ from artha.execution.router import router as execution_router
 from artha.investor.router import router as investor_router
 from artha.data.upload import router as data_upload_router
 from artha.data.router import router as data_explorer_router
+import artha.portfolio.models  # noqa: F401 — register portfolio tables
+from artha.portfolio.router import router as portfolio_router
 
 
 @asynccontextmanager
@@ -56,6 +58,7 @@ def create_app() -> FastAPI:
     app.include_router(investor_router, prefix="/api/v1")
     app.include_router(data_upload_router, prefix="/api/v1")
     app.include_router(data_explorer_router, prefix="/api/v1")
+    app.include_router(portfolio_router, prefix="/api/v1")
 
     @app.get("/api/v1/health")
     async def health():

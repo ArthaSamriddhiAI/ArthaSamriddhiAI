@@ -1,0 +1,13 @@
+asset_class,symbol_or_id,description,quantity,acquisition_date,acquisition_price,current_price,notes
+equity,RELIANCE,Reliance Industries Ltd,150,2023-06-15,2450.00,,Long-term core holding
+equity,TCS,Tata Consultancy Services,80,2022-03-10,3200.00,,IT sector anchor
+mutual_fund,119598,SBI Blue Chip Fund - Growth,5000,2022-01-10,62.50,,SIP since Jan 2022
+mutual_fund,100356,Mirae Asset Large Cap Fund - Growth,3000,2023-04-01,85.00,,Lump sum
+gold,GOLD_PHYSICAL,Physical Gold 24K (grams),50,2021-03-20,4800.00,7200.00,50 grams in locker
+fd,SBI_FD_1YR,SBI Fixed Deposit 1 Year,2500000,2025-10-01,1.00,1.00,"7.1% p.a., matures Oct 2026"
+bond,HDFC_NCD_2028,HDFC Ltd NCD 8.5% 2028,100,2024-01-15,1000.00,1020.00,Face value Rs 1000
+pms,ASK_IEP,ASK Investment Managers - IEP,1,2023-04-01,5000000.00,5800000.00,Min investment 50L
+aif,IIFL_SPECIAL_OPP,IIFL Special Opportunities Fund,1,2023-07-01,10000000.00,11500000.00,Cat III AIF
+real_estate,PROP_MUM_01,3BHK Worli Mumbai,1,2019-06-01,45000000.00,55000000.00,Current market est 5.5Cr
+insurance,LIC_JEEVAN_ANAND,LIC Jeevan Anand Policy,1,2018-01-01,1200000.00,1500000.00,Sum assured 25L
+crypto,bitcoin,Bitcoin,0.50,2024-01-15,3500000.00,,Via CoinDCX
