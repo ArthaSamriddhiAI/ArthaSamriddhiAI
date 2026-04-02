@@ -100,10 +100,7 @@ async def get_latest_mf_navs(
     sql = text("""
         SELECT u.scheme_code, u.scheme_name, n.date, n.nav
         FROM mf_universe u
-        LEFT JOIN (
-            SELECT scheme_code, MAX(date) as max_date FROM mf_navs GROUP BY scheme_code
-        ) m ON u.scheme_code = m.scheme_code
-        LEFT JOIN mf_navs n ON n.scheme_code = m.scheme_code AND n.date = m.max_date
+        LEFT JOIN latest_mf_navs n ON u.scheme_code = n.scheme_code
         WHERE u.active = 1
         ORDER BY u.scheme_name
         LIMIT :lim

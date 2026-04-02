@@ -229,51 +229,57 @@ class PortfolioService:
 
     async def _get_latest_stock_prices(self) -> dict[str, float]:
         try:
-            sql = text("""
-                SELECT s.symbol, s.adj_close FROM stock_prices s
-                INNER JOIN (SELECT symbol, MAX(date) as md FROM stock_prices GROUP BY symbol) m
-                ON s.symbol = m.symbol AND s.date = m.md
-            """)
+            # Use cache table (instant) with fallback to full scan
+            sql = text("SELECT symbol, adj_close FROM latest_stock_prices")
             result = await self._session.execute(sql)
             return {r[0]: r[1] for r in result.all()}
         except Exception:
-            return {}
+            try:
+                sql = text("SELECT s.symbol, s.adj_close FROM stock_prices s INNER JOIN (SELECT symbol, MAX(date) as md FROM stock_prices GROUP BY symbol) m ON s.symbol = m.symbol AND s.date = m.md")
+                result = await self._session.execute(sql)
+                return {r[0]: r[1] for r in result.all()}
+            except Exception:
+                return {}
 
     async def _get_latest_mf_navs(self) -> dict[str, float]:
         try:
-            sql = text("""
-                SELECT n.scheme_code, n.nav FROM mf_navs n
-                INNER JOIN (SELECT scheme_code, MAX(date) as md FROM mf_navs GROUP BY scheme_code) m
-                ON n.scheme_code = m.scheme_code AND n.date = m.md
-            """)
+            # Use cache table (instant) with fallback to full scan
+            sql = text("SELECT scheme_code, nav FROM latest_mf_navs")
             result = await self._session.execute(sql)
             return {r[0]: r[1] for r in result.all()}
         except Exception:
-            return {}
+            try:
+                sql = text("SELECT n.scheme_code, n.nav FROM mf_navs n INNER JOIN (SELECT scheme_code, MAX(date) as md FROM mf_navs GROUP BY scheme_code) m ON n.scheme_code = m.scheme_code AND n.date = m.md")
+                result = await self._session.execute(sql)
+                return {r[0]: r[1] for r in result.all()}
+            except Exception:
+                return {}
 
     async def _get_latest_commodity_prices(self) -> dict[str, float]:
         try:
-            sql = text("""
-                SELECT c.commodity, c.price_usd FROM commodity_prices c
-                INNER JOIN (SELECT commodity, MAX(date) as md FROM commodity_prices GROUP BY commodity) m
-                ON c.commodity = m.commodity AND c.date = m.md
-            """)
+            sql = text("SELECT commodity, price_usd FROM latest_commodity_prices")
             result = await self._session.execute(sql)
             return {r[0]: r[1] for r in result.all()}
         except Exception:
-            return {}
+            try:
+                sql = text("SELECT c.commodity, c.price_usd FROM commodity_prices c INNER JOIN (SELECT commodity, MAX(date) as md FROM commodity_prices GROUP BY commodity) m ON c.commodity = m.commodity AND c.date = m.md")
+                result = await self._session.execute(sql)
+                return {r[0]: r[1] for r in result.all()}
+            except Exception:
+                return {}
 
     async def _get_latest_crypto_prices(self) -> dict[str, float]:
         try:
-            sql = text("""
-                SELECT c.coin_id, c.price_usd FROM crypto_prices c
-                INNER JOIN (SELECT coin_id, MAX(date) as md FROM crypto_prices GROUP BY coin_id) m
-                ON c.coin_id = m.coin_id AND c.date = m.md
-            """)
+            sql = text("SELECT coin_id, price_usd FROM latest_crypto_prices")
             result = await self._session.execute(sql)
             return {r[0]: r[1] for r in result.all()}
         except Exception:
-            return {}
+            try:
+                sql = text("SELECT c.coin_id, c.price_usd FROM crypto_prices c INNER JOIN (SELECT coin_id, MAX(date) as md FROM crypto_prices GROUP BY coin_id) m ON c.coin_id = m.coin_id AND c.date = m.md")
+                result = await self._session.execute(sql)
+                return {r[0]: r[1] for r in result.all()}
+            except Exception:
+                return {}
 
     def _to_response(self, row: PortfolioHoldingRow) -> HoldingResponse:
         cost = row.quantity * row.acquisition_price

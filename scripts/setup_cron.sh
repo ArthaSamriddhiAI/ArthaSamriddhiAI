@@ -18,7 +18,7 @@ After=network.target
 Type=oneshot
 User=ubuntu
 WorkingDirectory=${APP_DIR}
-ExecStart=${VENV}/python scripts/run_pipeline.py --all --db-url sqlite+aiosqlite:///${DB_PATH}
+ExecStart=/bin/bash -c "${VENV}/python scripts/run_pipeline.py --all --db-url sqlite+aiosqlite:///${DB_PATH} && ${VENV}/python scripts/refresh_cache.py ${DB_PATH}"
 Environment=PATH=${VENV}:/usr/bin
 StandardOutput=journal
 StandardError=journal
