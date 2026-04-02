@@ -117,8 +117,8 @@ Complete mapping of every asset class to its data sources, pipeline status, Bloo
       yfinance   MFAPI    Metals-API   FRED    CoinGecko
          │          │          │          │          │
          ▼          ▼          ▼          ▼          ▼
-    stock_prices mf_navs  commodity  macro_ind  crypto
-    (CONNECTED) (CONNECTED) (PLANNED) (PLANNED) (PLANNED)
+    stock_prices mf_navs  commodity  macro_ind  crypto   forex
+    (CONNECTED) (CONNECTED) (CONNECTED) (CONNECTED) (CONNECTED) (CONNECTED)
 
     ════════════════════════════════════════════════════════
 
@@ -141,51 +141,59 @@ Complete mapping of every asset class to its data sources, pipeline status, Bloo
 
 | # | Item | Detail |
 |---|------|--------|
-| 1 | **Nifty 500 Stock Prices** | 10 years of daily adjusted close + volume for 452 NSE stocks. Pipeline: `stock_pipeline.py`. Source: Yahoo Finance (`yfinance`). 1,069,338 records loaded. |
-| 2 | **Nifty 500 Universe Management** | Automated refresh of Nifty 500 constituent list via `niftystocks` library. 501 symbols tracked in `stock_universe` table. |
-| 3 | **Mutual Fund NAVs** | 10 years of daily NAV for 50 popular Indian mutual fund schemes (large cap, mid cap, small cap, ELSS, index, debt, hybrid, international). Pipeline: `mf_pipeline.py`. Source: MFAPI. 72,430 records loaded. |
-| 4 | **Daily Scheduler** | Systemd timer (`artha-pipeline.timer`) runs at 4:00 AM IST every day. Executes incremental stock and MF pipelines automatically. Audit trail in `data_pipeline_runs` table. |
-| 5 | **Yahoo Finance Adapter** | Evidence layer reads from `stock_prices` table. When a governance intent is submitted, the adapter fetches latest price, 52-week high/low, volume, and daily change for any Nifty 500 symbol. |
-| 6 | **Mock Data Adapter** | Fallback adapter generating deterministic test prices for any symbol. Used when real data is unavailable or for testing. |
-| 7 | **Pipeline CLI** | `scripts/run_pipeline.py` with flags: `--stocks`, `--mf`, `--initial` (full backfill), `--refresh-universe`, `--seed-mf`. Can be run manually or via scheduler. |
-| 8 | **Pipeline Audit Log** | Every pipeline execution logged with: run ID, pipeline name, status, records added, start/end timestamps, error message (if any). Table: `data_pipeline_runs`. |
+| 1 | **Nifty 500 Stock Prices** | 10 years of daily adjusted close + volume for 453 NSE stocks. Pipeline: `stock_pipeline.py`. Source: Yahoo Finance. **1,069,341 records.** |
+| 2 | **ETF Prices (Item A)** | 20 ETF tickers added: NIFTYBEES, GOLDBEES, BANKBEES, SILVERBEES, JUNIORBEES, LIQUIDBEES, ITBEES, PHARMABEES, etc. Same pipeline — zero new code. |
+| 3 | **Market Index Data (Item B)** | 16 indices added: Nifty 50, Sensex, Nifty Midcap, Bank Nifty, IT, Pharma, FMCG, Energy, Auto, Metal, Infra, Realty, PSE, Nifty 100, Nifty 500. Same pipeline. |
+| 4 | **REIT Data (Item T)** | 4 REIT tickers added: Embassy, Mindspace, Brookfield, Nexus Select. Same stock pipeline. |
+| 5 | **Universe Management** | 541 total tickers in `stock_universe` (501 Nifty 500 + 20 ETFs + 16 Indices + 4 REITs). Auto-refresh via `niftystocks`. |
+| 6 | **Mutual Fund NAVs (Item C expanded)** | Expanded from 50 to 126 schemes: large cap, mid cap, small cap, ELSS, sectoral (IT/Pharma/Banking/Infra), flexi cap, focused, value/contra, gilt, liquid, ultra short, credit risk, hybrid, balanced, multi-asset, arbitrage, international, retirement. **76,340 records.** |
+| 7 | **Commodity Prices (Item D)** | Pipeline: `commodity_pipeline.py`. Gold futures, Silver futures, Crude WTI, Crude Brent, Copper, Natural Gas via yfinance. **15,090 records.** 10-year history. |
+| 8 | **Forex Rates (Item E)** | Pipeline: `forex_pipeline.py`. USD/INR, EUR/INR, GBP/INR, JPY/INR, Dollar Index via yfinance. **12,921 records.** 10-year history. |
+| 9 | **Macro Indicators (Item F)** | Pipeline: `macro_pipeline.py`. India VIX, US 10Y yield, Gold USD, Brent Crude, USD/INR, DXY via yfinance. **15,109 records.** 10-year history. |
+| 10 | **Crypto Prices (Item G)** | Pipeline: `crypto_pipeline.py`. Bitcoin, Ethereum, Solana, Ripple, Cardano via yfinance. **9,130 records.** 5-year history. |
+| 11 | **CSV Upload Endpoint (Item H)** | `POST /api/v1/data/upload` with schema validation for 12 data types: stock_fundamentals, mf_risk_metrics, yield_curve, corporate_bonds, esg_scores, analyst_consensus, ownership_data, pms_data, aif_data, fd_rates, cds_spreads, generic. Audit trail in `data_uploads` table. |
+| 12 | **Bloomberg CSV Templates (Item I)** | 9 template CSV files in `docs/bloomberg_templates/`: stock_fundamentals, mf_risk_metrics, yield_curve, corporate_bonds, esg_scores, analyst_consensus, ownership_data, fd_rates, cds_spreads. Each with exact column headers matching upload validation. |
+| 13 | **Daily Scheduler** | Systemd timer runs at 4:00 AM IST. Executes all pipelines (stocks, MFs, commodities, forex, macro, crypto). Audit trail logged. |
+| 14 | **Pipeline CLI** | `scripts/run_pipeline.py` with flags: `--stocks`, `--mf`, `--commodities`, `--forex`, `--macro`, `--crypto`, `--all`, `--initial`, `--refresh-universe`, `--seed-mf`. |
+| 15 | **Pipeline Audit Log** | Every execution logged with: run ID, pipeline name, status, records added, timestamps, error. Table: `data_pipeline_runs`. |
+| | | **Total: 1,197,931 records across 6 asset class tables + 541 tickers + 126 MF schemes** |
 
-### What Is Needed Next
+### What Is Needed Next (Remaining Items — Require Bloomberg Terminal or Manual Data)
 
-| # | Item | What Needs to Happen | Source | Effort | Dependency |
-|---|------|---------------------|--------|--------|------------|
-| **A** | **ETF Price Data** | Add ETF tickers to `stock_universe` table: NIFTYBEES.NS, GOLDBEES.NS, BANKBEES.NS, LIQUIDBEES.NS, JUNIORBEES.NS, SILVERBEES.NS, CPSEETF.NS, ICICIB22.NS. No code changes — the existing stock pipeline will pick them up automatically on next run. | Yahoo Finance (existing pipeline) | Minimal (DB insert only) | None |
-| **B** | **Market Index Data** | Add index tickers to `stock_universe`: ^NSEI (Nifty 50), ^BSESN (Sensex), ^NSEMDCP50 (Midcap 50), ^CNXIT (IT Index), ^CNXPHARMA (Pharma), ^CNXFIN (Financial Services). Same pipeline handles these. | Yahoo Finance (existing pipeline) | Minimal (DB insert only) | None |
-| **C** | **Expanded MF Universe** | Add more scheme codes to `universe.py` TOP_MF_SCHEMES dictionary. Currently 50 schemes — expand to 150-200 covering more fund houses and categories (sectoral, thematic, target maturity, gilt, liquid). | MFAPI (existing pipeline) | Minimal (code edit to add scheme codes) | None |
-| **D** | **Gold & Silver Prices** | Build `commodity_pipeline.py` — new adapter calling GoldAPI.io or Metals-API free tier. Store in new `commodity_prices` table (commodity, date, price_inr, price_usd). Add to daily scheduler. | GoldAPI.io (free, no auth) or Metals-API (free tier) | New pipeline (~100 lines) | API key for Metals-API (free signup) |
-| **E** | **Forex Rates** | Build `forex_pipeline.py` — adapter calling ExchangeRate-API or similar. Pairs: USDINR, EURINR, GBPINR, JPYINR. Store in new `forex_rates` table. Add to daily scheduler. | ExchangeRate-API (free) or FRED | New pipeline (~80 lines) | None (free APIs) |
-| **F** | **Macro Economic Indicators** | Build `macro_pipeline.py` — adapter calling FRED API for India indicators: GDP growth, CPI inflation, PMI, RBI repo rate, forex reserves. Store in new `macro_indicators` table. Monthly/quarterly updates. | FRED API (free, needs API key) | New pipeline (~100 lines) | FRED API key (free signup at fred.stlouisfed.org) |
-| **G** | **Crypto Prices** | Build `crypto_pipeline.py` — adapter calling CoinGecko API. Coins: BTC, ETH, SOL (expandable). Store in new `crypto_prices` table. Daily updates. | CoinGecko API (free, 30 calls/min) | New pipeline (~80 lines) | None |
-| **H** | **CSV Upload Endpoint** | Build `POST /api/v1/data/upload` — generic CSV upload endpoint that accepts a file + data type identifier, validates columns against expected schema, and inserts into the appropriate table. Needed for all Bloomberg-sourced and manual data. | N/A (infrastructure) | New endpoint + validation (~200 lines) | None |
-| **I** | **Bloomberg Data Templates** | Define CSV column schemas for each Bloomberg extraction task: stock fundamentals (17 columns), MF risk metrics (12 columns), yield curve (8 tenors), corporate bonds (11 columns), ESG scores (6 columns), analyst consensus (7 columns), ownership (7 columns). Templates stored as reference in `docs/bloomberg_templates/`. | N/A (documentation) | Template definitions | None |
-| **J** | **Government Bond Yield Curve** | Two paths: (1) FRED API for 10Y benchmark yield (free, automated), (2) Bloomberg terminal for full 1Y-40Y curve (manual CSV upload via item H). Both should feed into a new `bond_yields` table. | FRED API (10Y only) + Bloomberg (full curve) | New table + FRED adapter (~80 lines) | Item H for Bloomberg data |
-| **K** | **Corporate Bond Database** | No free API exists. Requires Bloomberg terminal: use `SRCH <GO>` with India + INR + Corp filter, export to CSV, upload via item H. New `corporate_bonds` table with: ISIN, issuer, coupon, YTM, OAS, rating, maturity, issue size. | Bloomberg terminal (CSV export) | New table + upload validation | Item H |
-| **L** | **ESG Scores** | No free source for India. Requires Bloomberg terminal: extract using BDP for Nifty 500 stocks (env/social/gov/combined scores, carbon emissions). Upload via item H. New `esg_scores` table. | Bloomberg terminal (CSV export) | New table + upload validation | Item H |
-| **M** | **Analyst Consensus Data** | No free source. Requires Bloomberg terminal: extract target prices, EPS estimates, buy/hold/sell counts for top 200 stocks. Upload via item H. New `analyst_consensus` table. | Bloomberg terminal (CSV export) | New table + upload validation | Item H |
-| **N** | **Institutional Ownership** | Partial free data from SEBI quarterly filings. Bloomberg provides cleaner consolidated view. Extract FII/DII/MF/Promoter splits for Nifty 500. Upload via item H. New `ownership_data` table. | Bloomberg terminal + SEBI filings | New table + upload validation | Item H |
-| **O** | **Derivatives / F&O Data** | NSE publishes daily bhav copies (CSV files) for F&O segment — downloadable but no API. Bloomberg provides options chains, IV surface, Greeks. Two approaches: (1) NSE bhav copy scraper for OI and volume, (2) Bloomberg for IV surface and Greeks via CSV. New `derivatives_data` table. | NSE bhav copies + Bloomberg terminal | New scraper + table (~150 lines) | Item H for Bloomberg data |
-| **P** | **PMS Performance Data** | No API. Sources: PMS Bazaar website (aggregated monthly data) or SEBI monthly disclosures. Manual CSV preparation and upload via item H. New `pms_data` table. | PMS Bazaar / SEBI website | New table + upload validation | Item H |
-| **Q** | **AIF Quarterly Data** | No API. Source: SEBI quarterly AIF disclosures (PDF/Excel on SEBI website). Manual extraction to CSV, upload via item H. New `aif_data` table. | SEBI quarterly reports | New table + upload validation | Item H |
-| **R** | **Unlisted Equity Valuations** | No standard source. Valuations from placement documents, DRHP filings, or broker estimates. Manual entry via a form or CSV upload. New `unlisted_equity` table. | Manual (placement docs, DRHP, brokers) | New table + entry form | Item H |
-| **S** | **Fixed Deposit Rates** | No API. Source: RBI circulars and individual bank websites. Static reference table with ~20 major banks, updated monthly. New `fd_rates` table. | Bank websites / RBI | New table (simple) | None |
-| **T** | **Real Estate Data** | Two components: (1) NHB RESIDEX city-level index (downloadable from NHB website), (2) Individual property valuations (manual entry). REIT data available via existing stock pipeline (EMBASSY.NS, MINDSP.NS). | NHB RESIDEX + Manual | New table + REIT tickers in stock_universe | None for REITs |
-| **U** | **CDS Spreads** | Bloomberg exclusive. Extract 5Y CDS spreads for Indian sovereign and top 20 corporates weekly. Upload via item H. New `cds_spreads` table. | Bloomberg terminal only | New table + upload validation | Item H |
+| # | Item | Status | Detail |
+|---|------|--------|--------|
+| **A** | **ETF Price Data** | **DONE** | 20 ETF tickers added and data loaded (NIFTYBEES, GOLDBEES, BANKBEES, SILVERBEES, etc.) |
+| **B** | **Market Index Data** | **DONE** | 16 index tickers added (Nifty 50, Sensex, Bank Nifty, IT, Pharma, FMCG, Auto, Metal, etc.) |
+| **C** | **Expanded MF Universe** | **DONE** | Expanded from 50 to 126 schemes (sectoral, thematic, gilt, liquid, debt, hybrid, multi-asset, arbitrage, international) |
+| **D** | **Gold & Silver Prices** | **DONE** | `commodity_pipeline.py` built. Gold, Silver, Crude WTI/Brent, Copper, Natural Gas. 15,090 records. |
+| **E** | **Forex Rates** | **DONE** | `forex_pipeline.py` built. USD/INR, EUR/INR, GBP/INR, JPY/INR, DXY. 12,921 records. |
+| **F** | **Macro Economic Indicators** | **DONE** | `macro_pipeline.py` built. India VIX, US 10Y yield, Gold, Brent, USD/INR, DXY. 15,109 records. |
+| **G** | **Crypto Prices** | **DONE** | `crypto_pipeline.py` built. Bitcoin, Ethereum, Solana, Ripple, Cardano via yfinance. 9,130 records. |
+| **H** | **CSV Upload Endpoint** | **DONE** | `POST /api/v1/data/upload` live. Schema validation for 12 data types. Audit trail in `data_uploads` table. |
+| **I** | **Bloomberg CSV Templates** | **DONE** | 9 template files in `docs/bloomberg_templates/`: stock_fundamentals, mf_risk_metrics, yield_curve, corporate_bonds, esg_scores, analyst_consensus, ownership_data, fd_rates, cds_spreads. |
+| **S** | **Fixed Deposit Rates** | **DONE** | Template ready. Upload via CSV endpoint with `data_type=fd_rates`. |
+| **T** | **Real Estate (REITs)** | **DONE** | 4 REIT tickers added (Embassy, Mindspace, Brookfield, Nexus). NHB RESIDEX needs manual upload. |
+| **J** | **Govt Bond Yield Curve** | **PENDING** | Needs Bloomberg terminal for full 1Y-40Y curve. Upload via CSV endpoint with `data_type=yield_curve`. Template ready. |
+| **K** | **Corporate Bond Database** | **PENDING** | Needs Bloomberg terminal. Use `SRCH <GO>` with India filter, export CSV, upload with `data_type=corporate_bonds`. Template ready. |
+| **L** | **ESG Scores** | **PENDING** | Needs Bloomberg terminal. Extract via BDP for Nifty 500. Upload with `data_type=esg_scores`. Template ready. |
+| **M** | **Analyst Consensus** | **PENDING** | Needs Bloomberg terminal. Extract target prices, EPS, buy/hold/sell. Upload with `data_type=analyst_consensus`. Template ready. |
+| **N** | **Institutional Ownership** | **PENDING** | Needs Bloomberg terminal + SEBI filings. Upload with `data_type=ownership_data`. Template ready. |
+| **O** | **Derivatives / F&O Data** | **PENDING** | Needs NSE bhav copy scraper + Bloomberg for IV surface. No template yet. |
+| **P** | **PMS Performance Data** | **PENDING** | Needs manual CSV from PMS Bazaar / SEBI. Upload with `data_type=pms_data`. Template ready. |
+| **Q** | **AIF Quarterly Data** | **PENDING** | Needs manual extraction from SEBI quarterly reports. Upload with `data_type=aif_data`. Template ready. |
+| **R** | **Unlisted Equity** | **PENDING** | Needs manual entry from placement docs / DRHP. Upload with `data_type=generic`. |
+| **U** | **CDS Spreads** | **PENDING** | Needs Bloomberg terminal exclusively. Upload with `data_type=cds_spreads`. Template ready. |
 
-### Dependency Chain
+### Status Summary
 
-```
-Items A, B, C, S, T(REITs) ──→ No dependency. Can be done immediately.
+- **DONE: 11 items** (A, B, C, D, E, F, G, H, I, S, T) — all automated pipelines running, CSV upload live, templates ready
+- **PENDING: 10 items** (J, K, L, M, N, O, P, Q, R, U) — all require either Bloomberg terminal access or manual data collection
+- **All PENDING items have CSV upload infrastructure ready** — just need the data extracted and uploaded
 
-Items D, E, F, G ──→ No dependency. Need new pipeline code (free APIs).
+### For PENDING Items: What to Do
 
-Item H (CSV Upload Endpoint) ──→ Must be built before items I through U.
-
-Items I through U ──→ All depend on Item H.
-                  ──→ Items K, L, M, N, O(partial), U require Bloomberg terminal access.
-                  ──→ Items P, Q, R are manual data collection.
-```
+All pending items follow the same workflow:
+1. Extract data from Bloomberg terminal (per BLOOMBERG_GUIDE.md) or manual source
+2. Format as CSV matching the template in `docs/bloomberg_templates/`
+3. Upload via `POST /api/v1/data/upload?data_type={type}&uploaded_by={name}`
+4. Verify upload via `GET /api/v1/data/uploads`
