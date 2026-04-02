@@ -185,6 +185,20 @@ async def generate_market_brief(session: AsyncSession) -> MarketBrief:
         return result
 
     except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Market brief AI generation failed: {e}")
+        # Try simple complete (non-structured) as fallback
+        try:
+            resp = await llm.complete(request)
+            return MarketBrief(
+                summary=resp.content[:500],
+                key_moves=[],
+                outlook="",
+                data_date=data_date,
+                generated_at=datetime.now(UTC).isoformat(),
+            )
+        except Exception:
+            pass
         return MarketBrief(
             summary=f"Market data as of {data_date}. " + " | ".join(lines[1:7]),
             key_moves=[l.strip() for l in lines[1:7] if l.strip().startswith((" ", "  "))],
