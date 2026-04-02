@@ -16,6 +16,7 @@ class MarketBrief(BaseModel):
     sector_highlights: list[str] = Field(default_factory=list)
     client_impact: list[str] = Field(default_factory=list)
     outlook: str = ""
+    data_date: str = ""
     generated_at: str = ""
 
 
@@ -45,59 +46,115 @@ async def gather_market_data(session: AsyncSession) -> dict[str, Any]:
     except Exception:
         data["forex"] = {}
 
-    # Commodities
+    # Commodities from cache
     try:
-        r = await session.execute(text("""
-            SELECT c.commodity, c.price_usd, c.date FROM commodity_prices c
-            INNER JOIN (SELECT commodity, MAX(date) as md FROM commodity_prices GROUP BY commodity) mx
-            ON c.commodity = mx.commodity AND c.date = mx.md
-        """))
+        r = await session.execute(text("SELECT commodity, price_usd, date FROM latest_commodity_prices"))
         data["commodities"] = {row[0]: {"price": row[1], "date": str(row[2])} for row in r.all()}
     except Exception:
         data["commodities"] = {}
 
-    # Crypto
+    # Crypto from cache
     try:
-        r = await session.execute(text("""
-            SELECT c.coin_id, c.price_usd, c.date FROM crypto_prices c
-            INNER JOIN (SELECT coin_id, MAX(date) as md FROM crypto_prices GROUP BY coin_id) mx
-            ON c.coin_id = mx.coin_id AND c.date = mx.md
-        """))
+        r = await session.execute(text("SELECT coin_id, price_usd, date FROM latest_crypto_prices"))
         data["crypto"] = {row[0]: {"price": row[1], "date": str(row[2])} for row in r.all()}
     except Exception:
         data["crypto"] = {}
+
+    # Top stock gainers/losers (compare latest 2 dates)
+    try:
+        r = await session.execute(text("""
+            SELECT s1.symbol, s1.adj_close as latest, s2.adj_close as prev,
+                   ROUND((s1.adj_close - s2.adj_close) / s2.adj_close * 100, 2) as chg_pct
+            FROM latest_stock_prices s1
+            INNER JOIN stock_prices s2 ON s1.symbol = s2.symbol
+            WHERE s2.date = (SELECT MAX(date) FROM stock_prices WHERE date < s1.date AND symbol = s1.symbol)
+            AND s2.adj_close > 0
+            ORDER BY chg_pct DESC LIMIT 5
+        """))
+        data["top_gainers"] = [{"symbol": r[0], "price": r[1], "prev": r[2], "change_pct": r[3]} for r in r.all()]
+    except Exception:
+        data["top_gainers"] = []
+
+    try:
+        r = await session.execute(text("""
+            SELECT s1.symbol, s1.adj_close as latest, s2.adj_close as prev,
+                   ROUND((s1.adj_close - s2.adj_close) / s2.adj_close * 100, 2) as chg_pct
+            FROM latest_stock_prices s1
+            INNER JOIN stock_prices s2 ON s1.symbol = s2.symbol
+            WHERE s2.date = (SELECT MAX(date) FROM stock_prices WHERE date < s1.date AND symbol = s1.symbol)
+            AND s2.adj_close > 0
+            ORDER BY chg_pct ASC LIMIT 5
+        """))
+        data["top_losers"] = [{"symbol": r[0], "price": r[1], "prev": r[2], "change_pct": r[3]} for r in r.all()]
+    except Exception:
+        data["top_losers"] = []
+
+    # Portfolio stats
+    try:
+        r = await session.execute(text("SELECT COUNT(DISTINCT investor_id), COUNT(*) FROM portfolio_holdings WHERE active=1"))
+        row = r.one()
+        data["portfolio_stats"] = {"clients": row[0], "holdings": row[1]}
+    except Exception:
+        data["portfolio_stats"] = {}
 
     return data
 
 
 async def generate_market_brief(session: AsyncSession) -> MarketBrief:
-    """Generate AI-powered market brief using Mistral."""
+    """Generate AI-powered market brief using Mistral with real data."""
     import json
     from datetime import UTC, datetime
 
     market_data = await gather_market_data(session)
 
-    # Build prompt context
-    context_parts = []
+    # Build detailed context from ACTUAL data only
+    lines = ["ACTUAL MARKET DATA (use ONLY these numbers, do NOT invent any data):"]
+
     macro = market_data.get("macro", {})
-    if "INDIA_VIX" in macro:
-        context_parts.append(f"India VIX: {macro['INDIA_VIX']['value']:.2f}")
-    if "GOLD_USD" in macro:
-        context_parts.append(f"Gold: ${macro['GOLD_USD']['value']:.2f}/oz")
-    if "CRUDE_BRENT" in macro:
-        context_parts.append(f"Brent Crude: ${macro['CRUDE_BRENT']['value']:.2f}/bbl")
+    for key in ["INDIA_VIX", "US_10Y_YIELD", "GOLD_USD", "CRUDE_BRENT", "USDINR", "DXY"]:
+        if key in macro:
+            lines.append(f"  {key}: {macro[key]['value']:.2f} (as of {macro[key]['date']})")
 
     forex = market_data.get("forex", {})
-    if "USDINR" in forex:
-        context_parts.append(f"USD/INR: {forex['USDINR']['rate']:.2f}")
-    if "DXY" in forex:
-        context_parts.append(f"Dollar Index: {forex['DXY']['rate']:.2f}")
+    for pair in ["USDINR", "EURINR", "GBPINR"]:
+        if pair in forex:
+            lines.append(f"  {pair}: {forex[pair]['rate']:.4f} (as of {forex[pair]['date']})")
+
+    commod = market_data.get("commodities", {})
+    for c in ["GOLD", "SILVER", "CRUDE_WTI", "CRUDE_BRENT", "COPPER", "NATGAS"]:
+        if c in commod:
+            lines.append(f"  {c}: ${commod[c]['price']:.2f} (as of {commod[c]['date']})")
 
     crypto = market_data.get("crypto", {})
-    if "bitcoin" in crypto:
-        context_parts.append(f"Bitcoin: ${crypto['bitcoin']['price']:,.0f}")
+    for coin in ["bitcoin", "ethereum", "solana"]:
+        if coin in crypto:
+            lines.append(f"  {coin.title()}: ${crypto[coin]['price']:,.2f} (as of {crypto[coin]['date']})")
 
-    context_str = " | ".join(context_parts)
+    gainers = market_data.get("top_gainers", [])
+    if gainers:
+        lines.append("  TOP GAINERS (1-day):")
+        for g in gainers[:5]:
+            lines.append(f"    {g['symbol']}: Rs {g['price']:.2f} ({g['change_pct']:+.2f}%)")
+
+    losers = market_data.get("top_losers", [])
+    if losers:
+        lines.append("  TOP LOSERS (1-day):")
+        for l in losers[:5]:
+            lines.append(f"    {l['symbol']}: Rs {l['price']:.2f} ({l['change_pct']:+.2f}%)")
+
+    ps = market_data.get("portfolio_stats", {})
+    if ps:
+        lines.append(f"  PORTFOLIO: {ps.get('clients', 0)} clients, {ps.get('holdings', 0)} holdings under management")
+
+    data_context = "\n".join(lines)
+
+    # Determine data date
+    dates = []
+    for section in [macro, forex, commod, crypto]:
+        for v in section.values():
+            if isinstance(v, dict) and "date" in v:
+                dates.append(v["date"])
+    data_date = max(dates) if dates else "unknown"
 
     try:
         from artha.llm.registry import get_provider
@@ -107,26 +164,31 @@ async def generate_market_brief(session: AsyncSession) -> MarketBrief:
         request = LLMRequest(
             messages=[
                 LLMMessage(role="system", content=(
-                    "You are a senior wealth management market analyst. Generate a concise daily market brief "
-                    "(200 words max) for a wealth manager serving HNI clients in India. Include: "
-                    "1) Key market moves 2) Commodity/currency highlights 3) What it means for client portfolios. "
-                    "Be specific with numbers. Professional tone."
+                    "You are a senior wealth management market analyst at an Indian HNI advisory firm. "
+                    "Generate a daily market brief for the advisory team. STRICT RULES:\n"
+                    "1. Use ONLY the numbers provided below. Do NOT invent or hallucinate any data points.\n"
+                    "2. If you don't have a specific data point (like Nifty closing), say 'data not available' or skip it.\n"
+                    "3. Focus on: what the provided data MEANS for HNI portfolios.\n"
+                    "4. Be concise (150-200 words). Professional but accessible tone.\n"
+                    "5. End with 1-2 actionable observations for the advisory team.\n"
+                    "6. Reference specific numbers from the data provided."
                 )),
-                LLMMessage(role="user", content=f"Latest market data:\n{context_str}\n\nGenerate today's market brief."),
+                LLMMessage(role="user", content=f"{data_context}\n\nGenerate today's market brief based ONLY on the above data."),
             ],
             temperature=0.3,
-            max_tokens=512,
+            max_tokens=600,
         )
 
         result = await llm.complete_structured(request, MarketBrief)
         result.generated_at = datetime.now(UTC).isoformat()
+        result.data_date = data_date
         return result
 
     except Exception as e:
-        # Fallback: generate basic brief without AI
         return MarketBrief(
-            summary=f"Market snapshot: {context_str}",
-            key_moves=context_parts[:4],
-            outlook="Market data loaded. AI analysis unavailable.",
+            summary=f"Market data as of {data_date}. " + " | ".join(lines[1:7]),
+            key_moves=[l.strip() for l in lines[1:7] if l.strip().startswith((" ", "  "))],
+            outlook="AI-generated analysis unavailable. Review raw data above.",
+            data_date=data_date,
             generated_at=datetime.now(UTC).isoformat(),
         )
