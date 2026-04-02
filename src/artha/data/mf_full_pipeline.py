@@ -173,7 +173,8 @@ async def run_mf_full_pipeline(session: AsyncSession, initial: bool = False) -> 
                         continue
                     if nav_date < cutoff:
                         continue
-                    if not initial and last_existing and nav_date <= last_existing:
+                    # Always skip dates we already have (prevents UNIQUE constraint violations)
+                    if last_existing and nav_date <= last_existing:
                         continue
 
                     nav_str = entry.get("nav", "")
@@ -188,7 +189,11 @@ async def run_mf_full_pipeline(session: AsyncSession, initial: bool = False) -> 
                     scheme_added += 1
 
                 total_added += scheme_added
-                await session.flush()
+                try:
+                    await session.flush()
+                except Exception:
+                    await session.rollback()
+                    failed_schemes += 1
                 time.sleep(REQUEST_DELAY_SEC)
 
         await session.commit()
