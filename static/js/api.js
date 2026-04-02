@@ -31,6 +31,7 @@ window.api = {
   getAudit: (id) => request('GET', `/accountability/decisions/${id}/audit`),
   getApprovals: (id) => request('GET', `/accountability/decisions/${id}/approvals`),
   submitApproval: (data) => request('POST', '/accountability/approvals', data),
+  telemetryAnalytics: () => request('GET', '/accountability/telemetry'),
 
   // Evidence
   ingestMarketData: (data) => request('POST', '/evidence/ingest', data),

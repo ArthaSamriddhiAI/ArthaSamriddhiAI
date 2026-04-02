@@ -83,7 +83,36 @@ class GovernancePipeline:
             "error": None,
         }
 
+        # Initialize trace builder — records every step as a node in the causal DAG
+        # Trace is non-critical: pipeline continues even if tracing fails
+        from artha.accountability.trace.graph import DecisionTraceBuilder
+        from artha.accountability.trace.models import TraceNodeType
+        trace = DecisionTraceBuilder(self._session, decision_id)
+        _trace_ok = True  # Flag to skip tracing if first attempt fails
+
+        async def _trace(node_type, data, parent_ids=None):
+            nonlocal _trace_ok
+            if not _trace_ok:
+                return "no-trace"
+            try:
+                return await trace.add_node(node_type, data, parent_ids)
+            except Exception:
+                _trace_ok = False
+                try:
+                    await self._session.rollback()
+                except Exception:
+                    pass
+                return "no-trace"
+
         try:
+            # ── TRACE: Intent Received ──
+            intent_node = await _trace(TraceNodeType.INTENT_RECEIVED, {
+                "intent_id": intent.id, "intent_type": intent.intent_type.value,
+                "source": intent.source.value, "initiator": intent.initiator,
+                "symbols": intent.symbols, "holdings_count": len(intent.holdings or {}),
+                "parameters_keys": list(intent.parameters.keys()),
+            })
+
             # Step 1: Compute evidence
             evidence_svc = EvidenceService(self._session)
             artifact_ids = await evidence_svc.compute_full_evidence(
@@ -93,6 +122,13 @@ class GovernancePipeline:
             # Step 2: Freeze evidence snapshot
             snapshot = await self._snapshot_service.freeze(decision_id)
             state["evidence_snapshot"] = snapshot
+
+            # ── TRACE: Evidence Frozen ──
+            evidence_node = await _trace(TraceNodeType.EVIDENCE_FROZEN, {
+                "snapshot_id": snapshot.id, "artifact_ids": snapshot.artifact_ids,
+                "artifact_count": len(snapshot.artifact_ids),
+                "frozen_at": str(snapshot.frozen_at),
+            }, parent_ids=[intent_node])
 
             # Build evidence context for agents
             evidence_context = await self._build_evidence_context(artifact_ids)
@@ -118,7 +154,7 @@ class GovernancePipeline:
                             "category_scores": profile.category_scores,
                         }
                 except Exception:
-                    pass  # Non-critical — proceed without profile
+                    pass
 
             state["evidence_context"] = evidence_context
 
@@ -128,10 +164,11 @@ class GovernancePipeline:
 
             # Step 4: Agent consultation loop
             max_loops = settings.max_orchestrator_loops
+            last_agent_nodes: list[str] = []
+
             for loop_i in range(max_loops + 1):
                 state["loop_count"] = loop_i
 
-                # Supervisor decides which agents to consult
                 dispatch = await self._supervisor.decide_agents(
                     intent=intent,
                     prior_outputs=state["agent_outputs"],
@@ -144,12 +181,27 @@ class GovernancePipeline:
                     state["synthesis_complete"] = True
                     break
 
-                # Run dispatched agents
                 for agent_id in dispatch.agents:
+                    # ── TRACE: Agent Invoked ──
+                    invoke_node = await _trace(TraceNodeType.AGENT_INVOKED, {
+                        "agent_id": agent_id, "loop": loop_i,
+                        "dispatch_reasoning": dispatch.reasoning,
+                    }, parent_ids=[evidence_node])
+
                     output = await run_agent(agent_id, evidence_context, self._llm)
                     state["agent_outputs"] = state["agent_outputs"] + [output]
 
-            # Step 5: Collect all proposed actions from agents
+                    # ── TRACE: Agent Output ──
+                    output_node = await _trace(TraceNodeType.AGENT_OUTPUT, {
+                        "agent_id": output.agent_id, "agent_name": output.agent_name,
+                        "risk_level": output.risk_level.value, "confidence": output.confidence,
+                        "drivers": output.drivers, "flags": output.flags,
+                        "proposed_actions_count": len(output.proposed_actions),
+                        "reasoning_summary": output.reasoning_summary[:200] if output.reasoning_summary else "",
+                    }, parent_ids=[invoke_node])
+                    last_agent_nodes.append(output_node)
+
+            # Step 5: Collect all proposed actions
             all_proposed = self._collect_proposed_actions(state["agent_outputs"])
 
             # Step 6: Rule engine evaluation
@@ -160,6 +212,19 @@ class GovernancePipeline:
                 all_evaluations.append((action, evals))
                 state["rule_evaluations"].extend(evals)
 
+                # ── TRACE: Rule Evaluated (per action) ──
+                passed_count = sum(1 for e in evals if e.passed)
+                failed_count = sum(1 for e in evals if not e.passed)
+                hard_fails = [e.rule_name for e in evals if not e.passed and e.severity.value == "hard"]
+                soft_fails = [e.rule_name for e in evals if not e.passed and e.severity.value == "soft"]
+                await _trace(TraceNodeType.RULE_EVALUATED, {
+                    "symbol": action.symbol, "action": action.action,
+                    "target_weight": action.target_weight,
+                    "rules_passed": passed_count, "rules_failed": failed_count,
+                    "hard_violations": hard_fails, "soft_violations": soft_fails,
+                    "total_rules": len(evals),
+                }, parent_ids=last_agent_nodes or [evidence_node])
+
             # Step 7: Permission filter
             permission_outcome = self._permission_filter.evaluate(
                 decision_id, all_evaluations
@@ -169,9 +234,39 @@ class GovernancePipeline:
             # Step 8: Determine final status
             state["status"] = permission_outcome.overall_status.value
 
+            # ── TRACE: Permission Outcome ──
+            perm_type = {
+                "approved": TraceNodeType.PERMISSION_GRANTED,
+                "rejected": TraceNodeType.PERMISSION_DENIED,
+                "escalation_required": TraceNodeType.ESCALATION_REQUIRED,
+            }.get(state["status"], TraceNodeType.PERMISSION_DENIED)
+
+            perm_data = {
+                "overall_status": state["status"],
+                "actions_approved": sum(1 for p in permission_outcome.permissions if p.status.value == "approved"),
+                "actions_rejected": sum(1 for p in permission_outcome.permissions if p.status.value == "rejected"),
+                "actions_escalated": sum(1 for p in permission_outcome.permissions if p.status.value == "escalation_required"),
+                "requires_human_approval": permission_outcome.requires_human_approval,
+            }
+            if permission_outcome.permissions:
+                perm_data["rejection_reasons"] = []
+                perm_data["escalation_reasons"] = []
+                for p in permission_outcome.permissions:
+                    perm_data["rejection_reasons"].extend(p.rejection_reasons)
+                    perm_data["escalation_reasons"].extend(p.escalation_reasons)
+
+            await _trace(perm_type, perm_data, parent_ids=last_agent_nodes or [evidence_node])
+
         except Exception as e:
             state["status"] = "error"
             state["error"] = str(e)
+            # ── TRACE: Error ──
+            try:
+                await _trace(TraceNodeType.ERROR, {
+                    "error_type": type(e).__name__, "error_message": str(e)[:500],
+                }, parent_ids=[intent_node] if 'intent_node' in dir() else [])
+            except Exception:
+                pass
 
         # Step 9: Persist decision record
         try:

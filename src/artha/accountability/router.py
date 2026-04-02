@@ -140,3 +140,10 @@ async def get_approvals(
     service: AccountabilityService = Depends(_get_service),
 ):
     return await service.get_approvals(decision_id)
+
+
+@router.get("/telemetry")
+async def get_telemetry(session: AsyncSession = Depends(get_session)):
+    """Decision telemetry analytics — aggregate patterns, disagreements, quality metrics."""
+    from artha.accountability.telemetry import get_telemetry_analytics
+    return await get_telemetry_analytics(session)
