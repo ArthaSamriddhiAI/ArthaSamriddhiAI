@@ -1,4 +1,4 @@
-"""Crypto price pipeline — BTC, ETH, SOL via CoinGecko free API."""
+"""Crypto price pipeline — BTC, ETH, SOL via yfinance (reliable, no auth needed)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ import time
 import uuid
 from datetime import UTC, date, datetime, timedelta
 
-import httpx
 from sqlalchemy import func, select, String, Date, Float, BigInteger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
@@ -17,7 +16,6 @@ from artha.data.models import PipelineRunRow
 
 log = logging.getLogger(__name__)
 
-COINGECKO_BASE = "https://api.coingecko.com/api/v3"
 
 class CryptoPriceRow(Base):
     __tablename__ = "crypto_prices"
@@ -28,10 +26,18 @@ class CryptoPriceRow(Base):
     market_cap_usd: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
 
-COINS = ["bitcoin", "ethereum", "solana", "ripple", "cardano"]
+CRYPTO_TICKERS = {
+    "bitcoin": "BTC-USD",
+    "ethereum": "ETH-USD",
+    "solana": "SOL-USD",
+    "ripple": "XRP-USD",
+    "cardano": "ADA-USD",
+}
 
 
 async def run_crypto_pipeline(session: AsyncSession, initial: bool = False) -> str:
+    import yfinance as yf
+
     run_id = str(uuid.uuid4())
     started = datetime.now(UTC)
     run = PipelineRunRow(id=run_id, pipeline="crypto", status="running", records_added=0, started_at=started)
@@ -40,69 +46,39 @@ async def run_crypto_pipeline(session: AsyncSession, initial: bool = False) -> s
 
     total_added = 0
     try:
-        days = 365 * 5 if initial else 30  # CoinGecko free: max ~365 days per call, 5yr via daily
-        # Use market_chart/range for longer history
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            for coin in COINS:
-                log.info(f"  Fetching {coin}...")
+        start_date = date.today() - timedelta(days=365 * 5) if initial else date.today() - timedelta(days=7)
 
-                # Get latest existing date
-                result = await session.execute(
-                    select(func.max(CryptoPriceRow.date)).where(CryptoPriceRow.coin_id == coin)
-                )
-                last_date = result.scalar()
+        for coin, ticker in CRYPTO_TICKERS.items():
+            log.info(f"  Fetching {coin} ({ticker})...")
+            try:
+                df = yf.download(ticker, start=str(start_date), progress=False, auto_adjust=True)
+            except Exception as e:
+                log.warning(f"  Error fetching {coin}: {e}")
+                continue
 
-                if initial:
-                    from_ts = int((datetime.now(UTC) - timedelta(days=days)).timestamp())
-                elif last_date:
-                    from_ts = int(datetime.combine(last_date + timedelta(days=1), datetime.min.time()).replace(tzinfo=UTC).timestamp())
-                else:
-                    from_ts = int((datetime.now(UTC) - timedelta(days=365)).timestamp())
+            if df.empty:
+                continue
 
-                to_ts = int(datetime.now(UTC).timestamp())
+            result = await session.execute(
+                select(func.max(CryptoPriceRow.date)).where(CryptoPriceRow.coin_id == coin)
+            )
+            last_date = result.scalar()
 
-                try:
-                    resp = await client.get(
-                        f"{COINGECKO_BASE}/coins/{coin}/market_chart/range",
-                        params={"vs_currency": "usd", "from": from_ts, "to": to_ts}
-                    )
-                    resp.raise_for_status()
-                    data = resp.json()
-                except Exception as e:
-                    log.warning(f"  CoinGecko error for {coin}: {e}")
-                    time.sleep(2)
+            added = 0
+            close_col = df["Close"].squeeze() if "Close" in df.columns else df.iloc[:, 0]
+            for idx in close_col.index:
+                d = idx.date() if hasattr(idx, "date") else idx
+                if last_date and d <= last_date:
                     continue
+                price = float(close_col.loc[idx])
+                if price is not None and price == price:
+                    session.add(CryptoPriceRow(coin_id=coin, date=d, price_usd=round(price, 2)))
+                    added += 1
 
-                prices = data.get("prices", [])
-                market_caps = data.get("market_caps", [])
-
-                # Build market cap lookup by date
-                mc_by_date = {}
-                for mc in market_caps:
-                    d = date.fromtimestamp(mc[0] / 1000)
-                    mc_by_date[d] = int(mc[1]) if mc[1] else None
-
-                added = 0
-                seen_dates = set()
-                for point in prices:
-                    d = date.fromtimestamp(point[0] / 1000)
-                    if d in seen_dates:
-                        continue
-                    seen_dates.add(d)
-                    if last_date and d <= last_date:
-                        continue
-                    price = point[1]
-                    if price is not None:
-                        session.add(CryptoPriceRow(
-                            coin_id=coin, date=d, price_usd=round(price, 4),
-                            market_cap_usd=mc_by_date.get(d)
-                        ))
-                        added += 1
-
-                total_added += added
-                log.info(f"  {coin}: +{added} records")
-                await session.flush()
-                time.sleep(6)  # CoinGecko free: 10-30 calls/min
+            total_added += added
+            log.info(f"  {coin}: +{added} records")
+            await session.flush()
+            time.sleep(1)
 
         run.status = "completed"
         run.records_added = total_added
