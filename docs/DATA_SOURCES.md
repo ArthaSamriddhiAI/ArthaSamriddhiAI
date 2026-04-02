@@ -1,76 +1,162 @@
 # ArthaSamriddhiAI — Data Sources Matrix
 
 ## Overview
-This document maps every asset class to its data sources, pipeline status, and Bloomberg Terminal opportunities.
+Complete mapping of every asset class to its data sources, pipeline status, Bloomberg Terminal opportunities, and implementation roadmap.
+
+**Last Updated:** April 2026
 
 ---
 
-## Data Sources by Asset Class
+## Master Data Sources Matrix
 
-| # | Asset Class | Primary Source | Status | Connector | Update Freq | Scheduler | Format | Bloomberg Terminal Value |
-|---|------------|---------------|--------|-----------|-------------|-----------|--------|------------------------|
-| **1** | **Stocks (NSE/BSE)** | Yahoo Finance (`yfinance`) | **CONNECTED** | `stock_pipeline.py` | Daily | **Yes** (4AM IST) | symbol, date, adj_close, volume | **HIGH** — BDH for corporate actions-adjusted prices, fundamental data (PE, PB, ROE, EPS), insider holdings, analyst consensus, short interest. Fields: `PX_LAST`, `PE_RATIO`, `BEST_EPS`, `SHORT_INT`. Tickers: `RELIANCE IN Equity` |
-| **2** | **ETFs** | Yahoo Finance (`yfinance`) | **Partial** — needs tickers added | Same pipeline | Daily | **Yes** | Same as stocks | **MEDIUM** — BDH for NAV vs market price discount/premium, tracking error, AUM, expense ratio. Fields: `FUND_NET_ASSET_VAL`, `FUND_TOTAL_ASSETS`. Tickers: `NIFTYBEES IN Equity` |
-| **3** | **Mutual Funds** | MFAPI (`api.mfapi.in`) | **CONNECTED** | `mf_pipeline.py` | Daily NAV | **Yes** (4AM IST) | scheme_code, date, nav | **HIGH** — BDH for scheme-level risk metrics (Sharpe, Sortino, Information Ratio, max drawdown), portfolio holdings, sector allocation, AUM history, expense ratio trends. Fields: `FUND_SHARPE_RATIO`, `FUND_HOLDINGS`. Use `FUND <GO>` search. |
-| **4** | **Gold** | Metals-API / GoldAPI.io | **NOT CONNECTED** | Needs adapter | Daily | No | date, price_inr, price_usd | **HIGH** — BDH for MCX Gold futures, LBMA fix, Gold ETF flows, COMEX open interest, Gold/Silver ratio, central bank reserves. Tickers: `XAU Curncy`, `GOLD IN Equity`, `MCX Gold`. Fields: `PX_LAST`, `OPEN_INT` |
-| **5** | **Silver** | Metals-API / MetalpriceAPI | **NOT CONNECTED** | Needs adapter | Daily | No | date, price_inr, price_usd | **HIGH** — Same as Gold. Tickers: `XAG Curncy`, `SLVR IN Equity`. MCX Silver futures data. |
-| **6** | **Other Commodities** | Metals.Dev / MCX data | **NOT CONNECTED** | Needs adapter | Daily | No | commodity, date, price | **HIGH** — BDH for crude oil (Brent/WTI), natural gas, copper, aluminum from MCX/NCDEX. Tickers: `CO1 Comdty` (Brent), `CL1 Comdty` (WTI). Full futures curves available. |
-| **7** | **Govt Bonds / G-Secs** | FRED API (10Y yield) | **NOT CONNECTED** | Needs adapter | Monthly/Daily | No | tenor, date, yield_pct | **CRITICAL** — Bloomberg is the gold standard for Indian G-Sec data. Full yield curve (1Y-40Y), real-time NDS-OM prices, OIS rates, repo rates. Tickers: `GIND10YR Index`, `INROIS1Y Index`. BDH fields: `YLD_YTM_MID`, `PX_BID`, `PX_ASK`. Use `GC <GO>` for yield curves. |
-| **8** | **Corporate Bonds** | No free API | **NOT CONNECTED** | Manual/CSV upload | Ad hoc | No | isin, issuer, coupon, ytm, rating | **CRITICAL** — Bloomberg is the primary source. Search via `SRCH <GO>` with India filter. BDH for YTM, OAS, Z-spread, credit rating history, issue size, callability. Tickers: `[ISIN] Corp`. Fields: `YLD_YTM_MID`, `RTG_SP`, `RTG_MOODY`, `CRNCY_ADJ_OAS`. |
-| **9** | **Fixed Deposits** | RBI / Bank websites | **NOT CONNECTED** | Manual/reference table | Monthly | No | bank, tenor, rate_pct | **LOW** — Bloomberg has limited FD data. Better sourced directly from bank websites or RBI. |
-| **10** | **PMS** | PMS Bazaar / SEBI | **NOT CONNECTED** | Manual/CSV upload | Monthly | No | pms_name, strategy, aum, returns | **MEDIUM** — Some PMS strategies are tracked. Use `FUND <GO>` and filter by country=India, fund type=Portfolio Management. Limited but may have top PMS houses (ASK, Marcellus, etc.). Fields: `FUND_NET_ASSET_VAL`, `FUND_TOTAL_ASSETS`. |
-| **11** | **AIF** | SEBI disclosures | **NOT CONNECTED** | Manual/CSV upload | Quarterly | No | aif_name, category, irr, tvpi | **LOW-MEDIUM** — Category III AIFs (hedge funds) may have Bloomberg tickers. Cat I/II limited. Use `FUND <GO>` search. SEBI quarterly reports remain primary source. |
-| **12** | **Unlisted Equity / Pre-IPO** | No standard source | **NOT CONNECTED** | Manual entry | Ad hoc | No | company, valuation, source | **MEDIUM** — Bloomberg has some unlisted company data via `EQUITY <GO>` search (revenue, employee count, funding rounds). For pre-IPO companies filing DRHP, use `IPO <GO>`. Limited pricing data. |
-| **13** | **Real Estate** | NHB RESIDEX / Manual | **NOT CONNECTED** | Manual entry | Quarterly | No | location, value, rental_yield | **LOW** — Bloomberg has REITs (Embassy, Mindspace, Brookfield). Tickers: `EMBASSY IN Equity`. For residential index data, NHB RESIDEX is better. |
-| **14** | **Insurance (ULIP NAVs)** | Insurer websites | **NOT CONNECTED** | Needs scraper | Daily | No | fund_name, nav, date | **LOW** — Most ULIP NAVs not on Bloomberg. Direct insurer websites or IRDA data preferred. |
-| **15** | **Crypto** | CoinGecko API (free) | **NOT CONNECTED** | Needs adapter | Daily | No | coin, price_inr, market_cap | **MEDIUM** — Bloomberg tracks major crypto. Tickers: `XBTUSD Curncy` (Bitcoin), `XETUSD Curncy` (Ethereum). BDH for institutional-grade OHLCV data. |
-| **16** | **Forex** | FRED / ExchangeRate-API | **NOT CONNECTED** | Needs adapter | Daily | No | pair, date, rate | **HIGH** — Bloomberg is definitive for FX. Tickers: `USDINR Curncy`, `EURINR Curncy`. BDH for spot, forward points, NDF, implied vol. Fields: `PX_LAST`, `FWD_RATE`. |
-| **17** | **Indices** | Yahoo Finance (`yfinance`) | **Partial** | Same pipeline | Daily | **Yes** | Same as stocks | **HIGH** — Bloomberg has Nifty 50 constituents, sector indices, factor indices. Tickers: `NIFTY Index`, `SENSEX Index`. BDH for index-level PE, PB, dividend yield, earnings growth. Fields: `INDX_MWEIGHT` for constituent weights. |
-| **18** | **Derivatives (F&O)** | NSE website / Manual | **NOT CONNECTED** | Needs adapter | Daily | No | symbol, expiry, strike, oi, premium | **CRITICAL** — Bloomberg provides full options chains, implied volatility surfaces, Greeks, open interest. Use `OMON <GO>`. Tickers: `NIFTY IN Index` + option chain. Fields: `IVOL_MID`, `OPEN_INT`, `OPT_DELTA`. |
-| **19** | **Macro / Economic** | RBI DBIE / FRED | **NOT CONNECTED** | Needs adapter | Monthly/Quarterly | No | indicator, date, value | **CRITICAL** — Bloomberg ECST function. GDP, CPI, IIP, PMI, forex reserves, FII/DII flows. Tickers: `INGDPY% Index` (GDP), `INFUTOTY Index` (CPI). Use `ECST <GO>` for India economic dashboard. |
-
----
-
-## Bloomberg Terminal Unique Advantages (Not Available from Free Sources)
-
-| Data Type | Bloomberg Function | Why It's Cutting-Edge |
-|-----------|-------------------|----------------------|
-| **Analyst Consensus** | `ANR <GO>` | Buy/sell/hold ratings, target prices, EPS estimates from 30+ brokerages |
-| **Ownership / Institutional Holdings** | `OWN <GO>` | FII/DII/MF/Insurance holding patterns, changes quarter-over-quarter |
-| **ESG Scores** | `ESG <GO>` | Bloomberg ESG scores, carbon intensity, governance metrics per company |
-| **Credit Risk (CDS Spreads)** | `CDSW <GO>` | 5Y CDS spreads for Indian corporates and sovereign — real market-priced credit risk |
-| **Implied Volatility Surface** | `OVDV <GO>` | Full vol surface for Nifty options — term structure, skew, smile |
-| **Fund Flow Data** | `FLOW <GO>` | Real-time FII/DII daily flows, sector-wise allocation shifts |
-| **Supply Chain Mapping** | `SPLC <GO>` | Revenue exposure by customer/supplier for any company |
-| **Earnings Transcripts** | `NT <GO>` | Full text of earnings call transcripts — can feed into NLP analysis |
-| **M&A / Deal Analytics** | `MA <GO>` | Transaction comps, premium analysis, deal pipeline |
-| **Custom Screening** | `EQS <GO>` | Multi-factor stock screening with 5000+ fields |
-| **Portfolio Analytics** | `PORT <GO>` | Upload portfolio, get risk decomposition, factor exposure, VaR |
+| # | Asset Class | Primary Free Source | Bloomberg Source | Pipeline Status | Connector | Update Freq | Scheduler (Y/N) | Data Format | Bloomberg Value | Bloomberg Tickers / Fields | Notes |
+|---|------------|-------------------|-----------------|----------------|-----------|-------------|-----------------|-------------|----------------|---------------------------|-------|
+| 1 | **Stocks (NSE/BSE)** | Yahoo Finance (`yfinance`) | BDH: `PX_LAST`, `VOLUME` | **CONNECTED** | `stock_pipeline.py` | Daily | **Y** (4AM IST) | symbol, date, adj_close, volume | **HIGH** — Fundamentals (PE, PB, ROE, EPS), analyst consensus, insider holdings, short interest not available from yfinance | `RELIANCE IN Equity` / `PX_LAST`, `PE_RATIO`, `BEST_EPS`, `RETURN_COM_EQY`, `VOLATILITY_260D`, `BETA_RAW_OVERRIDABLE`, `SHORT_INT` | 452 of 501 Nifty 500 loaded. 1M+ records. 10yr backfill done. Bloomberg adds fundamentals + analyst layer. |
+| 2 | **ETFs** | Yahoo Finance (`yfinance`) | BDH: `FUND_NET_ASSET_VAL` | **Partial** — tickers need adding to `stock_universe` | Same `stock_pipeline.py` | Daily | **Y** (same pipeline) | symbol, date, adj_close, volume | **MEDIUM** — NAV vs market price discount/premium, tracking error, AUM, expense ratio | `NIFTYBEES IN Equity`, `GOLDBEES IN Equity`, `BANKBEES IN Equity` / `FUND_NET_ASSET_VAL`, `FUND_TOTAL_ASSETS`, `FUND_EXPENSE_RATIO` | Zero new code needed — just add ETF tickers (NIFTYBEES.NS, GOLDBEES.NS, BANKBEES.NS, etc.) to stock_universe table. |
+| 3 | **Mutual Funds** | MFAPI (`api.mfapi.in`) | `FUND <GO>` search | **CONNECTED** | `mf_pipeline.py` | Daily NAV | **Y** (4AM IST) | scheme_code, date, nav | **HIGH** — Risk metrics (Sharpe, Sortino, Info Ratio, max drawdown), portfolio holdings, sector allocation, AUM history, expense ratio trends — none available from MFAPI | `SBIMCEQ IN Equity` (SBI Bluechip), `HABOREG IN Equity` (HDFC Top 100) / `FUND_SHARPE_RATIO`, `FUND_SORTINO_RATIO`, `FUND_MAX_DRAWDOWN`, `FUND_HOLDINGS`, `FUND_SECTOR_ALLOCATION` | 50 schemes seeded. 72K+ NAV records. Bloomberg adds risk-adjusted metrics. Expand universe by adding scheme codes to `universe.py`. |
+| 4 | **Gold** | Metals-API / GoldAPI.io (free tier) | BDH: `XAU Curncy` | **NOT CONNECTED** | Needs `commodity_pipeline.py` | Daily (EOD spot) | **N** | date, price_per_gram_inr, price_per_oz_usd | **HIGH** — MCX Gold futures, LBMA London Fix, COMEX open interest, Gold/Silver ratio, central bank gold reserves, Gold ETF fund flows | `XAU Curncy` (spot USD/oz), `GOLDINR Index` (INR/10g), `MAUGOLD Index` (MCX near-month) / `PX_LAST`, `OPEN_INT` | Free API: GoldAPI.io (no auth, JSON). Also available via GOLDBEES.NS in yfinance (Gold ETF proxy). Bloomberg gives MCX futures + institutional flows. |
+| 5 | **Silver** | Metals-API / MetalpriceAPI (free tier) | BDH: `XAG Curncy` | **NOT CONNECTED** | Same `commodity_pipeline.py` | Daily (EOD spot) | **N** | date, price_per_kg_inr, price_per_oz_usd | **HIGH** — MCX Silver futures, LBMA fix, Gold/Silver ratio | `XAG Curncy` (spot USD/oz), `SLVR IN Equity` (Silver ETF), `MAUSILVE Index` (MCX) / `PX_LAST` | Same adapter as Gold. SILVERBEES.NS available as yfinance proxy. |
+| 6 | **Other Commodities** (Crude, Copper, Natural Gas, Aluminum) | Metals.Dev (100 req/mo free) | BDH: `CO1 Comdty`, `CL1 Comdty` | **NOT CONNECTED** | Needs `commodity_pipeline.py` | Daily | **N** | commodity, date, price, currency | **HIGH** — Full MCX/NCDEX futures curves, Brent/WTI crude, copper, aluminum, natural gas. Open interest, contango/backwardation analysis | `CO1 Comdty` (Brent), `CL1 Comdty` (WTI), `HG1 Comdty` (Copper), `NG1 Comdty` (Nat Gas), `LA1 Comdty` (Aluminum) / `PX_LAST`, `OPEN_INT`, `FUT_CUR_GEN_TICKER` | Limited free APIs for Indian MCX data. Bloomberg is the primary source for futures curves and commodity analytics. |
+| 7 | **Govt Bonds / G-Secs** | FRED API (free, 10Y yield only) | `GC <GO>` yield curves | **NOT CONNECTED** | Needs `bond_pipeline.py` | FRED: Monthly. Bloomberg: Daily | **N** | tenor, date, yield_pct | **CRITICAL** — Bloomberg is the gold standard. Full yield curve (1Y to 40Y), real-time NDS-OM prices, OIS rates, repo rate history, T-bill rates. No adequate free alternative for the full curve | `GIND1YR Index` through `GIND30YR Index` (full tenor curve), `INRPYLDP Index` (RBI repo rate), `INROIS1Y Index` (OIS) / `PX_LAST`, `YLD_YTM_MID`, `PX_BID`, `PX_ASK` | FRED gives only 10Y benchmark (monthly). RBI DBIE has some data but no API. CCIL publishes daily but no free API. Bloomberg is the only practical source for the full yield curve. |
+| 8 | **Corporate Bonds** | No free API available | `SRCH <GO>` with India filter | **NOT CONNECTED** | Manual CSV upload + `/api/v1/data/upload` (planned) | Ad hoc / Monthly | **N** | isin, issuer, coupon, ytm, oas, rating, maturity, issue_size | **CRITICAL** — Bloomberg is the primary source. YTM, OAS, Z-spread, credit rating history (S&P, Moody's, Fitch, CRISIL, CARE), issue size, callability, sector classification | `[ISIN] Corp` / `YLD_YTM_MID`, `CRNCY_ADJ_OAS`, `RTG_SP`, `RTG_MOODY`, `RTG_FITCH`, `CPN`, `MATURITY`, `ISSUE_SZ`, `CALLABLE` | No free API exists for Indian corporate bonds. Bloomberg + CSV upload is the only viable path. Student extracts via `SRCH <GO>`, exports to CSV, uploads to platform. |
+| 9 | **Fixed Deposits** | RBI website / Individual bank websites | Limited | **NOT CONNECTED** | Manual reference table | Monthly | **N** | bank, tenor_months, rate_pct, effective_date, senior_citizen_rate | **LOW** — Bloomberg has limited FD data for India. Better sourced directly from bank websites or RBI master circulars | N/A | FD rates change infrequently. Maintain a static reference table with ~15-20 major banks. Manual update monthly. Not a pipeline candidate. |
+| 10 | **PMS (Portfolio Mgmt Services)** | PMS Bazaar / SEBI monthly disclosures | `FUND <GO>` (partial) | **NOT CONNECTED** | Manual CSV upload | Monthly (performance) | **N** | pms_name, manager, strategy, aum_cr, returns_1m/3m/6m/1yr/3yr/5yr, min_investment, benchmark | **MEDIUM** — Top PMS houses (ASK, Marcellus, Unifi, IIFL, Kotak) may have Bloomberg tickers. Use `FUND <GO>` filter: country=India, type=Portfolio Management | `[PMS ticker] IN Equity` (if listed) / `FUND_NET_ASSET_VAL`, `FUND_TOTAL_ASSETS`, `FUND_YTD_RETURN`, `FUND_1_YEAR_RETURN` | No free API. SEBI mandates monthly disclosure. PMS Bazaar aggregates data. Student checks Bloomberg for available tickers, supplements with SEBI/PMS Bazaar CSV. |
+| 11 | **AIF (Alternative Investment Funds)** | SEBI quarterly disclosures | `FUND <GO>` (limited) | **NOT CONNECTED** | Manual CSV upload | Quarterly | **N** | aif_name, category (I/II/III), manager, vintage_year, irr, tvpi, dpi, commitment_cr, drawdown_pct | **LOW-MEDIUM** — Category III AIFs (long-short, hedge funds) more likely on Bloomberg. Cat I (infra, social) and Cat II (PE, debt) limited | Search via `FUND <GO>` | SEBI quarterly reports are the primary source. Bloomberg coverage of Indian AIFs is sparse. Manual CSV upload from SEBI filings. |
+| 12 | **Unlisted Equity / Pre-IPO** | No standard source | `EQUITY <GO>`, `IPO <GO>` | **NOT CONNECTED** | Manual entry only | Ad hoc (per valuation event) | **N** | company_name, valuation_date, price_per_share, implied_valuation_cr, valuation_method, source_document | **MEDIUM** — Bloomberg has some unlisted company data (revenue, headcount, funding rounds) via private company database. For pre-IPO, use `IPO <GO>` for DRHP filings. Limited pricing data | `[Company] IN Equity` (if available) / `SALES_REV_TURN`, `NUM_OF_EMPLOYEES`, `LATEST_DEAL_AMOUNT` | Inherently non-standard. Valuations from placement documents, DRHP filings, or broker estimates. Manual entry is the only reliable method. Bloomberg adds context but not pricing. |
+| 13 | **Real Estate** | NHB RESIDEX (index), Manual (property-level) | REITs only: `EMBASSY IN Equity` | **NOT CONNECTED** | Manual entry | Quarterly (index) / Ad hoc (property) | **N** | property_id/index_name, location, type, area_sqft, current_value_cr, rental_yield_pct, occupancy_pct | **LOW** — Bloomberg has Indian REITs (Embassy, Mindspace, Brookfield) with full financial data. For residential/commercial property, NHB RESIDEX index is better. No property-level Bloomberg data | `EMBASSY IN Equity`, `MINDSP IN Equity` / `PX_LAST`, `DVD_YLD_IND`, `OCCUPANCY_RATE` | NHB RESIDEX for city-level residential index. REIT data from Bloomberg/yfinance. Individual property valuations are manual. |
+| 14 | **Insurance (ULIP NAVs)** | Individual insurer websites (LIC, HDFC Life, ICICI Pru, etc.) | Very limited | **NOT CONNECTED** | Needs per-insurer scraper | Daily (NAV) | **N** | insurer, policy_name, fund_option, nav, date | **LOW** — Most ULIP fund NAVs not tracked on Bloomberg. Direct insurer websites or IRDA aggregated data preferred. Insurance company stocks available (`HDFCLIFE IN Equity`) but not ULIP fund NAVs | N/A | Low priority. Each insurer publishes NAVs on their website. No unified API exists. Consider building only if significant client exposure to ULIPs. |
+| 15 | **Crypto** | CoinGecko API (free, 30 calls/min) | BDH: `XBTUSD Curncy` | **NOT CONNECTED** | Needs `crypto_pipeline.py` | Daily / Hourly (if needed) | **N** | coin_id, date, price_inr, price_usd, market_cap_usd, volume_24h | **MEDIUM** — Bloomberg tracks major crypto (BTC, ETH, SOL, etc.) with institutional-grade OHLCV. More reliable than free APIs for historical data | `XBTUSD Curncy` (Bitcoin), `XETUSD Curncy` (Ethereum) / `PX_LAST`, `VOLUME`, `CUR_MKT_CAP` | CoinGecko free tier is adequate for daily prices. Bloomberg adds institutional-grade data quality and derivatives (BTC futures, options). Only needed if HNI clients have crypto exposure. |
+| 16 | **Forex (Currency Pairs)** | ExchangeRate-API (free) / FRED | BDH: `USDINR Curncy` | **NOT CONNECTED** | Needs `forex_pipeline.py` | Daily | **N** | pair, date, rate | **HIGH** — Bloomberg is definitive for FX. Spot rates, forward points (1W to 5Y), NDF rates, implied volatility, cross-currency basis. Essential for NRI client portfolios | `USDINR Curncy`, `EURINR Curncy`, `GBPINR Curncy`, `DXY Curncy` (Dollar Index) / `PX_LAST`, `FWD_RATE`, `IVOL_MID` | Free APIs give spot only. Bloomberg gives forward curves, NDF, and vol — critical for NRI hedging analysis. |
+| 17 | **Indices** (Nifty 50, Sensex, Sectoral, Factor) | Yahoo Finance (`yfinance`) | BDH: `NIFTY Index` | **Partial** — tickers need adding | Same `stock_pipeline.py` | Daily | **Y** (same pipeline) | index, date, close_value | **HIGH** — Nifty 50 constituents with weights, sector indices, factor indices (momentum, quality, value). Index-level PE, PB, dividend yield, earnings growth | `NIFTY Index`, `SENSEX Index`, `NSEMDCP50 Index` (Midcap), `NSEIT Index` (IT) / `PX_LAST`, `INDX_MWEIGHT` (constituent weights), `PE_RATIO`, `DVD_YLD_IND` | Add index tickers to stock_universe: ^NSEI, ^BSESN, ^NSEMDCP50. Bloomberg adds constituent weights and index-level fundamentals. |
+| 18 | **Derivatives (F&O)** | NSE website (bhav copy) / Manual | `OMON <GO>`, `OVDV <GO>` | **NOT CONNECTED** | Needs adapter (NSE bhav copy or Bloomberg CSV) | Daily | **N** | symbol, expiry, strike, option_type, oi, volume, premium, iv, delta | **CRITICAL** — Bloomberg provides full options chains, implied volatility surfaces (term structure, skew, smile), Greeks, historical open interest. No adequate free API | `NIFTY IN Index` (then `OMON <GO>` for chain) / `IVOL_MID`, `OPEN_INT`, `OPT_DELTA`, `OPT_GAMMA`, `OPT_VEGA` | NSE publishes daily bhav copies (CSV) for F&O but no API. Bloomberg is the only practical source for vol surface, Greeks, and historical IV. India VIX: `INVIXN Index`. |
+| 19 | **Macro / Economic Indicators** | RBI DBIE (download) / FRED API | `ECST <GO>` | **NOT CONNECTED** | Needs `macro_pipeline.py` | Monthly / Quarterly | **N** | indicator_name, date, value, unit | **CRITICAL** — Bloomberg ECST has comprehensive India macro dashboard: GDP, CPI, IIP, PMI, forex reserves, FII/DII flows, money supply, current account, fiscal deficit — all in one place with history | `INGDPY% Index` (GDP), `INFUTOTY Index` (CPI), `INPMMI Index` (PMI), `INRPYLDP Index` (Repo rate), `MAHESSION Index` (FII flows), `INFORRES Index` (Forex reserves) / `PX_LAST` | FRED has some India indicators (free API). RBI DBIE has comprehensive data but no REST API (download only). Bloomberg consolidates everything with consistent formatting and history. |
+| 20 | **ESG Scores & Sustainability** | No free source for India | `ESG <GO>` | **NOT CONNECTED** | Bloomberg CSV upload | Quarterly | **N** | symbol, env_score, social_score, gov_score, esg_combined, carbon_intensity | **HIGH** (Bloomberg exclusive) — Bloomberg ESG disclosure scores, carbon emissions (Scope 1/2/3), governance metrics, controversies. Essential for ESG-mandated HNI clients (like Ms. Ananya Bhat scenario) | `[Ticker]` then `ESG <GO>` / `ESG_DISCLOSURE_SCORE`, `ENVIRON_DISCLOSURE_SCORE`, `SOCIAL_DISCLOSURE_SCORE`, `GOVNCE_DISCLOSURE_SCORE`, `CARBON_EMISSIONS_SCOPE_1` | No free ESG data source for Indian companies. Bloomberg is the primary source. MSCI ESG and Sustainalytics are paid alternatives. Student extracts quarterly for Nifty 500. |
+| 21 | **Analyst Consensus & Ratings** | No free source | `ANR <GO>` | **NOT CONNECTED** | Bloomberg CSV upload | Monthly | **N** | symbol, target_price, consensus_rating, buy_count, hold_count, sell_count, eps_estimate | **HIGH** (Bloomberg exclusive) — Consensus target prices, EPS estimates, buy/sell/hold from 30+ brokerages per stock. Critical for agent reasoning on fair value | `[Ticker]` then `ANR <GO>` / `BEST_TARGET_PRICE`, `BEST_ANALYST_RATING`, `TOT_BUY_REC`, `TOT_SELL_REC`, `BEST_EPS`, `BEST_EBITDA` | Not available from any free source. Student extracts monthly for top 100-200 stocks. Feeds directly into allocation and risk agents. |
+| 22 | **Institutional Ownership** (FII/DII/MF/Promoter) | NSE/BSE bulk deals (partial) | `OWN <GO>` | **NOT CONNECTED** | Bloomberg CSV upload | Monthly / Quarterly | **N** | symbol, promoter_pct, fii_pct, dii_pct, mf_pct, insurance_pct, top_holders | **HIGH** (Bloomberg exclusive) — Full ownership breakdown with quarter-over-quarter changes. FII/DII/MF/Insurance/Promoter splits. Top 20 institutional holders by name | `[Ticker]` then `OWN <GO>` / `EQY_INST_PCT_SH_OUT`, `INSIDER_HOLDING_PCT`, `EQY_SH_OUT_TOT` + `BDS("TOP_20_HOLDERS_PUBLIC_FILINGS")` | SEBI shareholding patterns available quarterly (free) but fragmented. Bloomberg consolidates ownership data cleanly. |
+| 23 | **Credit Risk (CDS Spreads)** | No free source | `CDSW <GO>` | **NOT CONNECTED** | Bloomberg CSV upload | Weekly | **N** | entity, tenor, spread_bps, date | **CRITICAL** (Bloomberg exclusive) — 5Y CDS spreads for Indian sovereign and top corporates. Market-implied credit risk — far more responsive than rating agency changes | `INDIA CDS USD SR 5Y Corp` (sovereign), `[Entity] CDS` / `PX_LAST` | Available only on Bloomberg. Critical for corporate bond analysis and credit risk interpretation agent. |
+| 24 | **Supply Chain / Revenue Exposure** | No free source | `SPLC <GO>` | **NOT CONNECTED** | Bloomberg CSV upload | Quarterly | **N** | company, customer/supplier, revenue_pct, relationship_type | **MEDIUM** (Bloomberg exclusive) — Revenue exposure by customer/supplier for any listed company. Useful for concentration risk analysis in portfolios | `[Ticker]` then `SPLC <GO>` | Unique Bloomberg dataset. Useful for understanding portfolio-level supply chain concentration risk. Ad hoc extraction. |
 
 ---
 
-## Data Pipeline Architecture (Current + Planned)
+## Summary by Status
+
+| Status | Count | Asset Classes |
+|--------|-------|--------------|
+| **CONNECTED** (pipeline live, scheduler active) | 3 | Stocks, Mutual Funds, Indices (partial via same pipeline) |
+| **Partial** (pipeline exists, needs ticker expansion) | 2 | ETFs, Indices |
+| **NOT CONNECTED — Free API available** | 5 | Gold, Silver, Other Commodities, Crypto, Forex |
+| **NOT CONNECTED — Bloomberg primary source** | 7 | Govt Bonds, Corporate Bonds, Derivatives, Macro, ESG, Analyst Consensus, Ownership |
+| **NOT CONNECTED — Bloomberg exclusive** | 2 | CDS Spreads, Supply Chain |
+| **NOT CONNECTED — Manual only** | 5 | FDs, PMS, AIF, Unlisted Equity, Real Estate |
+| **NOT CONNECTED — Low priority** | 1 | Insurance/ULIP |
+
+---
+
+## Bloomberg Terminal Value Rating
+
+| Rating | Count | Asset Classes | Action |
+|--------|-------|--------------|--------|
+| **CRITICAL** (no adequate free alternative) | 5 | Govt Bonds, Corporate Bonds, Derivatives/F&O, Macro Economic, CDS Spreads | Student must extract from Bloomberg — no other viable source |
+| **HIGH** (Bloomberg adds unique enrichment) | 8 | Stocks, MFs, Gold, Silver, Commodities, Forex, Indices, ESG, Analyst Consensus, Ownership | Free API for basic data + Bloomberg for enrichment layer |
+| **MEDIUM** (Bloomberg has partial coverage) | 4 | ETFs, PMS, Unlisted/Pre-IPO, Crypto, Supply Chain | Check Bloomberg availability first, supplement with manual |
+| **LOW** (better sourced elsewhere) | 4 | FDs, AIF, Real Estate, Insurance/ULIP | Bloomberg not the primary path |
+
+---
+
+## Bloomberg Terminal Unique Data (Not Available from Any Free Source)
+
+| # | Data Type | Bloomberg Function | Why It's Cutting-Edge | Extraction Frequency |
+|---|-----------|-------------------|----------------------|---------------------|
+| 1 | **Analyst Consensus** | `ANR <GO>` | Buy/sell/hold ratings, target prices, EPS estimates from 30+ brokerages | Monthly |
+| 2 | **Institutional Ownership** | `OWN <GO>` | FII/DII/MF/Insurance holding patterns, quarter-over-quarter changes | Quarterly |
+| 3 | **ESG Scores** | `ESG <GO>` | Bloomberg ESG disclosure scores, carbon intensity, governance metrics per company | Quarterly |
+| 4 | **Credit Risk (CDS Spreads)** | `CDSW <GO>` | 5Y CDS spreads for Indian corporates and sovereign — market-priced credit risk | Weekly |
+| 5 | **Implied Volatility Surface** | `OVDV <GO>` | Full vol surface for Nifty options — term structure, skew, smile, historical IV | Daily |
+| 6 | **Fund Flow Data** | `FLOW <GO>` | Real-time FII/DII daily flows, sector-wise allocation shifts | Daily |
+| 7 | **Supply Chain Mapping** | `SPLC <GO>` | Revenue exposure by customer/supplier for any company | Quarterly |
+| 8 | **Earnings Transcripts** | `NT <GO>` | Full text of earnings call transcripts — can feed into NLP analysis | Per earnings |
+| 9 | **M&A / Deal Analytics** | `MA <GO>` | Transaction comps, premium analysis, deal pipeline for Indian M&A | Ad hoc |
+| 10 | **Custom Screening** | `EQS <GO>` | Multi-factor stock screening with 5000+ fields across all Indian stocks | Ad hoc |
+| 11 | **Portfolio Analytics** | `PORT <GO>` | Upload portfolio, get risk decomposition, factor exposure, VaR, stress testing | Ad hoc |
+| 12 | **Full Yield Curve** | `GC <GO>` | Indian G-Sec yield curve (1Y-40Y), OIS curve, T-bill rates — definitive source | Weekly |
+
+---
+
+## Data Pipeline Architecture
 
 ```
-Bloomberg Terminal (Student Access)
-  |
-  +-- Excel BDH/BDP/BDS --> CSV Export --> Upload Pipeline --> DB Tables
-  |
-  +-- Python blpapi/xbbg --> Direct API --> Pipeline Scripts --> DB Tables
-  |                         (requires terminal running on same machine)
+                        ┌─────────────────────────────────┐
+                        │   Bloomberg Terminal (Student)    │
+                        │   IMT CFM Lab Access             │
+                        └───────────┬─────────────────────┘
+                                    │
+                    ┌───────────────┼───────────────┐
+                    ▼               ▼               ▼
+             Excel BDH/BDP    Python xbbg     Manual Export
+             → CSV Export     → Direct API    → SRCH/EQS
+                    │               │               │
+                    └───────────────┼───────────────┘
+                                    ▼
+                          CSV Upload Pipeline
+                          /api/v1/data/upload
+                                    │
+                    ┌───────────────┼───────────────┐
+                    ▼               ▼               ▼
+              fundamentals    yield_curve     corp_bonds
+              esg_scores      macro_data      ownership
+              analyst_recs    cds_spreads     vol_surface
 
-Free APIs (Always Available)
-  |
-  +-- yfinance -----------> stock_pipeline.py -----> stock_prices (CONNECTED)
-  +-- MFAPI --------------> mf_pipeline.py -------> mf_navs (CONNECTED)
-  +-- niftystocks --------> universe.py ----------> stock_universe (CONNECTED)
-  +-- Metals-API ---------> commodity_pipeline.py -> commodity_prices (PLANNED)
-  +-- FRED API -----------> macro_pipeline.py -----> macro_indicators (PLANNED)
-  +-- CoinGecko ----------> crypto_pipeline.py ----> crypto_prices (PLANNED)
-  +-- ExchangeRate-API ---> forex_pipeline.py -----> forex_rates (PLANNED)
+    ════════════════════════════════════════════════════════
 
-Manual Upload (For Bloomberg-sourced / Non-API data)
-  |
-  +-- CSV Upload Endpoint -> /api/v1/data/upload --> Appropriate DB Table
-  +-- Supports: Corporate bonds, PMS, AIF, Unlisted equity, Real estate
+                    ┌───────────────────────────┐
+                    │   Free APIs (24/7 Auto)    │
+                    └───────────┬───────────────┘
+                                │
+         ┌──────────┬──────────┬──────────┬──────────┐
+         ▼          ▼          ▼          ▼          ▼
+      yfinance   MFAPI    Metals-API   FRED    CoinGecko
+         │          │          │          │          │
+         ▼          ▼          ▼          ▼          ▼
+    stock_prices mf_navs  commodity  macro_ind  crypto
+    (CONNECTED) (CONNECTED) (PLANNED) (PLANNED) (PLANNED)
+
+    ════════════════════════════════════════════════════════
+
+                    ┌───────────────────────────┐
+                    │   Manual Entry / CSV       │
+                    │   (No API Available)        │
+                    └───────────┬───────────────┘
+                                │
+         ┌──────────┬──────────┬──────────┬──────────┐
+         ▼          ▼          ▼          ▼          ▼
+       PMS       AIF      Unlisted   Real Estate   FDs
+     (Monthly) (Quarterly) (Ad hoc)  (Quarterly) (Monthly)
 ```
+
+---
+
+## Implementation Roadmap
+
+### Phase 1: Immediate (Zero Code — Expand Existing Pipelines)
+- Add ETF tickers to `stock_universe`: NIFTYBEES.NS, GOLDBEES.NS, BANKBEES.NS, LIQUIDBEES.NS
+- Add index tickers: ^NSEI, ^BSESN, ^NSEMDCP50
+- Expand MF universe: add more scheme codes to `universe.py`
+
+### Phase 2: Short-Term (New Adapters — Free APIs)
+- `commodity_pipeline.py` — Gold/Silver/Crude via Metals-API or GoldAPI.io
+- `forex_pipeline.py` — USD/INR, EUR/INR via ExchangeRate-API
+- `macro_pipeline.py` — GDP, CPI, PMI, Repo rate via FRED API
+- `crypto_pipeline.py` — BTC, ETH via CoinGecko
+
+### Phase 3: Bloomberg Integration (Student-Assisted)
+- Build CSV upload endpoint: `POST /api/v1/data/upload`
+- Define CSV templates for each Bloomberg extraction task
+- Student extracts data per BLOOMBERG_GUIDE.md schedule
+- Uploads are validated, versioned, and stored in appropriate tables
+
+### Phase 4: Manual Upload Portal (For Non-API Data)
+- PMS performance data (monthly from PMS Bazaar / SEBI)
+- AIF quarterly reports (from SEBI)
+- Corporate bond universe (from Bloomberg SRCH export)
+- Unlisted equity valuations (manual entry)
+- FD rate reference table (manual monthly update)
