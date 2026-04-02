@@ -1,0 +1,2 @@
+scheme_name,bloomberg_ticker,nav,aum,sharpe_ratio,sortino_ratio,max_drawdown,information_ratio,alpha,beta,expense_ratio,inception_date
+SBI Bluechip Fund,SBIMCEQ IN,82.45,42000,1.23,1.56,-18.5,0.45,2.1,0.92,1.72,2006-02-14

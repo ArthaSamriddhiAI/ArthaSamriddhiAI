@@ -23,6 +23,11 @@ log = logging.getLogger("artha.pipeline")
 async def _run(args: argparse.Namespace) -> None:
     # Import models to register them with Base
     import artha.data.models  # noqa: F401
+    import artha.data.commodity_pipeline  # noqa: F401
+    import artha.data.forex_pipeline  # noqa: F401
+    import artha.data.macro_pipeline  # noqa: F401
+    import artha.data.crypto_pipeline  # noqa: F401
+    import artha.data.upload  # noqa: F401
     import artha.evidence.models  # noqa: F401
     import artha.governance.models  # noqa: F401
     import artha.accountability.models  # noqa: F401
@@ -69,6 +74,38 @@ async def _run(args: argparse.Namespace) -> None:
             await session.commit()
             log.info(f"MF pipeline run: {run_id}")
 
+        # Commodity pipeline
+        if args.commodities:
+            from artha.data.commodity_pipeline import run_commodity_pipeline
+            log.info("=== Running commodity price pipeline ===")
+            run_id = await run_commodity_pipeline(session, initial=args.initial)
+            await session.commit()
+            log.info(f"Commodity pipeline run: {run_id}")
+
+        # Forex pipeline
+        if args.forex:
+            from artha.data.forex_pipeline import run_forex_pipeline
+            log.info("=== Running forex rate pipeline ===")
+            run_id = await run_forex_pipeline(session, initial=args.initial)
+            await session.commit()
+            log.info(f"Forex pipeline run: {run_id}")
+
+        # Macro pipeline
+        if args.macro:
+            from artha.data.macro_pipeline import run_macro_pipeline
+            log.info("=== Running macro indicator pipeline ===")
+            run_id = await run_macro_pipeline(session, initial=args.initial)
+            await session.commit()
+            log.info(f"Macro pipeline run: {run_id}")
+
+        # Crypto pipeline
+        if args.crypto:
+            from artha.data.crypto_pipeline import run_crypto_pipeline
+            log.info("=== Running crypto price pipeline ===")
+            run_id = await run_crypto_pipeline(session, initial=args.initial)
+            await session.commit()
+            log.info(f"Crypto pipeline run: {run_id}")
+
     await engine.dispose()
     log.info("=== Pipeline execution complete ===")
 
@@ -80,6 +117,11 @@ def main() -> None:
     parser.add_argument("--initial", action="store_true", help="Full 10-year backfill (default: incremental)")
     parser.add_argument("--refresh-universe", action="store_true", help="Refresh Nifty 500 constituent list")
     parser.add_argument("--seed-mf", action="store_true", help="Seed top 50 MF schemes")
+    parser.add_argument("--commodities", action="store_true", help="Run commodity price pipeline")
+    parser.add_argument("--forex", action="store_true", help="Run forex rate pipeline")
+    parser.add_argument("--macro", action="store_true", help="Run macro indicator pipeline")
+    parser.add_argument("--crypto", action="store_true", help="Run crypto price pipeline")
+    parser.add_argument("--all", action="store_true", help="Run all pipelines")
     parser.add_argument(
         "--db-url",
         default="sqlite+aiosqlite:///./artha.db",
@@ -87,7 +129,11 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if not any([args.stocks, args.mf, args.refresh_universe, args.seed_mf]):
+    if args.all:
+        args.stocks = args.mf = args.commodities = args.forex = args.macro = args.crypto = True
+
+    if not any([args.stocks, args.mf, args.refresh_universe, args.seed_mf,
+                args.commodities, args.forex, args.macro, args.crypto]):
         parser.print_help()
         sys.exit(1)
 
