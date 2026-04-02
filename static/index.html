@@ -104,65 +104,72 @@
     <div x-show="screen==='dashboard'" x-cloak>
       <div x-data="dashboardScreen()" x-init="load()">
         <div class="p-6">
-          <h2 class="text-2xl font-bold mb-6">Dashboard</h2>
-          <!-- Status cards -->
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div class="card p-4">
-              <p class="text-xs text-slate-500 uppercase tracking-wide">System Health</p>
-              <p class="text-2xl font-bold mt-1" :class="$store.system.health?.status==='ok'?'text-green-600':'text-red-600'"
-                 x-text="$store.system.health?.status==='ok'?'Healthy':'Down'"></p>
+          <h2 class="text-2xl font-bold mb-6">Advisor Dashboard</h2>
+
+          <!-- AUM + Client Summary -->
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6" x-show="advisor">
+            <div class="card p-4 border-l-4 border-blue-500">
+              <p class="text-xs text-slate-500 uppercase">Total AUM</p>
+              <p class="text-2xl font-bold mt-1 text-blue-600" x-text="'Rs '+(advisor?.total_aum>=10000000?(advisor.total_aum/10000000).toFixed(1)+' Cr':(advisor?.total_aum/100000).toFixed(1)+' L')"></p>
             </div>
             <div class="card p-4">
-              <p class="text-xs text-slate-500 uppercase tracking-wide">Kill Switch</p>
-              <p class="text-2xl font-bold mt-1" :class="$store.system.killSwitch?.enabled?'text-red-600':'text-green-600'"
-                 x-text="$store.system.killSwitch?.enabled?'ACTIVE':'Inactive'"></p>
+              <p class="text-xs text-slate-500 uppercase">Clients</p>
+              <p class="text-2xl font-bold mt-1" x-text="advisor?.client_count||0"></p>
             </div>
             <div class="card p-4">
-              <p class="text-xs text-slate-500 uppercase tracking-wide">LLM Provider</p>
-              <p class="text-2xl font-bold mt-1 text-blue-600">Mistral</p>
+              <p class="text-xs text-slate-500 uppercase">Total Gain/Loss</p>
+              <p class="text-2xl font-bold mt-1" :class="advisor?.total_gain_loss>=0?'text-green-600':'text-red-600'" x-text="(advisor?.total_gain_loss_pct>=0?'+':'')+advisor?.total_gain_loss_pct?.toFixed(1)+'%'"></p>
+            </div>
+            <div class="card p-4" :class="advisor?.attention_needed?'border-2 border-amber-400':''">
+              <p class="text-xs text-slate-500 uppercase">Need Attention</p>
+              <p class="text-2xl font-bold mt-1" :class="advisor?.attention_needed?'text-amber-600':'text-green-600'" x-text="advisor?.attention_needed||0"></p>
             </div>
             <div class="card p-4">
-              <p class="text-xs text-slate-500 uppercase tracking-wide">Total Decisions</p>
-              <p class="text-2xl font-bold mt-1" x-text="decisions.length"></p>
+              <p class="text-xs text-slate-500 uppercase">System</p>
+              <p class="text-lg font-bold mt-1" :class="$store.system.health?.status==='ok'?'text-green-600':'text-red-600'" x-text="$store.system.health?.status==='ok'?'Healthy':'Down'"></p>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Recent Decisions -->
-            <div class="card p-5">
-              <h3 class="font-semibold mb-3">Recent Decisions</h3>
-              <div x-show="decisions.length===0" class="text-sm text-slate-400 py-4">No decisions yet. Submit a governance intent to get started.</div>
-              <div class="space-y-2">
-                <template x-for="d in decisions.slice(0,10)" :key="d.decision_id||d">
-                  <a @click.prevent="window.location.hash='#/decision/'+(d.decision_id||d)" href="#"
-                     class="flex items-center justify-between p-2.5 rounded hover:bg-slate-50 text-sm border border-transparent hover:border-slate-200">
-                    <div>
-                      <div class="font-medium" x-text="d.client_name||utils.truncateId(d.decision_id||d)"></div>
-                      <div class="text-xs text-slate-400 mt-0.5">
-                        <span x-text="d.intent_type||''"></span>
-                        <span x-show="d.portfolio_value"> &middot; <span x-text="d.portfolio_value"></span></span>
-                        <span x-show="d.created_at"> &middot; <span x-text="utils.relativeTime(d.created_at)"></span></span>
-                      </div>
-                    </div>
-                    <span class="badge" :class="utils.statusBadge(d.status||'')" x-text="utils.statusLabel(d.status||'')"></span>
-                  </a>
-                </template>
-              </div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Client List -->
+            <div class="card p-5 lg:col-span-2">
+              <h3 class="font-semibold mb-3">Client Portfolios</h3>
+              <table class="w-full text-sm" x-show="advisor?.clients?.length">
+                <thead class="bg-slate-50"><tr><th class="px-3 py-2 text-left text-xs">Client</th><th class="px-3 py-2 text-right text-xs">AUM</th><th class="px-3 py-2 text-right text-xs">G/L %</th><th class="px-3 py-2 text-left text-xs">Risk</th><th class="px-3 py-2 text-left text-xs">Drift</th></tr></thead>
+                <tbody>
+                  <template x-for="c in advisor?.clients||[]" :key="c.investor_id">
+                    <tr class="border-t hover:bg-slate-50 cursor-pointer" @click="window.location.hash='#/portfolio/'+c.investor_id">
+                      <td class="px-3 py-2 font-medium" x-text="c.name"></td>
+                      <td class="px-3 py-2 text-right" x-text="c.aum>=10000000?(c.aum/10000000).toFixed(1)+' Cr':(c.aum/100000).toFixed(0)+' L'"></td>
+                      <td class="px-3 py-2 text-right font-medium" :class="c.gain_loss_pct>=0?'text-green-600':'text-red-600'" x-text="(c.gain_loss_pct>=0?'+':'')+c.gain_loss_pct+'%'"></td>
+                      <td class="px-3 py-2 text-xs" x-text="c.risk_category"></td>
+                      <td class="px-3 py-2"><span class="badge text-xs" :class="c.drift_status==='needs_rebalance'?'badge-escalation':'badge-approved'" x-text="c.drift_status==='needs_rebalance'?'Drift '+c.max_drift_pct+'%':'OK'"></span></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
             </div>
 
-            <!-- Quick Actions -->
-            <div class="card p-5">
-              <h3 class="font-semibold mb-3">Quick Actions</h3>
-              <div class="grid grid-cols-1 gap-2">
-                <button @click="window.location.hash='#/intent'" class="w-full text-left px-4 py-3 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-medium">
-                  + New Rebalance Intent
-                </button>
-                <button @click="window.location.hash='#/evidence'" class="w-full text-left px-4 py-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium">
-                  Explore Evidence Artifacts
-                </button>
-                <button @click="window.location.hash='#/help'" class="w-full text-left px-4 py-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium">
-                  EGA Architecture Guide
-                </button>
+            <!-- Market Brief + Quick Actions -->
+            <div class="space-y-4">
+              <div class="card p-5" x-show="marketBrief">
+                <h3 class="font-semibold mb-2">AI Market Brief</h3>
+                <p class="text-sm text-slate-600 leading-relaxed" x-text="marketBrief?.summary"></p>
+                <div x-show="marketBrief?.key_moves?.length" class="mt-2">
+                  <template x-for="m in marketBrief?.key_moves?.slice(0,4)||[]">
+                    <p class="text-xs text-slate-500 mt-1" x-text="'- '+m"></p>
+                  </template>
+                </div>
+                <p x-show="marketBrief?.outlook" class="text-xs text-blue-600 mt-2 font-medium" x-text="marketBrief.outlook"></p>
+              </div>
+
+              <div class="card p-5">
+                <h3 class="font-semibold mb-3">Quick Actions</h3>
+                <div class="space-y-2">
+                  <button @click="window.location.hash='#/intent'" class="w-full text-left px-3 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm">+ New Governance Intent</button>
+                  <button @click="window.location.hash='#/investors'" class="w-full text-left px-3 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm">Manage Investors</button>
+                  <button @click="window.location.hash='#/market'" class="w-full text-left px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm">Market Data</button>
+                </div>
               </div>
             </div>
           </div>
@@ -587,6 +594,7 @@
               </div>
             </div>
             <div class="flex gap-2">
+              <a :href="'/api/v1/portfolio/'+_currentId+'/report'" target="_blank" class="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm">Download Report</a>
               <label class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm cursor-pointer">
                 Import CSV
                 <input type="file" accept=".csv" class="hidden" @change="importCSV($event)">
@@ -618,64 +626,219 @@
             </div>
           </div>
 
-          <!-- Allocation -->
-          <div class="card p-5 mb-6">
-            <h3 class="font-semibold mb-4">Asset Allocation</h3>
-            <!-- Stacked bar -->
-            <div class="flex rounded-lg overflow-hidden h-8 mb-4">
-              <template x-for="a in portfolio?.allocation||[]" :key="a.asset_class">
-                <div class="h-full flex items-center justify-center text-xs text-white font-medium"
-                     :style="'width:'+a.percentage+'%;background:'+allocationColor(a.asset_class)"
-                     :title="a.label+': '+a.percentage+'%'"
-                     x-text="a.percentage>5?a.percentage.toFixed(0)+'%':''"></div>
-              </template>
+          <!-- Tabs -->
+          <div class="flex gap-0 border-b mb-4">
+            <button @click="ptab='overview'" class="tab" :class="ptab==='overview'&&'active'">Overview</button>
+            <button @click="ptab='performance';loadPerf()" class="tab" :class="ptab==='performance'&&'active'">Performance</button>
+            <button @click="ptab='rebalance';loadRebal()" class="tab" :class="ptab==='rebalance'&&'active'">Rebalance</button>
+            <button @click="ptab='scenarios';loadScenario()" class="tab" :class="ptab==='scenarios'&&'active'">Scenarios</button>
+            <button @click="ptab='tax';loadTax()" class="tab" :class="ptab==='tax'&&'active'">Tax</button>
+            <button @click="ptab='goals';loadGoals()" class="tab" :class="ptab==='goals'&&'active'">Goals</button>
+          </div>
+
+          <!-- OVERVIEW TAB -->
+          <div x-show="ptab==='overview'">
+            <!-- Allocation bar -->
+            <div class="card p-5 mb-4">
+              <h3 class="font-semibold mb-3">Asset Allocation</h3>
+              <div class="flex rounded-lg overflow-hidden h-8 mb-3">
+                <template x-for="a in portfolio?.allocation||[]" :key="a.asset_class">
+                  <div class="h-full flex items-center justify-center text-xs text-white font-medium" :style="'width:'+a.percentage+'%;background:'+allocationColor(a.asset_class)" x-text="a.percentage>5?a.percentage.toFixed(0)+'%':''"></div>
+                </template>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <template x-for="a in portfolio?.allocation||[]" :key="a.asset_class">
+                  <div class="flex items-center gap-2 text-sm"><div class="w-3 h-3 rounded-sm" :style="'background:'+allocationColor(a.asset_class)"></div><span x-text="a.label"></span><span class="ml-auto font-medium" x-text="a.percentage.toFixed(1)+'%'"></span></div>
+                </template>
+              </div>
             </div>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <template x-for="a in portfolio?.allocation||[]" :key="a.asset_class">
-                <div class="flex items-center gap-2 text-sm">
-                  <div class="w-3 h-3 rounded-sm" :style="'background:'+allocationColor(a.asset_class)"></div>
-                  <span x-text="a.label"></span>
-                  <span class="ml-auto font-medium" x-text="a.percentage.toFixed(1)+'%'"></span>
-                  <span class="text-slate-400 text-xs" x-text="'Rs '+formatINR(a.current_value)"></span>
-                </div>
-              </template>
+            <!-- Holdings -->
+            <div class="card overflow-hidden">
+              <div class="p-3 border-b flex items-center justify-between">
+                <h3 class="font-semibold text-sm">Holdings</h3>
+                <input type="text" x-model="searchHoldings" placeholder="Search..." class="px-2 py-1 border rounded text-xs w-48">
+              </div>
+              <table class="w-full text-xs">
+                <thead class="bg-slate-50"><tr><th class="px-2 py-2 text-left">Class</th><th class="px-2 py-2 text-left">Symbol</th><th class="px-2 py-2 text-left">Description</th><th class="px-2 py-2 text-right">Qty</th><th class="px-2 py-2 text-right">Cost</th><th class="px-2 py-2 text-right">Current</th><th class="px-2 py-2 text-right">Value</th><th class="px-2 py-2 text-right">G/L</th><th class="px-2 py-2 text-right">Return</th></tr></thead>
+                <tbody>
+                  <template x-for="h in filteredHoldings" :key="h.id">
+                    <tr class="border-t hover:bg-slate-50">
+                      <td class="px-2 py-1.5"><span class="badge badge-info" style="font-size:0.6rem" x-text="h.asset_class_label"></span></td>
+                      <td class="px-2 py-1.5 font-mono font-bold" x-text="h.symbol_or_id"></td>
+                      <td class="px-2 py-1.5" x-text="h.description"></td>
+                      <td class="px-2 py-1.5 text-right" x-text="h.quantity.toLocaleString()"></td>
+                      <td class="px-2 py-1.5 text-right" x-text="h.acquisition_price?.toLocaleString(undefined,{maximumFractionDigits:2})"></td>
+                      <td class="px-2 py-1.5 text-right" x-text="h.current_price?.toLocaleString(undefined,{maximumFractionDigits:2})||'-'"></td>
+                      <td class="px-2 py-1.5 text-right font-medium" x-text="formatINR(h.current_value)"></td>
+                      <td class="px-2 py-1.5 text-right" :class="h.gain_loss>=0?'text-green-600':'text-red-600'" x-text="(h.gain_loss>=0?'+':'')+formatINR(h.gain_loss)"></td>
+                      <td class="px-2 py-1.5 text-right font-medium" :class="h.gain_loss_pct>=0?'text-green-600':'text-red-600'" x-text="(h.gain_loss_pct>=0?'+':'')+h.gain_loss_pct?.toFixed(1)+'%'"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
             </div>
           </div>
 
-          <!-- Holdings Table -->
-          <div class="card overflow-hidden">
-            <div class="p-4 border-b flex items-center justify-between">
-              <h3 class="font-semibold">Holdings</h3>
-              <input type="text" x-model="searchHoldings" placeholder="Search holdings..." class="px-3 py-1.5 border rounded text-sm w-64">
-            </div>
-            <table class="w-full text-sm">
-              <thead class="bg-slate-50"><tr>
-                <th class="px-3 py-2 text-left text-xs">Asset Class</th>
-                <th class="px-3 py-2 text-left text-xs">Symbol</th>
-                <th class="px-3 py-2 text-left text-xs">Description</th>
-                <th class="px-3 py-2 text-right text-xs">Qty</th>
-                <th class="px-3 py-2 text-right text-xs">Avg Cost</th>
-                <th class="px-3 py-2 text-right text-xs">Current</th>
-                <th class="px-3 py-2 text-right text-xs">Value</th>
-                <th class="px-3 py-2 text-right text-xs">Gain/Loss</th>
-                <th class="px-3 py-2 text-right text-xs">Return %</th>
-              </tr></thead>
-              <tbody>
-                <template x-for="h in filteredHoldings" :key="h.id">
-                  <tr class="border-t hover:bg-slate-50">
-                    <td class="px-3 py-2"><span class="badge badge-info text-xs" x-text="h.asset_class_label"></span></td>
-                    <td class="px-3 py-2 font-mono font-bold text-xs" x-text="h.symbol_or_id"></td>
-                    <td class="px-3 py-2 text-xs" x-text="h.description"></td>
-                    <td class="px-3 py-2 text-right text-xs" x-text="h.quantity.toLocaleString()"></td>
-                    <td class="px-3 py-2 text-right text-xs" x-text="h.acquisition_price?.toLocaleString(undefined,{maximumFractionDigits:2})"></td>
-                    <td class="px-3 py-2 text-right text-xs" x-text="h.current_price?.toLocaleString(undefined,{maximumFractionDigits:2})||'-'"></td>
-                    <td class="px-3 py-2 text-right text-xs font-medium" x-text="formatINR(h.current_value)"></td>
-                    <td class="px-3 py-2 text-right text-xs" :class="h.gain_loss>=0?'text-green-600':'text-red-600'" x-text="(h.gain_loss>=0?'+':'')+formatINR(h.gain_loss)"></td>
-                    <td class="px-3 py-2 text-right text-xs font-medium" :class="h.gain_loss_pct>=0?'text-green-600':'text-red-600'" x-text="(h.gain_loss_pct>=0?'+':'')+h.gain_loss_pct?.toFixed(1)+'%'"></td>
-                  </tr>
+          <!-- PERFORMANCE TAB -->
+          <div x-show="ptab==='performance'">
+            <div x-show="!perfData" class="skeleton h-48 w-full"></div>
+            <div x-show="perfData" class="space-y-4">
+              <div class="card p-5">
+                <h3 class="font-semibold mb-3">Period Returns</h3>
+                <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
+                  <template x-for="[period, ret] in Object.entries(perfData?.period_returns||{})" :key="period">
+                    <div class="bg-slate-50 rounded-lg p-3 text-center">
+                      <p class="text-xs text-slate-400" x-text="period"></p>
+                      <p class="text-lg font-bold mt-1" :class="ret>=0?'text-green-600':'text-red-600'" x-text="ret!=null?(ret>=0?'+':'')+ret.toFixed(1)+'%':'N/A'"></p>
+                      <p class="text-xs mt-0.5" :class="perfData?.alpha?.[period]>=0?'text-green-500':'text-red-500'" x-text="perfData?.alpha?.[period]!=null?'Alpha: '+(perfData.alpha[period]>=0?'+':'')+perfData.alpha[period].toFixed(1)+'%':''"></p>
+                    </div>
+                  </template>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="card p-5">
+                  <h3 class="font-semibold mb-3 text-green-700">Top Performers</h3>
+                  <template x-for="t in perfData?.top_performers||[]"><div class="flex justify-between py-1.5 border-b text-sm"><span x-text="t.description"></span><span class="font-bold text-green-600" x-text="'+'+t.return_pct?.toFixed(1)+'%'"></span></div></template>
+                </div>
+                <div class="card p-5">
+                  <h3 class="font-semibold mb-3 text-red-700">Bottom Performers</h3>
+                  <template x-for="b in perfData?.bottom_performers||[]"><div class="flex justify-between py-1.5 border-b text-sm"><span x-text="b.description"></span><span class="font-bold text-red-600" x-text="b.return_pct?.toFixed(1)+'%'"></span></div></template>
+                </div>
+              </div>
+              <div class="card p-5">
+                <h3 class="font-semibold mb-3">Return Attribution by Asset Class</h3>
+                <template x-for="a in perfData?.attribution||[]">
+                  <div class="flex items-center gap-3 py-1.5 border-b text-sm">
+                    <span class="w-32" x-text="a.label"></span>
+                    <span class="w-16 text-right text-slate-500" x-text="a.weight_pct+'%'"></span>
+                    <div class="flex-1 bg-slate-100 rounded-full h-2"><div class="h-2 rounded-full" :class="a.gain_loss>=0?'bg-green-500':'bg-red-500'" :style="'width:'+Math.min(Math.abs(a.contribution_pct)*5,100)+'%'"></div></div>
+                    <span class="w-24 text-right font-medium" :class="a.gain_loss>=0?'text-green-600':'text-red-600'" x-text="formatINR(a.gain_loss)"></span>
+                  </div>
                 </template>
-              </tbody>
-            </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- REBALANCE TAB -->
+          <div x-show="ptab==='rebalance'">
+            <div x-show="!rebalData" class="skeleton h-48 w-full"></div>
+            <div x-show="rebalData" class="space-y-4">
+              <div class="card p-5" :class="rebalData?.needs_rebalance?'border-2 border-amber-400':''">
+                <div class="flex items-center gap-3 mb-4">
+                  <h3 class="font-semibold">Drift Analysis</h3>
+                  <span class="badge" :class="rebalData?.needs_rebalance?'badge-escalation':'badge-approved'" x-text="rebalData?.needs_rebalance?'Rebalancing Recommended':'Within Target'"></span>
+                  <span class="text-sm text-slate-400" x-text="'Max drift: '+rebalData?.max_drift_pct+'%'"></span>
+                </div>
+                <table class="w-full text-sm">
+                  <thead class="bg-slate-50"><tr><th class="px-3 py-2 text-left">Asset Class</th><th class="px-3 py-2 text-right">Target</th><th class="px-3 py-2 text-right">Actual</th><th class="px-3 py-2 text-right">Drift</th><th class="px-3 py-2 text-left">Status</th></tr></thead>
+                  <tbody>
+                    <template x-for="d in rebalData?.drift_items||[]" :key="d.asset_class">
+                      <tr class="border-t" :class="d.abs_drift>5?'bg-amber-50':''">
+                        <td class="px-3 py-2" x-text="d.label"></td>
+                        <td class="px-3 py-2 text-right" x-text="d.target_pct+'%'"></td>
+                        <td class="px-3 py-2 text-right font-medium" x-text="d.actual_pct+'%'"></td>
+                        <td class="px-3 py-2 text-right font-bold" :class="d.drift_pct>0?'text-amber-600':'text-blue-600'" x-text="(d.drift_pct>0?'+':'')+d.drift_pct+'%'"></td>
+                        <td class="px-3 py-2 capitalize text-xs" :class="d.status==='on_target'?'text-green-600':'text-amber-600'" x-text="d.status.replace('_',' ')"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+              <div x-show="rebalData?.suggestions?.length" class="card p-5">
+                <h3 class="font-semibold mb-3">Suggestions</h3>
+                <template x-for="s in rebalData?.suggestions||[]"><div class="bg-amber-50 border-l-3 border-amber-400 p-3 rounded-r mb-2 text-sm" x-text="s"></div></template>
+              </div>
+            </div>
+          </div>
+
+          <!-- SCENARIOS TAB -->
+          <div x-show="ptab==='scenarios'">
+            <div class="card p-5 mb-4">
+              <div class="flex items-center gap-3 mb-4">
+                <h3 class="font-semibold">Stress Test</h3>
+                <select x-model="selectedScenario" @change="loadScenario()" class="px-3 py-1.5 border rounded text-sm">
+                  <template x-for="s in scenarios" :key="s.id"><option :value="s.id" x-text="s.name"></option></template>
+                </select>
+              </div>
+              <div x-show="scenarioData" class="grid grid-cols-3 gap-4 mb-4">
+                <div class="bg-slate-50 rounded-lg p-3"><p class="text-xs text-slate-400">Before</p><p class="text-lg font-bold" x-text="formatINR(scenarioData?.pre_value)"></p></div>
+                <div class="bg-slate-50 rounded-lg p-3"><p class="text-xs text-slate-400">After Scenario</p><p class="text-lg font-bold" :class="scenarioData?.total_impact>=0?'text-green-600':'text-red-600'" x-text="formatINR(scenarioData?.post_value)"></p></div>
+                <div class="bg-slate-50 rounded-lg p-3"><p class="text-xs text-slate-400">Impact</p><p class="text-lg font-bold" :class="scenarioData?.total_impact>=0?'text-green-600':'text-red-600'" x-text="(scenarioData?.total_impact>=0?'+':'')+formatINR(scenarioData?.total_impact)+' ('+scenarioData?.impact_pct+'%)'"></p></div>
+              </div>
+              <table x-show="scenarioData" class="w-full text-xs">
+                <thead class="bg-slate-50"><tr><th class="px-2 py-2 text-left">Holding</th><th class="px-2 py-2 text-left">Class</th><th class="px-2 py-2 text-right">Shock</th><th class="px-2 py-2 text-right">Before</th><th class="px-2 py-2 text-right">Impact</th><th class="px-2 py-2 text-right">After</th></tr></thead>
+                <tbody>
+                  <template x-for="h in scenarioData?.holdings_impact||[]" :key="h.symbol">
+                    <tr class="border-t" :class="h.impact<0?'bg-red-50':h.impact>0?'bg-green-50':''">
+                      <td class="px-2 py-1.5" x-text="h.description"></td>
+                      <td class="px-2 py-1.5" x-text="h.asset_class"></td>
+                      <td class="px-2 py-1.5 text-right" x-text="h.shock_pct+'%'"></td>
+                      <td class="px-2 py-1.5 text-right" x-text="formatINR(h.pre_value)"></td>
+                      <td class="px-2 py-1.5 text-right font-bold" :class="h.impact>=0?'text-green-600':'text-red-600'" x-text="(h.impact>=0?'+':'')+formatINR(h.impact)"></td>
+                      <td class="px-2 py-1.5 text-right" x-text="formatINR(h.post_value)"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAX TAB -->
+          <div x-show="ptab==='tax'">
+            <div x-show="!taxData" class="skeleton h-48 w-full"></div>
+            <div x-show="taxData" class="space-y-4">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="card p-4"><p class="text-xs text-slate-400">STCG (Equity)</p><p class="text-lg font-bold" :class="taxData?.stcg_equity>=0?'text-green-600':'text-red-600'" x-text="formatINR(taxData?.stcg_equity)"></p></div>
+                <div class="card p-4"><p class="text-xs text-slate-400">LTCG (Equity)</p><p class="text-lg font-bold" :class="taxData?.ltcg_equity>=0?'text-green-600':'text-red-600'" x-text="formatINR(taxData?.ltcg_equity)"></p></div>
+                <div class="card p-4"><p class="text-xs text-slate-400">LTCG Exemption Used</p><p class="text-lg font-bold text-blue-600" x-text="formatINR(taxData?.ltcg_exemption_used)"></p></div>
+                <div class="card p-4 border-2 border-amber-300"><p class="text-xs text-slate-400">Estimated Total Tax</p><p class="text-lg font-bold text-amber-600" x-text="'Rs '+formatINR(taxData?.total_estimated_tax)"></p></div>
+              </div>
+              <div x-show="taxData?.harvesting_suggestions?.length" class="card p-5">
+                <h3 class="font-semibold mb-3 text-green-700">Tax Harvesting Opportunities</h3>
+                <template x-for="s in taxData?.harvesting_suggestions||[]">
+                  <div class="bg-green-50 border-l-3 border-green-400 p-3 rounded-r mb-2 text-sm">
+                    <span class="font-medium" x-text="s.action"></span> — loss of <span class="font-bold text-red-600" x-text="'Rs '+formatINR(s.loss_amount)"></span> can offset gains, saving ~<span class="font-bold text-green-600" x-text="'Rs '+formatINR(s.estimated_tax_saving)"></span> in tax
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- GOALS TAB -->
+          <div x-show="ptab==='goals'">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-semibold">Financial Goals</h3>
+              <button @click="showGoalForm=!showGoalForm" class="px-3 py-1.5 bg-blue-600 text-white rounded text-xs">+ Add Goal</button>
+            </div>
+            <div x-show="showGoalForm" class="card p-4 mb-4">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <input type="text" x-model="goalForm.goal_name" placeholder="Goal name" class="px-3 py-1.5 border rounded text-sm">
+                <input type="number" x-model.number="goalForm.target_amount" placeholder="Target (Rs)" class="px-3 py-1.5 border rounded text-sm">
+                <input type="date" x-model="goalForm.target_date" class="px-3 py-1.5 border rounded text-sm">
+                <button @click="addGoalAction()" class="px-4 py-1.5 bg-green-600 text-white rounded text-sm">Save</button>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <template x-for="g in goalsData" :key="g.id">
+                <div class="card p-5">
+                  <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-semibold" x-text="g.goal_name"></h4>
+                    <span class="badge" :class="g.priority==='high'?'badge-hard':g.priority==='low'?'badge-info':'badge-soft'" x-text="g.priority"></span>
+                  </div>
+                  <div class="mb-3">
+                    <div class="flex justify-between text-xs text-slate-500 mb-1"><span x-text="formatINR(g.current_allocation)+' of '+formatINR(g.target_amount)"></span><span x-text="g.progress_pct+'%'"></span></div>
+                    <div class="w-full bg-slate-100 rounded-full h-3"><div class="h-3 rounded-full bg-blue-500 confidence-bar" :style="'width:'+g.progress_pct+'%'"></div></div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div><span class="text-slate-400">Target Date:</span> <span x-text="g.target_date"></span></div>
+                    <div><span class="text-slate-400">Time Left:</span> <span x-text="g.years_remaining+' yrs'"></span></div>
+                    <div><span class="text-slate-400">Gap:</span> <span class="font-bold" x-text="'Rs '+formatINR(g.gap_amount)"></span></div>
+                    <div><span class="text-slate-400">Monthly SIP Needed:</span> <span class="font-bold text-blue-600" x-text="'Rs '+formatINR(g.monthly_sip_required)"></span></div>
+                  </div>
+                </div>
+              </template>
+            </div>
+            <div x-show="!goalsData?.length" class="card p-8 text-center text-slate-400">No financial goals set. Click "Add Goal" to get started.</div>
           </div>
         </div>
         <div x-show="loading" class="p-6"><div class="skeleton h-8 w-48 mb-4"></div><div class="skeleton h-64 w-full"></div></div>
@@ -1236,7 +1399,19 @@
 <!-- Screen components -->
 <script>
 function dashboardScreen() {
-  return { decisions: [], async load() { const d = await api.listDecisionsSummary(10); if (!d.error) this.decisions = d; } };
+  return {
+    decisions: [], advisor: null, marketBrief: null,
+    async load() {
+      const [d, a, mb] = await Promise.all([
+        api.listDecisionsSummary(10),
+        api.advisorDashboard(),
+        api.marketBrief(),
+      ]);
+      if (!d.error) this.decisions = d;
+      if (!a.error) this.advisor = a;
+      if (!mb.error) this.marketBrief = mb;
+    }
+  };
 }
 
 function intentScreen() {
@@ -1350,6 +1525,11 @@ function portfolioScreen() {
   const COLORS = {equity:'#3b82f6',mutual_fund:'#8b5cf6',gold:'#f59e0b',silver:'#94a3b8',fd:'#22c55e',bond:'#06b6d4',pms:'#ec4899',aif:'#f97316',real_estate:'#84cc16',insurance:'#6366f1',crypto:'#eab308',ppf:'#14b8a6',nps:'#e11d48',other:'#64748b'};
   return {
     portfolio: null, loading: false, searchHoldings: '', _currentId: null,
+    ptab: 'overview',
+    // Feature data
+    perfData: null, rebalData: null, scenarioData: null, taxData: null, goalsData: [],
+    selectedScenario: 'nifty_crash_20', scenarios: [],
+    showGoalForm: false, goalForm: { goal_name: '', target_amount: 0, target_date: '2030-01-01' },
     initRouteListener() {
       const self = this;
       const check = () => {
@@ -1357,11 +1537,15 @@ function portfolioScreen() {
         const parts = hash.split('/');
         if (parts[0] === 'portfolio' && parts[1] && parts[1] !== self._currentId) {
           self._currentId = parts[1];
+          self.ptab = 'overview';
+          self.perfData = null; self.rebalData = null; self.scenarioData = null; self.taxData = null; self.goalsData = [];
           self.load(parts[1]);
         }
       };
       window.addEventListener('route-change', check);
       check();
+      // Load scenarios list
+      api.scenariosList().then(r => { if (!r.error) this.scenarios = r; });
     },
     async load(id) {
       if (!id) return;
@@ -1369,6 +1553,18 @@ function portfolioScreen() {
       const res = await api.portfolioSummary(id);
       this.loading = false;
       this.portfolio = res.error ? null : res;
+    },
+    async loadPerf() { if (!this._currentId || this.perfData) return; this.perfData = await api.portfolioPerformance(this._currentId); if (this.perfData?.error) this.perfData = null; },
+    async loadRebal() { if (!this._currentId || this.rebalData) return; this.rebalData = await api.portfolioRebalance(this._currentId); if (this.rebalData?.error) this.rebalData = null; },
+    async loadScenario() { if (!this._currentId) return; const r = await api.portfolioScenario(this._currentId, this.selectedScenario); this.scenarioData = r.error ? null : r; },
+    async loadTax() { if (!this._currentId || this.taxData) return; this.taxData = await api.portfolioTax(this._currentId); if (this.taxData?.error) this.taxData = null; },
+    async loadGoals() { if (!this._currentId) return; const r = await api.portfolioGoals(this._currentId); this.goalsData = r.error ? [] : r; },
+    async addGoalAction() {
+      if (!this._currentId || !this.goalForm.goal_name) return;
+      await api.addGoal(this._currentId, this.goalForm);
+      this.showGoalForm = false;
+      this.goalForm = { goal_name: '', target_amount: 0, target_date: '2030-01-01' };
+      await this.loadGoals();
     },
     get filteredHoldings() {
       const h = this.portfolio?.holdings || [];
