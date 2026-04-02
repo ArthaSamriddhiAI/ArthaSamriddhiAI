@@ -55,6 +55,12 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         Decisions
       </a>
+      <a @click.prevent="navigate('investors')" href="#/investors"
+         class="sidebar-link flex items-center gap-2 px-3 py-2 rounded text-sm"
+         :class="(isActive('investors')||isActive('investor')||isActive('questionnaire')||isActive('assessment'))&&'active'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        Investors
+      </a>
       <a @click.prevent="navigate('evidence')" href="#/evidence"
          class="sidebar-link flex items-center gap-2 px-3 py-2 rounded text-sm"
          :class="isActive('evidence')&&'active'">
@@ -907,6 +913,275 @@
         </div>
       </div>
     </div>
+
+    <!-- ══════ Investors List ══════ -->
+    <div x-show="screen==='investors'" x-cloak>
+      <div x-data="investorsScreen()" x-init="load()">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold">Investors</h2>
+            <button @click="showCreate=!showCreate" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">+ New Investor</button>
+          </div>
+
+          <!-- Create form (toggle) -->
+          <div x-show="showCreate" class="card p-5 mb-6">
+            <h3 class="font-semibold mb-3">Create Investor</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <input type="text" x-model="newInv.name" placeholder="Full Name" class="px-3 py-2 border rounded-lg text-sm">
+              <input type="text" x-model="newInv.phone" placeholder="Phone" class="px-3 py-2 border rounded-lg text-sm">
+              <select x-model="newInv.investor_type" class="px-3 py-2 border rounded-lg text-sm">
+                <option value="individual">Individual</option>
+                <option value="hni">HNI</option>
+                <option value="family_office">Family Office</option>
+                <option value="nri">NRI</option>
+              </select>
+              <button @click="createInvestor()" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">Create</button>
+            </div>
+          </div>
+
+          <!-- Investor list -->
+          <div class="card">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50"><tr>
+                <th class="px-4 py-3 text-left">Name</th>
+                <th class="px-4 py-3 text-left">Type</th>
+                <th class="px-4 py-3 text-left">Risk Category</th>
+                <th class="px-4 py-3 text-right">Score</th>
+                <th class="px-4 py-3 text-right">Actions</th>
+              </tr></thead>
+              <tbody>
+                <template x-for="inv in investors" :key="inv.id">
+                  <tr class="border-t hover:bg-slate-50">
+                    <td class="px-4 py-3 font-medium" x-text="inv.name"></td>
+                    <td class="px-4 py-3 capitalize" x-text="inv.investor_type?.replace('_',' ')"></td>
+                    <td class="px-4 py-3">
+                      <span x-show="inv.risk_profile" class="badge" :class="utils.riskBadge(inv.risk_profile?.risk_category?.includes('conservative')?'low':inv.risk_profile?.risk_category?.includes('aggressive')?'high':'medium')" x-text="inv.risk_profile?.risk_category?.replace(/_/g,' ')"></span>
+                      <span x-show="!inv.risk_profile" class="text-xs text-slate-400">No profile</span>
+                    </td>
+                    <td class="px-4 py-3 text-right font-mono" x-text="inv.risk_profile?.overall_score?.toFixed(1)||'-'"></td>
+                    <td class="px-4 py-3 text-right space-x-2">
+                      <button @click="window.location.hash='#/investor/'+inv.id" class="text-blue-600 hover:underline text-xs">Profile</button>
+                      <button @click="window.location.hash='#/questionnaire/'+inv.id" class="text-green-600 hover:underline text-xs">Assess</button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+            <div x-show="investors.length===0" class="p-8 text-center text-slate-400">No investors yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ Investor Profile + Assessment History ══════ -->
+    <div x-show="screen==='investor'" x-cloak>
+      <div x-data="investorProfileScreen()" x-init="initRouteListener()">
+        <div class="p-6" x-show="investor">
+          <div class="flex items-center gap-4 mb-6">
+            <button @click="window.location.hash='#/investors'" class="text-slate-400 hover:text-slate-600">&larr; Back</button>
+            <h2 class="text-2xl font-bold" x-text="investor?.name"></h2>
+            <span class="badge badge-info capitalize" x-text="investor?.investor_type?.replace('_',' ')"></span>
+          </div>
+
+          <!-- Profile Summary Cards -->
+          <div x-show="profile" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="card p-4">
+              <p class="text-xs text-slate-500 uppercase">Overall Score</p>
+              <p class="text-3xl font-bold mt-1" x-text="profile?.overall_score?.toFixed(1)"></p>
+              <p class="text-xs text-slate-400">out of 40</p>
+            </div>
+            <div class="card p-4">
+              <p class="text-xs text-slate-500 uppercase">Risk Category</p>
+              <p class="text-lg font-bold mt-1 capitalize" x-text="profile?.risk_category?.replace(/_/g,' ')"></p>
+            </div>
+            <div class="card p-4">
+              <p class="text-xs text-slate-500 uppercase">Max Volatility</p>
+              <p class="text-lg font-bold mt-1" x-text="utils.formatPercent(profile?.effective_constraints?.max_volatility)"></p>
+            </div>
+            <div class="card p-4">
+              <p class="text-xs text-slate-500 uppercase">Equity Range</p>
+              <p class="text-lg font-bold mt-1" x-text="utils.formatPercent(profile?.effective_constraints?.equity_allocation_min)+' - '+utils.formatPercent(profile?.effective_constraints?.equity_allocation_max)"></p>
+            </div>
+          </div>
+
+          <!-- Category Scores -->
+          <div x-show="profile" class="card p-5 mb-6">
+            <h3 class="font-semibold mb-4">Category Scores</h3>
+            <div class="space-y-2">
+              <template x-for="[cat, score] in Object.entries(profile?.category_scores||{})" :key="cat">
+                <div class="flex items-center gap-3">
+                  <span class="w-48 text-sm capitalize" x-text="cat.replace(/_/g,' ')"></span>
+                  <div class="flex-1 bg-slate-100 rounded-full h-3"><div class="h-3 rounded-full confidence-bar" :class="score>30?'bg-red-500':score>20?'bg-amber-500':'bg-green-500'" :style="'width:'+(score/40*100)+'%'"></div></div>
+                  <span class="w-12 text-right text-sm font-mono" x-text="score.toFixed(1)"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Assessment History -->
+          <div class="card p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold">Assessment History</h3>
+              <button @click="window.location.hash='#/questionnaire/'+investor?.id" class="px-3 py-1.5 bg-blue-600 text-white rounded text-xs">New Assessment</button>
+            </div>
+            <div x-show="assessments.length===0" class="text-sm text-slate-400 py-4">No assessments recorded.</div>
+            <div class="space-y-3">
+              <template x-for="a in assessments" :key="a.id">
+                <div class="border rounded-lg p-4 cursor-pointer hover:bg-slate-50" @click="selectedAssessment=selectedAssessment?.id===a.id?null:a">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <span class="badge" :class="{'badge-approved':a.assessment_context==='annual_review','badge-info':a.assessment_context==='onboarding','badge-escalation':a.assessment_context==='regulatory','badge-soft':a.assessment_context==='ad_hoc'}" x-text="a.assessment_context?.replace('_',' ')"></span>
+                      <span class="text-sm ml-2" x-text="a.assessed_by"></span>
+                    </div>
+                    <div class="text-right">
+                      <span class="font-mono font-bold" x-text="a.overall_score?.toFixed(1)"></span>
+                      <span x-show="a.score_change_from_previous!=null" class="text-xs ml-1" :class="a.score_change_from_previous>0?'text-amber-600':'text-green-600'" x-text="(a.score_change_from_previous>0?'+':'')+a.score_change_from_previous?.toFixed(2)"></span>
+                      <span class="badge ml-2" :class="utils.riskBadge(a.risk_category?.includes('conservative')?'low':a.risk_category?.includes('aggressive')?'high':'medium')" x-text="a.risk_category?.replace(/_/g,' ')"></span>
+                    </div>
+                  </div>
+                  <div class="text-xs text-slate-400 mt-1" x-text="utils.formatTime(a.assessment_date)"></div>
+
+                  <!-- Expanded Assessment Detail (view-only) -->
+                  <div x-show="selectedAssessment?.id===a.id" class="mt-4 border-t pt-4 space-y-4" @click.stop>
+                    <!-- AI Narrative -->
+                    <div x-show="a.ai_narrative" class="bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r">
+                      <p class="text-xs font-semibold text-blue-700 mb-1">AI-Generated Narrative</p>
+                      <p class="text-sm text-blue-900 whitespace-pre-line" x-text="a.ai_narrative"></p>
+                    </div>
+
+                    <!-- AI Flags -->
+                    <div x-show="a.ai_flags?.length">
+                      <p class="text-xs font-semibold text-amber-700 mb-1">Flags & Advisor Notes</p>
+                      <template x-for="f in a.ai_flags||[]">
+                        <div class="flex items-start gap-1 text-sm text-amber-700 bg-amber-50 px-2 py-1 rounded mb-1">
+                          <span>&#9888;</span><span x-text="f"></span>
+                        </div>
+                      </template>
+                    </div>
+
+                    <!-- Constraints at Assessment Time -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div class="bg-slate-50 rounded p-2"><p class="text-xs text-slate-400">Max Volatility</p><p class="font-medium text-sm" x-text="utils.formatPercent(a.effective_constraints?.max_volatility)"></p></div>
+                      <div class="bg-slate-50 rounded p-2"><p class="text-xs text-slate-400">Max Drawdown</p><p class="font-medium text-sm" x-text="utils.formatPercent(a.effective_constraints?.max_drawdown)"></p></div>
+                      <div class="bg-slate-50 rounded p-2"><p class="text-xs text-slate-400">Equity Max</p><p class="font-medium text-sm" x-text="utils.formatPercent(a.effective_constraints?.equity_allocation_max)"></p></div>
+                      <div class="bg-slate-50 rounded p-2"><p class="text-xs text-slate-400">Horizon</p><p class="font-medium text-sm capitalize" x-text="a.effective_constraints?.investment_horizon"></p></div>
+                    </div>
+
+                    <!-- Q&A Snapshot (collapsible) -->
+                    <details>
+                      <summary class="text-xs text-blue-600 cursor-pointer font-medium">View Full Questionnaire Responses</summary>
+                      <div class="mt-2 max-h-72 overflow-auto">
+                        <table class="w-full text-xs">
+                          <thead class="bg-slate-50 sticky top-0"><tr><th class="px-2 py-1 text-left">Category</th><th class="px-2 py-1 text-left">Question</th><th class="px-2 py-1 text-left">Answer</th><th class="px-2 py-1 text-right">Score</th></tr></thead>
+                          <tbody>
+                            <template x-for="r in a.responses_snapshot||[]" :key="r.q_num+r.category">
+                              <tr class="border-t">
+                                <td class="px-2 py-1 capitalize text-slate-400" x-text="r.category?.replace(/_/g,' ')"></td>
+                                <td class="px-2 py-1" x-text="r.question"></td>
+                                <td class="px-2 py-1 font-medium" x-text="r.answer"></td>
+                                <td class="px-2 py-1 text-right font-mono" x-text="r.score"></td>
+                              </tr>
+                            </template>
+                          </tbody>
+                        </table>
+                      </div>
+                    </details>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+        <div x-show="loading" class="p-6"><div class="skeleton h-8 w-48 mb-4"></div><div class="skeleton h-64 w-full"></div></div>
+      </div>
+    </div>
+
+    <!-- ══════ Questionnaire Wizard ══════ -->
+    <div x-show="screen==='questionnaire'" x-cloak>
+      <div x-data="questionnaireScreen()" x-init="initRouteListener()">
+        <div class="p-6 max-w-3xl mx-auto">
+          <div class="flex items-center gap-4 mb-6">
+            <button @click="window.location.hash='#/investors'" class="text-slate-400 hover:text-slate-600">&larr; Back</button>
+            <h2 class="text-2xl font-bold">Risk Assessment</h2>
+          </div>
+
+          <!-- Not yet completed -->
+          <div x-show="!completed && template">
+            <!-- Progress -->
+            <div class="card p-4 mb-6">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium" x-text="currentCategory?.name||''"></span>
+                <span class="text-xs text-slate-400" x-text="'Step '+(catIndex+1)+' of '+visibleCategories.length"></span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2"><div class="h-2 rounded-full bg-blue-500 confidence-bar" :style="'width:'+((catIndex+1)/visibleCategories.length*100)+'%'"></div></div>
+              <p class="text-xs text-slate-400 mt-2" x-text="currentCategory?.description||''"></p>
+            </div>
+
+            <!-- Questions for current category -->
+            <div class="space-y-4">
+              <template x-for="q in currentCategory?.questions||[]" :key="q.number">
+                <div class="card p-5">
+                  <p class="font-medium text-sm mb-3" x-text="q.text"></p>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <template x-for="opt in q.options" :key="opt.key">
+                      <button @click="setAnswer(q.number, opt.key)"
+                              class="text-left p-3 rounded-lg border-2 text-sm transition-all"
+                              :class="getAnswer(q.number)===opt.key?'border-blue-500 bg-blue-50 font-medium':'border-slate-200 hover:border-slate-300'">
+                        <span class="font-bold mr-1" x-text="opt.key+')'" :class="getAnswer(q.number)===opt.key?'text-blue-600':'text-slate-400'"></span>
+                        <span x-text="opt.text"></span>
+                      </button>
+                    </template>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <!-- Navigation -->
+            <div class="flex justify-between mt-6">
+              <button @click="prevCategory()" x-show="catIndex>0" class="px-4 py-2 bg-slate-200 rounded-lg text-sm">&larr; Previous</button>
+              <div x-show="catIndex===0"></div>
+              <button @click="nextCategory()" x-show="catIndex<visibleCategories.length-1" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Next &rarr;</button>
+              <button @click="submitQuestionnaire()" x-show="catIndex===visibleCategories.length-1" :disabled="submitting" class="px-6 py-2 bg-green-600 text-white rounded-lg text-sm font-medium">
+                <span x-show="!submitting">Submit Assessment</span><span x-show="submitting">Processing...</span>
+              </button>
+            </div>
+
+            <!-- Assessor info -->
+            <div class="card p-4 mt-6">
+              <div class="grid grid-cols-2 gap-3">
+                <div><label class="text-xs text-slate-500">Assessed By</label><input type="text" x-model="assessedBy" class="w-full px-3 py-1.5 border rounded text-sm mt-1"></div>
+                <div><label class="text-xs text-slate-500">Context</label>
+                  <select x-model="assessmentContext" class="w-full px-3 py-1.5 border rounded text-sm mt-1">
+                    <option value="onboarding">Onboarding</option><option value="annual_review">Annual Review</option>
+                    <option value="regulatory">Regulatory</option><option value="ad_hoc">Ad Hoc</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Completed — show result -->
+          <div x-show="completed && result" class="card p-6">
+            <div class="text-center mb-6">
+              <h3 class="text-xl font-bold mb-2">Assessment Complete</h3>
+              <div class="text-4xl font-bold" x-text="result?.overall_score?.toFixed(1)"></div>
+              <div class="text-lg capitalize mt-1" x-text="result?.risk_category?.replace(/_/g,' ')"></div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+              <div class="bg-slate-50 rounded-lg p-3 text-center"><p class="text-xs text-slate-400">Max Volatility</p><p class="font-bold" x-text="utils.formatPercent(result?.effective_constraints?.max_volatility)"></p></div>
+              <div class="bg-slate-50 rounded-lg p-3 text-center"><p class="text-xs text-slate-400">Max Drawdown</p><p class="font-bold" x-text="utils.formatPercent(result?.effective_constraints?.max_drawdown)"></p></div>
+              <div class="bg-slate-50 rounded-lg p-3 text-center"><p class="text-xs text-slate-400">Equity Min</p><p class="font-bold" x-text="utils.formatPercent(result?.effective_constraints?.equity_allocation_min)"></p></div>
+              <div class="bg-slate-50 rounded-lg p-3 text-center"><p class="text-xs text-slate-400">Equity Max</p><p class="font-bold" x-text="utils.formatPercent(result?.effective_constraints?.equity_allocation_max)"></p></div>
+            </div>
+            <div class="flex justify-center gap-3">
+              <button @click="window.location.hash='#/investor/'+investorId" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">View Full Profile</button>
+              <button @click="window.location.hash='#/investors'" class="px-4 py-2 bg-slate-200 rounded-lg text-sm">Back to Investors</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1092,6 +1367,146 @@ function helpScreen() {
       { term: 'Skill.md', def: 'A versioned markdown file defining an agent\'s behavior, heuristics, and constraints. Updated through governed learning cycles.' },
       { term: 'Supervisor', def: 'The orchestrator component that decides which agents to consult. Has bounded authority — cannot trade, override rules, or invent objectives.' },
     ].sort((a, b) => a.term.localeCompare(b.term)),
+  };
+}
+
+function investorsScreen() {
+  return {
+    investors: [], showCreate: false,
+    newInv: { name: '', phone: '', investor_type: 'individual' },
+    async load() {
+      const data = await api.listInvestors(50);
+      if (!data.error) {
+        // Fetch profiles for each investor
+        const enriched = [];
+        for (const inv of data) {
+          const profile = await api.getInvestorProfile(inv.id);
+          inv.risk_profile = profile.error ? null : profile;
+          enriched.push(inv);
+        }
+        this.investors = enriched;
+      }
+    },
+    async createInvestor() {
+      if (!this.newInv.name) return;
+      const res = await api.createInvestor(this.newInv);
+      if (!res.error) {
+        this.showCreate = false;
+        this.newInv = { name: '', phone: '', investor_type: 'individual' };
+        await this.load();
+        Alpine.store('notifications').add('success', 'Investor created');
+      }
+    }
+  };
+}
+
+function investorProfileScreen() {
+  return {
+    investor: null, profile: null, assessments: [], loading: false,
+    selectedAssessment: null, _currentId: null,
+    initRouteListener() {
+      const self = this;
+      const check = () => {
+        const hash = window.location.hash.replace('#/', '');
+        const parts = hash.split('/');
+        if (parts[0] === 'investor' && parts[1] && parts[1] !== self._currentId) {
+          self._currentId = parts[1];
+          self.load(parts[1]);
+        }
+      };
+      window.addEventListener('route-change', check);
+      check();
+    },
+    async load(id) {
+      if (!id) return;
+      this.loading = true;
+      const [inv, assessments] = await Promise.all([
+        api.getInvestor(id),
+        api.getAssessmentHistory(id),
+      ]);
+      this.loading = false;
+      if (inv.error) return;
+      this.investor = inv;
+      this.profile = inv.risk_profile || null;
+      this.assessments = assessments.error ? [] : assessments;
+    }
+  };
+}
+
+function questionnaireScreen() {
+  return {
+    investorId: null, template: null, catIndex: 0, answers: {},
+    completed: false, result: null, submitting: false,
+    assessedBy: '', assessmentContext: 'annual_review',
+    _currentId: null,
+    initRouteListener() {
+      const self = this;
+      const check = () => {
+        const hash = window.location.hash.replace('#/', '');
+        const parts = hash.split('/');
+        if (parts[0] === 'questionnaire' && parts[1] && parts[1] !== self._currentId) {
+          self._currentId = parts[1];
+          self.investorId = parts[1];
+          self.loadTemplate();
+        }
+      };
+      window.addEventListener('route-change', check);
+      check();
+    },
+    async loadTemplate() {
+      this.template = await api.getQuestionnaireTemplate();
+      this.catIndex = 0;
+      this.answers = {};
+      this.completed = false;
+      this.result = null;
+    },
+    get visibleCategories() {
+      if (!this.template) return [];
+      return this.template.categories.filter(c => !c.is_optional || c.id === 'family_office');
+    },
+    get currentCategory() {
+      return this.visibleCategories[this.catIndex] || null;
+    },
+    setAnswer(qNum, opt) {
+      const key = this.currentCategory.id + '_' + qNum;
+      this.answers[key] = opt;
+    },
+    getAnswer(qNum) {
+      const key = this.currentCategory?.id + '_' + qNum;
+      return this.answers[key] || '';
+    },
+    nextCategory() { if (this.catIndex < this.visibleCategories.length - 1) this.catIndex++; },
+    prevCategory() { if (this.catIndex > 0) this.catIndex--; },
+    async submitQuestionnaire() {
+      this.submitting = true;
+      // Build responses in category order (flat list, excluding family_office)
+      const responses = [];
+      const foResponses = [];
+      for (const cat of this.template.categories) {
+        for (const q of cat.questions) {
+          const key = cat.id + '_' + q.number;
+          const opt = this.answers[key] || 'b'; // default to b if unanswered
+          if (cat.id === 'family_office') {
+            foResponses.push({ question_number: q.number, selected_option: opt });
+          } else {
+            responses.push({ question_number: q.number, selected_option: opt });
+          }
+        }
+      }
+      const payload = {
+        responses,
+        assessed_by: this.assessedBy || 'Advisor',
+        assessment_context: this.assessmentContext,
+        include_family_office: foResponses.length > 0 && Object.keys(this.answers).some(k => k.startsWith('family_office')),
+        family_office_responses: foResponses,
+      };
+      const res = await api.submitQuestionnaire(this.investorId, payload);
+      this.submitting = false;
+      if (res.error) { Alpine.store('notifications').add('error', res.error); return; }
+      this.result = res;
+      this.completed = true;
+      Alpine.store('notifications').add('success', 'Assessment complete: ' + res.risk_category?.replace(/_/g, ' '));
+    }
   };
 }
 </script>

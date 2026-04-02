@@ -38,6 +38,17 @@ window.api = {
   getArtifact: (id) => request('GET', `/evidence/artifacts/${id}`),
   getLatestEvidence: (type) => request('GET', `/evidence/latest/${type}`),
 
+  // Investor
+  listInvestors: (limit = 50) => request('GET', `/investor/investors?limit=${limit}`),
+  getInvestor: (id) => request('GET', `/investor/investors/${id}`),
+  createInvestor: (data) => request('POST', '/investor/investors', data),
+  getQuestionnaireTemplate: () => request('GET', '/investor/questionnaire/template'),
+  submitQuestionnaire: (investorId, data) => request('POST', `/investor/investors/${investorId}/questionnaire`, data),
+  getInvestorProfile: (id) => request('GET', `/investor/investors/${id}/profile`),
+  getAssessmentHistory: (investorId) => request('GET', `/investor/investors/${investorId}/assessments`),
+  getAssessmentDetail: (id) => request('GET', `/investor/assessments/${id}`),
+  createFamilyOffice: (data) => request('POST', '/investor/family-offices', data),
+
   // Execution
   getKillSwitch: () => request('GET', '/execution/killswitch'),
   activateKillSwitch: (by = 'ui') => request('POST', `/execution/killswitch/activate?by=${by}`),
