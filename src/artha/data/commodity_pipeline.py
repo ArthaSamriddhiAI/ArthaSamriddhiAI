@@ -69,11 +69,12 @@ async def run_commodity_pipeline(session: AsyncSession, initial: bool = False) -
             last_date = result.scalar()
 
             added = 0
-            for idx, row in df.iterrows():
+            close_col = df["Close"].squeeze() if "Close" in df.columns else df.iloc[:, 0]
+            for idx in close_col.index:
                 d = idx.date() if hasattr(idx, "date") else idx
                 if last_date and d <= last_date:
                     continue
-                price = row.get("Close")
+                price = float(close_col.loc[idx])
                 if price is not None and price == price:
                     session.add(CommodityPriceRow(
                         commodity=commodity, date=d, price_usd=round(float(price), 4), unit=unit

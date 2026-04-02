@@ -63,13 +63,14 @@ async def run_forex_pipeline(session: AsyncSession, initial: bool = False) -> st
             last_date = result.scalar()
 
             added = 0
-            for idx, row in df.iterrows():
+            close_col = df["Close"].squeeze() if "Close" in df.columns else df.iloc[:, 0]
+            for idx in close_col.index:
                 d = idx.date() if hasattr(idx, "date") else idx
                 if last_date and d <= last_date:
                     continue
-                rate = row.get("Close")
+                rate = float(close_col.loc[idx])
                 if rate is not None and rate == rate:
-                    session.add(ForexRateRow(pair=pair, date=d, rate=round(float(rate), 4)))
+                    session.add(ForexRateRow(pair=pair, date=d, rate=round(rate, 4)))
                     added += 1
 
             total_added += added

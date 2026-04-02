@@ -66,11 +66,12 @@ async def run_macro_pipeline(session: AsyncSession, initial: bool = False) -> st
             last_date = result.scalar()
 
             added = 0
-            for idx, row in df.iterrows():
+            close_col = df["Close"].squeeze() if "Close" in df.columns else df.iloc[:, 0]
+            for idx in close_col.index:
                 d = idx.date() if hasattr(idx, "date") else idx
                 if last_date and d <= last_date:
                     continue
-                val = row.get("Close")
+                val = float(close_col.loc[idx])
                 if val is not None and val == val:
                     session.add(MacroIndicatorRow(indicator=indicator, date=d, value=round(float(val), 4), unit=unit))
                     added += 1
