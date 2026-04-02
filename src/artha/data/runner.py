@@ -28,6 +28,7 @@ async def _run(args: argparse.Namespace) -> None:
     import artha.data.macro_pipeline  # noqa: F401
     import artha.data.crypto_pipeline  # noqa: F401
     import artha.data.upload  # noqa: F401
+    import artha.data.mf_full_pipeline  # noqa: F401
     import artha.evidence.models  # noqa: F401
     import artha.governance.models  # noqa: F401
     import artha.accountability.models  # noqa: F401
@@ -66,11 +67,11 @@ async def _run(args: argparse.Namespace) -> None:
             await session.commit()
             log.info(f"Stock pipeline run: {run_id}")
 
-        # MF pipeline
+        # MF pipeline (full — all AMFI Regular schemes)
         if args.mf:
-            from artha.data.mf_pipeline import run_mf_pipeline
-            log.info("=== Running MF NAV pipeline ===")
-            run_id = await run_mf_pipeline(session, initial=args.initial)
+            from artha.data.mf_full_pipeline import run_mf_full_pipeline
+            log.info("=== Running MF NAV pipeline (ALL Regular schemes from AMFI) ===")
+            run_id = await run_mf_full_pipeline(session, initial=args.initial)
             await session.commit()
             log.info(f"MF pipeline run: {run_id}")
 
