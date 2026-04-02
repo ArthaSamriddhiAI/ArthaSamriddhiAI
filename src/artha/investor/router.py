@@ -93,3 +93,24 @@ async def create_family_office(
     result = await service.create_family_office(req)
     await session.commit()
     return result
+
+
+@router.get("/investors/{investor_id}/assessments")
+async def get_assessment_history(
+    investor_id: str,
+    service: InvestorService = Depends(_get_service),
+):
+    """Get all historical assessments for an investor (view-only, immutable)."""
+    return await service.get_assessment_history(investor_id)
+
+
+@router.get("/assessments/{assessment_id}")
+async def get_assessment_detail(
+    assessment_id: str,
+    service: InvestorService = Depends(_get_service),
+):
+    """Get a single historical assessment with full Q&A snapshot (view-only)."""
+    result = await service.get_assessment_detail(assessment_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+    return result

@@ -77,6 +77,8 @@ class SubmitQuestionnaireRequest(BaseModel):
     responses: list[QuestionResponse]
     include_family_office: bool = False
     family_office_responses: list[QuestionResponse] = Field(default_factory=list)
+    assessed_by: str = "system"
+    assessment_context: str = "ad_hoc"  # onboarding, annual_review, ad_hoc, regulatory
 
 
 class RiskProfileResponse(BaseModel):

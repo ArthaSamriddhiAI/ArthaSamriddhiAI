@@ -87,3 +87,32 @@ class InvestorRiskProfileRow(Base):
     questionnaire_version: Mapped[str] = mapped_column(String(16), default="1.0")
     computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # AI-generated narrative and flags
+    ai_narrative: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_flags_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    assessed_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    assessment_context: Mapped[str | None] = mapped_column(String(64), nullable=True)  # annual_review, onboarding, ad_hoc, regulatory
+
+
+class AssessmentHistoryRow(Base):
+    """Immutable historical log of all risk profile assessments."""
+
+    __tablename__ = "assessment_history"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    investor_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    profile_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    assessment_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    assessment_context: Mapped[str] = mapped_column(String(64), nullable=False)
+    assessed_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    overall_score: Mapped[float] = mapped_column(Float, nullable=False)
+    risk_category: Mapped[str] = mapped_column(String(32), nullable=False)
+    category_scores_json: Mapped[str] = mapped_column(Text, nullable=False)
+    constraints_json: Mapped[str] = mapped_column(Text, nullable=False)
+    effective_constraints_json: Mapped[str] = mapped_column(Text, nullable=False)
+    family_complexity_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ai_narrative: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_flags_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    responses_snapshot_json: Mapped[str] = mapped_column(Text, nullable=False)  # Full Q&A snapshot
+    score_change_from_previous: Mapped[float | None] = mapped_column(Float, nullable=True)
+    category_change_from_previous: Mapped[str | None] = mapped_column(String(32), nullable=True)
