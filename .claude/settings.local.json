@@ -11,7 +11,8 @@
       "Bash(ssh -i \"D:/Downloads/ArthaSamriddhiAI.pem\" ubuntu@13.204.187.25 \"ls /home/ubuntu/ArthaSamriddhiAI/.venv/bin/uvicorn 2>&1 && /home/ubuntu/ArthaSamriddhiAI/.venv/bin/python -c ''import artha; print\\(\"\"artha imported OK\"\"\\)'' 2>&1\")",
       "Bash(ssh -i \"D:/Downloads/ArthaSamriddhiAI.pem\" ubuntu@13.204.187.25 \"cd /home/ubuntu/ArthaSamriddhiAI && cp .env.example .env && mkdir -p data\")",
       "Bash(ssh -i:*)",
-      "WebFetch(domain:imt.edu)"
+      "WebFetch(domain:imt.edu)",
+      "Bash(.venv/Scripts/python -m pytest tests/ -q)"
     ]
   }
 }

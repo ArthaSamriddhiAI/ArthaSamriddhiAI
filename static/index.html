@@ -190,6 +190,25 @@
           <h2 class="text-2xl font-bold mb-6">New Governance Intent</h2>
 
           <div class="card p-6" x-show="!result">
+            <!-- Client Selector -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium mb-2">Select Client</label>
+              <select @change="selectClient($event.target.value)" class="w-full px-3 py-2 border rounded-lg text-sm">
+                <option value="">-- Select a client --</option>
+                <template x-for="inv in investors" :key="inv.id">
+                  <option :value="inv.id" x-text="inv.name + ' (' + inv.investor_type + ')'"></option>
+                </template>
+              </select>
+              <div x-show="selectedInvestor" class="mt-3 p-3 bg-blue-50 rounded-lg">
+                <div class="flex items-center gap-3">
+                  <span class="font-medium" x-text="selectedInvestor?.name"></span>
+                  <span class="badge badge-info capitalize" x-text="selectedInvestor?.investor_type?.replace('_',' ')"></span>
+                  <span x-show="clientPortfolio" class="text-sm text-slate-500" x-text="clientPortfolio?.holdings_count+' holdings | AUM: Rs '+(clientPortfolio?.current_value>=10000000?(clientPortfolio.current_value/10000000).toFixed(1)+' Cr':(clientPortfolio?.current_value/100000).toFixed(0)+' L')"></span>
+                </div>
+                <p x-show="clientPortfolio" class="text-xs text-green-600 mt-1">Portfolio loaded — symbols and holdings auto-populated below.</p>
+              </div>
+            </div>
+
             <!-- Intent Type -->
             <div class="mb-6">
               <label class="block text-sm font-medium mb-2">Intent Type</label>
@@ -600,6 +619,7 @@
               </div>
             </div>
             <div class="flex gap-2">
+              <button @click="window.location.hash='#/intent?investor='+_currentId" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm">Run Governance Review</button>
               <a :href="'/api/v1/portfolio/'+_currentId+'/report'" target="_blank" class="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm">Download Report</a>
               <label class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm cursor-pointer">
                 Import CSV
@@ -1542,9 +1562,43 @@ function intentScreen() {
       { value: 'trade_proposal', label: 'Trade Proposal', desc: 'Evaluate specific trades' },
       { value: 'scheduled_evaluation', label: 'Scheduled Eval', desc: 'Periodic review' },
     ],
+    investors: [], selectedInvestor: null, clientPortfolio: null,
     form: { intent_type: 'rebalance', symbols: [], holdings: {}, parameters: {} },
     newSymbol: '', loading: false, result: null,
-    init() {},
+    async init() {
+      const invs = await api.listInvestors(50);
+      if (!invs.error) this.investors = invs;
+      // Check if navigated with a pre-selected investor (from portfolio screen)
+      const hash = window.location.hash;
+      if (hash.includes('?investor=')) {
+        const invId = hash.split('?investor=')[1];
+        if (invId) await this.selectClient(invId);
+      }
+    },
+    async selectClient(investorId) {
+      if (!investorId) { this.selectedInvestor = null; this.clientPortfolio = null; return; }
+      this.selectedInvestor = this.investors.find(i => i.id === investorId) || null;
+      // Load their portfolio and auto-populate
+      const summary = await api.portfolioSummary(investorId);
+      if (!summary.error && summary.holdings?.length) {
+        this.clientPortfolio = summary;
+        // Auto-populate symbols and holdings from equity + MF positions
+        this.form.symbols = [];
+        this.form.holdings = {};
+        for (const h of summary.holdings) {
+          if (['equity','mutual_fund'].includes(h.asset_class)) {
+            this.form.symbols.push(h.symbol_or_id);
+            this.form.holdings[h.symbol_or_id] = h.quantity;
+          }
+        }
+        this.form.parameters = {
+          investor_id: investorId,
+          client_name: summary.investor_name,
+          portfolio_value_inr: Math.round(summary.current_value).toLocaleString(),
+          risk_appetite: this.selectedInvestor?.risk_profile?.risk_category || 'moderate',
+        };
+      }
+    },
     addSymbol() {
       const s = this.newSymbol.trim().toUpperCase();
       if (s && !this.form.symbols.includes(s)) { this.form.symbols.push(s); this.form.holdings[s] = 0; }
