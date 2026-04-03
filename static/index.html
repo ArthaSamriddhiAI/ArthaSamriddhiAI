@@ -158,6 +158,13 @@
 
             <!-- Market Brief + Quick Actions -->
             <div class="space-y-4">
+              <div class="card p-5" x-show="!marketBrief">
+                <h3 class="font-semibold mb-2">AI Market Brief</h3>
+                <div class="skeleton h-4 w-3/4 mb-2"></div>
+                <div class="skeleton h-4 w-full mb-2"></div>
+                <div class="skeleton h-4 w-2/3"></div>
+                <p class="text-xs text-slate-400 mt-2">Generating via Mistral AI...</p>
+              </div>
               <div class="card p-5" x-show="marketBrief">
                 <h3 class="font-semibold mb-2">AI Market Brief</h3>
                 <p class="text-sm text-slate-600 leading-relaxed" x-text="cleanMd(marketBrief?.summary)"></p>
@@ -1603,14 +1610,15 @@ function dashboardScreen() {
     decisions: [], advisor: null, marketBrief: null,
     cleanMd(s) { return (s||'').replace(/\*\*/g,'').replace(/\*/g,'').replace(/^#+\s*/gm,'').replace(/^-\s*/gm,'- ').trim(); },
     async load() {
-      const [d, a, mb] = await Promise.all([
+      // Load fast data first (< 1s), show immediately
+      const [d, a] = await Promise.all([
         api.listDecisionsSummary(10),
         api.advisorDashboard(),
-        api.marketBrief(),
       ]);
       if (!d.error) this.decisions = d;
       if (!a.error) this.advisor = a;
-      if (!mb.error) this.marketBrief = mb;
+      // Load market brief in background (LLM call, 10-15s) — don't block UI
+      api.marketBrief().then(mb => { if (!mb.error) this.marketBrief = mb; });
     }
   };
 }
