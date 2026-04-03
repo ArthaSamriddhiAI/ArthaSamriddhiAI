@@ -160,7 +160,7 @@
             <div class="space-y-4">
               <div class="card p-5" x-show="marketBrief">
                 <h3 class="font-semibold mb-2">AI Market Brief</h3>
-                <p class="text-sm text-slate-600 leading-relaxed" x-text="marketBrief?.summary"></p>
+                <p class="text-sm text-slate-600 leading-relaxed" x-text="(marketBrief?.summary||'').replace(/\*\*/g,'').replace(/\*/g,'').replace(/^#+\s/gm,'')"></p>
                 <div x-show="marketBrief?.key_moves?.length" class="mt-2">
                   <template x-for="m in marketBrief?.key_moves?.slice(0,4)||[]">
                     <p class="text-xs text-slate-500 mt-1" x-text="'- '+m"></p>

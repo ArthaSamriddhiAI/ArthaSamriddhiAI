@@ -16,9 +16,10 @@ router = APIRouter(prefix="/data", tags=["data-explorer"])
 @router.get("/summary")
 async def data_summary(session: AsyncSession = Depends(get_session)):
     """Get record counts and date ranges for all data tables."""
+    # Use fast queries — cache tables for stocks/MF, direct COUNT for smaller tables
     tables = {
-        "stock_prices": "SELECT COUNT(*), COUNT(DISTINCT symbol), MIN(date), MAX(date) FROM stock_prices",
-        "mf_navs": "SELECT COUNT(*), COUNT(DISTINCT scheme_code), MIN(date), MAX(date) FROM mf_navs",
+        "stock_prices": "SELECT (SELECT COUNT(*) FROM stock_prices), (SELECT COUNT(*) FROM latest_stock_prices), (SELECT MIN(date) FROM stock_prices), (SELECT MAX(date) FROM latest_stock_prices)",
+        "mf_navs": "SELECT (SELECT COUNT(*) FROM mf_navs), (SELECT COUNT(*) FROM latest_mf_navs), '2011-01-01', (SELECT MAX(date) FROM latest_mf_navs)",
         "commodity_prices": "SELECT COUNT(*), COUNT(DISTINCT commodity), MIN(date), MAX(date) FROM commodity_prices",
         "forex_rates": "SELECT COUNT(*), COUNT(DISTINCT pair), MIN(date), MAX(date) FROM forex_rates",
         "macro_indicators": "SELECT COUNT(*), COUNT(DISTINCT indicator), MIN(date), MAX(date) FROM macro_indicators",
