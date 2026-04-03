@@ -114,3 +114,41 @@ async def get_assessment_detail(
     if result is None:
         raise HTTPException(status_code=404, detail="Assessment not found")
     return result
+
+
+# ── Mandates ──
+
+@router.get("/mandate-types")
+async def get_mandate_types():
+    """Get all available mandate types with descriptions."""
+    from artha.investor.mandates import MANDATE_TYPES
+    return MANDATE_TYPES
+
+
+@router.get("/investors/{investor_id}/mandates")
+async def get_mandates(investor_id: str, session: AsyncSession = Depends(get_session)):
+    from artha.investor.mandates import MandateService
+    return await MandateService(session).get_mandates(investor_id)
+
+
+@router.post("/investors/{investor_id}/mandates")
+async def set_mandate(
+    investor_id: str, data: dict,
+    session: AsyncSession = Depends(get_session),
+):
+    from artha.investor.mandates import MandateService
+    result = await MandateService(session).set_mandate(
+        investor_id, data.get("mandate_type", ""), data.get("value"), data.get("created_by", "advisor")
+    )
+    await session.commit()
+    return result
+
+
+@router.delete("/mandates/{mandate_id}")
+async def delete_mandate(mandate_id: str, session: AsyncSession = Depends(get_session)):
+    from artha.investor.mandates import MandateService
+    ok = await MandateService(session).delete_mandate(mandate_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Mandate not found")
+    await session.commit()
+    return {"status": "deleted"}

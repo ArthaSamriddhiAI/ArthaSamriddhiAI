@@ -1,0 +1,24 @@
+rules:
+  - name: mandate_max_position
+    description: Investor mandate - maximum single position weight
+    category: concentration
+    severity: hard
+    condition: "action_target_weight <= mandate_max_position"
+    parameters:
+      mandate_max_position: 0.25
+
+  - name: mandate_excluded_symbol
+    description: Investor mandate - symbol is on the exclusion list
+    category: regulatory
+    severity: hard
+    condition: "symbol not in excluded_symbols"
+    parameters:
+      excluded_symbols: []
+
+  - name: mandate_committee_approval
+    description: Investor mandate - committee approval required
+    category: concentration
+    severity: soft
+    condition: "not require_committee_approval"
+    parameters:
+      require_committee_approval: false

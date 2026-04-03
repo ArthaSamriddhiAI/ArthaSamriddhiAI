@@ -1368,6 +1368,67 @@
             </div>
           </div>
 
+          <!-- Investor Mandates -->
+          <div class="card p-5 mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">Governance Mandates</h3>
+                <p class="text-xs text-slate-400">Per-client rules enforced during governance decisions</p>
+              </div>
+              <button @click="showMandateForm=!showMandateForm" class="px-3 py-1.5 bg-amber-600 text-white rounded text-xs">+ Add Mandate</button>
+            </div>
+
+            <!-- Add form -->
+            <div x-show="showMandateForm" class="border rounded-lg p-4 mb-4 bg-slate-50">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label class="text-xs text-slate-500">Mandate Type</label>
+                  <select x-model="mandateForm.mandate_type" class="w-full px-2 py-1.5 border rounded text-sm mt-1">
+                    <template x-for="[key, mt] in Object.entries(mandateTypes)" :key="key">
+                      <option :value="key" x-text="mt.label"></option>
+                    </template>
+                  </select>
+                  <p class="text-xs text-slate-400 mt-1" x-text="mandateTypes[mandateForm.mandate_type]?.description||''"></p>
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500">Value</label>
+                  <input x-show="mandateTypes[mandateForm.mandate_type]?.value_type==='number'" type="number" x-model.number="mandateForm.value" class="w-full px-2 py-1.5 border rounded text-sm mt-1">
+                  <input x-show="mandateTypes[mandateForm.mandate_type]?.value_type==='text'" type="text" x-model="mandateForm.value" class="w-full px-2 py-1.5 border rounded text-sm mt-1" placeholder="Enter text...">
+                  <input x-show="mandateTypes[mandateForm.mandate_type]?.value_type==='list'" type="text" x-model="mandateForm.valueStr" class="w-full px-2 py-1.5 border rounded text-sm mt-1" placeholder="Comma-separated (e.g., COALINDIA,ONGC,ITC)">
+                  <select x-show="mandateTypes[mandateForm.mandate_type]?.value_type==='boolean'" x-model="mandateForm.value" class="w-full px-2 py-1.5 border rounded text-sm mt-1">
+                    <option :value="true">Yes</option><option :value="false">No</option>
+                  </select>
+                  <select x-show="mandateTypes[mandateForm.mandate_type]?.value_type==='choice'" x-model="mandateForm.value" class="w-full px-2 py-1.5 border rounded text-sm mt-1">
+                    <template x-for="c in mandateTypes[mandateForm.mandate_type]?.choices||[]"><option :value="c" x-text="c"></option></template>
+                  </select>
+                </div>
+                <div class="flex items-end">
+                  <button @click="addMandate()" class="px-4 py-1.5 bg-green-600 text-white rounded text-sm">Save Mandate</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active mandates -->
+            <div x-show="mandates.length" class="space-y-2">
+              <template x-for="m in mandates" :key="m.id">
+                <div class="flex items-center justify-between p-3 border rounded-lg">
+                  <div class="flex items-center gap-3">
+                    <span class="badge" :class="m.category==='exclusion'?'badge-hard':m.category==='risk'?'badge-escalation':m.category==='concentration'?'badge-soft':'badge-info'" x-text="m.category"></span>
+                    <div>
+                      <span class="font-medium text-sm" x-text="m.label"></span>
+                      <span class="text-sm text-blue-600 ml-2" x-text="Array.isArray(m.value)?m.value.join(', '):(m.value+' '+(m.unit||''))"></span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-400" x-text="'by '+m.created_by"></span>
+                    <button @click="deleteMandate(m.id)" class="text-red-400 hover:text-red-600 text-xs">Remove</button>
+                  </div>
+                </div>
+              </template>
+            </div>
+            <div x-show="!mandates.length" class="text-sm text-slate-400 py-2">No mandates set. Global governance rules apply.</div>
+          </div>
+
           <!-- Assessment History -->
           <div class="card p-5">
             <div class="flex items-center justify-between mb-4">
@@ -1905,6 +1966,8 @@ function investorProfileScreen() {
   return {
     investor: null, profile: null, assessments: [], loading: false,
     selectedAssessment: null, _currentId: null,
+    mandates: [], mandateTypes: {}, showMandateForm: false,
+    mandateForm: { mandate_type: 'max_single_position_pct', value: 25, valueStr: '' },
     initRouteListener() {
       const self = this;
       const check = () => {
@@ -1917,19 +1980,39 @@ function investorProfileScreen() {
       };
       window.addEventListener('route-change', check);
       check();
+      api.getMandateTypes().then(r => { if (!r.error) this.mandateTypes = r; });
     },
     async load(id) {
       if (!id) return;
       this.loading = true;
-      const [inv, assessments] = await Promise.all([
+      const [inv, assessments, mands] = await Promise.all([
         api.getInvestor(id),
         api.getAssessmentHistory(id),
+        api.getMandates(id),
       ]);
       this.loading = false;
       if (inv.error) return;
       this.investor = inv;
       this.profile = inv.risk_profile || null;
       this.assessments = assessments.error ? [] : assessments;
+      this.mandates = mands.error ? [] : mands;
+    },
+    async addMandate() {
+      if (!this._currentId) return;
+      let value = this.mandateForm.value;
+      const vt = this.mandateTypes[this.mandateForm.mandate_type]?.value_type;
+      if (vt === 'list') value = this.mandateForm.valueStr.split(',').map(s => s.trim()).filter(Boolean);
+      if (vt === 'boolean') value = value === true || value === 'true';
+      await api.setMandate(this._currentId, { mandate_type: this.mandateForm.mandate_type, value: value });
+      this.showMandateForm = false;
+      const mands = await api.getMandates(this._currentId);
+      this.mandates = mands.error ? [] : mands;
+      Alpine.store('notifications').add('success', 'Mandate saved');
+    },
+    async deleteMandate(id) {
+      await api.deleteMandate(id);
+      const mands = await api.getMandates(this._currentId);
+      this.mandates = mands.error ? [] : mands;
     }
   };
 }

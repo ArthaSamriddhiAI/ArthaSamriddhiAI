@@ -49,6 +49,10 @@ window.api = {
   getAssessmentHistory: (investorId) => request('GET', `/investor/investors/${investorId}/assessments`),
   getAssessmentDetail: (id) => request('GET', `/investor/assessments/${id}`),
   createFamilyOffice: (data) => request('POST', '/investor/family-offices', data),
+  getMandateTypes: () => request('GET', '/investor/mandate-types'),
+  getMandates: (investorId) => request('GET', `/investor/investors/${investorId}/mandates`),
+  setMandate: (investorId, data) => request('POST', `/investor/investors/${investorId}/mandates`, data),
+  deleteMandate: (id) => request('DELETE', `/investor/mandates/${id}`),
 
   // Portfolio
   portfolioSummary: (investorId) => request('GET', `/portfolio/${investorId}/summary`),

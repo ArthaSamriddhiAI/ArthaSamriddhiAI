@@ -156,6 +156,16 @@ class GovernancePipeline:
                 except Exception:
                     pass
 
+                # Also inject investor mandates
+                try:
+                    from artha.investor.mandates import MandateService
+                    mandate_svc = MandateService(self._session)
+                    mandates = await mandate_svc.get_mandates_for_governance(investor_id)
+                    if mandates:
+                        evidence_context["investor_mandates"] = mandates
+                except Exception:
+                    pass
+
             state["evidence_context"] = evidence_context
 
             # Step 3: Snapshot rules
@@ -370,10 +380,12 @@ class GovernancePipeline:
         }
 
     def _get_investor_constraints(self, evidence_context: dict[str, Any]) -> dict[str, Any]:
-        """Extract investor constraints for rule evaluation context."""
+        """Extract investor constraints + mandates for rule evaluation context."""
         profile = evidence_context.get("investor_risk_profile", {})
         constraints = profile.get("constraints", {})
-        return {
+        mandates = evidence_context.get("investor_mandates", {})
+
+        result = {
             "investor_risk_category": profile.get("risk_category", "moderate"),
             "investor_max_volatility": constraints.get("max_volatility", 0.20),
             "investor_max_drawdown": constraints.get("max_drawdown", 0.25),
@@ -381,3 +393,17 @@ class GovernancePipeline:
             "investor_horizon": constraints.get("investment_horizon", "medium"),
             "family_complexity_score": profile.get("family_complexity_score", 0),
         }
+
+        # Override with investor-specific mandates (tighter rules win)
+        if mandates.get("max_single_position_pct"):
+            result["mandate_max_position"] = mandates["max_single_position_pct"] / 100
+        if mandates.get("max_equity_pct"):
+            result["investor_equity_ceiling"] = min(result["investor_equity_ceiling"], mandates["max_equity_pct"] / 100)
+        if mandates.get("max_drawdown_pct"):
+            result["investor_max_drawdown"] = min(result["investor_max_drawdown"], mandates["max_drawdown_pct"] / 100)
+        if mandates.get("excluded_symbols"):
+            result["excluded_symbols"] = mandates["excluded_symbols"]
+        if mandates.get("require_committee_approval"):
+            result["require_committee_approval"] = True
+
+        return result
