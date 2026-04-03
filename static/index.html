@@ -1947,14 +1947,14 @@ function investorsScreen() {
     async load() {
       const data = await api.listInvestors(50);
       if (!data.error) {
-        // Fetch profiles for each investor
-        const enriched = [];
-        for (const inv of data) {
-          const profile = await api.getInvestorProfile(inv.id);
-          inv.risk_profile = profile.error ? null : profile;
-          enriched.push(inv);
+        // Show investors immediately, then enrich profiles in parallel
+        this.investors = data;
+        // Fetch all profiles in parallel (not sequential)
+        const profiles = await Promise.all(data.map(inv => api.getInvestorProfile(inv.id)));
+        for (let i = 0; i < data.length; i++) {
+          data[i].risk_profile = profiles[i].error ? null : profiles[i];
         }
-        this.investors = enriched;
+        this.investors = [...data]; // trigger Alpine reactivity
       }
     },
     async createInvestor() {
