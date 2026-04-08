@@ -421,18 +421,23 @@
 
           <!-- Analysis Tab (Pre-Governance Multi-Lens Analysis) -->
           <div x-show="tab==='analysis'">
-            <!-- Pipeline flow diagram -->
+            <!-- Pipeline flow diagram — dynamic from actual agents -->
             <div class="card p-4 mb-4">
               <div class="flex items-center justify-center gap-2 text-sm flex-wrap">
                 <span class="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg font-medium">Intent</span>
                 <span class="text-slate-400">&rarr;</span>
                 <span class="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg font-medium">Evidence</span>
                 <span class="text-slate-400">&rarr;</span>
-                <span class="px-3 py-1.5 bg-teal-100 text-teal-700 rounded-lg font-medium border-2 border-teal-300">Analysis Agents</span>
+                <template x-for="(agent, i) in analysisEnvelope?.individual_outputs||[]" :key="agent.agent_id">
+                  <span class="contents">
+                    <span class="px-3 py-1.5 bg-teal-100 text-teal-700 rounded-lg font-medium text-xs" x-text="agent.agent_name"></span>
+                    <span class="text-slate-400" x-show="i < (analysisEnvelope?.individual_outputs?.length||1)-1">&rarr;</span>
+                  </span>
+                </template>
+                <span class="text-slate-400" x-show="analysisEnvelope?.individual_outputs?.length">&rarr;</span>
+                <span class="px-3 py-1.5 bg-teal-200 text-teal-800 rounded-lg font-medium border border-teal-400">Synthesis</span>
                 <span class="text-slate-400">&rarr;</span>
-                <span class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg font-medium">Governance Agents</span>
-                <span class="text-slate-400">&rarr;</span>
-                <span class="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg font-medium">Rules</span>
+                <span class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg font-medium">Governance</span>
                 <span class="text-slate-400">&rarr;</span>
                 <span class="px-3 py-1.5 rounded-lg font-medium" :class="result?.status==='approved'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'" x-text="utils.statusLabel(result?.status)"></span>
               </div>
@@ -582,16 +587,17 @@
 
           <!-- Governance Agent Tab -->
           <div x-show="tab==='agents'">
-            <!-- Agent flow diagram -->
+            <!-- Agent flow diagram — dynamic from actual agents -->
             <div class="card p-4 mb-4">
               <div class="flex items-center justify-center gap-2 text-sm flex-wrap">
-                <span class="px-3 py-1.5 bg-teal-100 text-teal-700 rounded-lg font-medium">Analysis Synthesis</span>
-                <span class="text-slate-400">&rarr;</span>
-                <span class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg font-medium">Allocation Agent</span>
-                <span class="text-slate-400">&rarr;</span>
-                <span class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg font-medium">Risk Agent</span>
-                <span class="text-slate-400">&rarr;</span>
-                <span class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg font-medium">Review Agent</span>
+                <span x-show="analysisEnvelope" class="px-3 py-1.5 bg-teal-100 text-teal-700 rounded-lg font-medium">Analysis Synthesis</span>
+                <span x-show="analysisEnvelope" class="text-slate-400">&rarr;</span>
+                <template x-for="(agent, i) in agentOutputs" :key="agent.agent_id">
+                  <span class="contents">
+                    <span class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg font-medium" x-text="agent.agent_name"></span>
+                    <span class="text-slate-400" x-show="i < agentOutputs.length-1">&rarr;</span>
+                  </span>
+                </template>
                 <span class="text-slate-400">&rarr;</span>
                 <span class="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg font-medium">Rule Engine</span>
                 <span class="text-slate-400">&rarr;</span>
