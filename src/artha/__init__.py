@@ -1,1 +1,1 @@
-"""ArthaSamriddhiAI — Portfolio Operating System for Regulated Finance."""
+"""Samriddhi AI — Portfolio Operating System for Regulated Finance."""

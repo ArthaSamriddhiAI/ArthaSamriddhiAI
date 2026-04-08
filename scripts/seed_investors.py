@@ -160,7 +160,7 @@ INVESTORS = [
 
 def main():
     print("=" * 70)
-    print("  ArthaSamriddhiAI - Investor & Assessment Data Seeder")
+    print("  Samriddhi AI - Investor & Assessment Data Seeder")
     print("=" * 70)
 
     for inv_data in INVESTORS:

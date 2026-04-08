@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ArthaSamriddhiAI Demo Data Seeder
+Samriddhi AI Demo Data Seeder
 ==================================
 Seeds realistic HNI (High Net-worth Individual) portfolio scenarios
 covering explainability, auditability, and decision telemetry.
@@ -270,13 +270,13 @@ SCENARIOS = [
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Seed ArthaSamriddhiAI with demo data")
+    parser = argparse.ArgumentParser(description="Seed Samriddhi AI with demo data")
     parser.add_argument("--base-url", default=DEFAULT_BASE, help=f"API base URL (default: {DEFAULT_BASE})")
     args = parser.parse_args()
 
     base = args.base_url.rstrip("/")
     print(f"\n{'='*70}")
-    print(f"  ArthaSamriddhiAI Demo Data Seeder")
+    print(f"  Samriddhi AI Demo Data Seeder")
     print(f"  Target: {base}")
     print(f"{'='*70}\n")
 

@@ -1,4 +1,4 @@
-// ArthaSamriddhiAI API Client
+// Samriddhi AI API Client
 const BASE = '/api/v1';
 
 async function request(method, path, body = null) {

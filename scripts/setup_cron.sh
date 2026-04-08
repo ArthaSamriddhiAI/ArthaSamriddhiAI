@@ -11,7 +11,7 @@ DB_PATH="${APP_DIR}/artha.db"
 # Service
 cat > /etc/systemd/system/artha-pipeline.service << EOF
 [Unit]
-Description=ArthaSamriddhiAI Daily Data Pipeline
+Description=Samriddhi AI Daily Data Pipeline
 After=network.target
 
 [Service]
@@ -28,7 +28,7 @@ EOF
 # Timer — 4 AM IST = 22:30 UTC
 cat > /etc/systemd/system/artha-pipeline.timer << EOF
 [Unit]
-Description=Run ArthaSamriddhiAI data pipeline daily at 4 AM IST
+Description=Run Samriddhi AI data pipeline daily at 4 AM IST
 
 [Timer]
 OnCalendar=*-*-* 22:30:00

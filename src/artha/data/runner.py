@@ -112,7 +112,7 @@ async def _run(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="ArthaSamriddhiAI Data Pipeline")
+    parser = argparse.ArgumentParser(description="Samriddhi AI Data Pipeline")
     parser.add_argument("--stocks", action="store_true", help="Run stock price pipeline")
     parser.add_argument("--mf", action="store_true", help="Run mutual fund NAV pipeline")
     parser.add_argument("--initial", action="store_true", help="Full 10-year backfill (default: incremental)")

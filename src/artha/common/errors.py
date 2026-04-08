@@ -4,7 +4,7 @@ from __future__ import annotations
 
 
 class ArthaError(Exception):
-    """Base exception for all ArthaSamriddhiAI errors."""
+    """Base exception for all Samriddhi AI errors."""
 
 
 class ValidationError(ArthaError):

@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="ArthaSamriddhiAI",
+        title="Samriddhi AI",
         description="Portfolio Operating System — Evidence, Governance, Accountability",
         version="0.1.0",
         lifespan=lifespan,
@@ -64,7 +64,7 @@ def create_app() -> FastAPI:
 
     @app.get("/api/v1/health")
     async def health():
-        return {"status": "ok", "service": "ArthaSamriddhiAI"}
+        return {"status": "ok", "service": "Samriddhi AI"}
 
     # Static files and SPA root
     static_dir = Path("static")
