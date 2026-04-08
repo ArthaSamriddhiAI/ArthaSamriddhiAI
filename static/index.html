@@ -1930,6 +1930,9 @@ function decisionScreen() {
       this.ruleEvals = detail.rule_evaluations || [];
       this.permission = detail.permission_outcome || null;
 
+      // Auto-select best tab: Analysis if available, otherwise Governance
+      this.tab = this.analysisEnvelope ? 'analysis' : 'agents';
+
       // Also fetch trace and evidence for those tabs
       const [audit] = await Promise.all([api.getAudit(id)]);
       this.loading = false;
