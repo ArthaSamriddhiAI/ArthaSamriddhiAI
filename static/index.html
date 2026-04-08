@@ -415,7 +415,7 @@
             <button @click="tab='agents'" class="tab" :class="tab==='agents'&&'active'">Governance</button>
             <button @click="tab='rules'" class="tab" :class="tab==='rules'&&'active'">Rules</button>
             <button @click="tab='permissions'" class="tab" :class="tab==='permissions'&&'active'">Permissions</button>
-            <button @click="tab='trace'" class="tab" :class="tab==='trace'&&'active'">Trace DAG</button>
+            <button @click="tab='trace'" class="tab" :class="tab==='trace'&&'active'">Decision Trace</button>
             <button @click="tab='evidence'" class="tab" :class="tab==='evidence'&&'active'">Evidence</button>
           </div>
 
@@ -734,7 +734,7 @@
             </div>
           </div>
 
-          <!-- Trace DAG Tab -->
+          <!-- Decision Trace Tab -->
           <div x-show="tab==='trace'">
             <div class="card p-5">
               <h3 class="font-semibold mb-4">Decision Trace (Causal Graph)</h3>

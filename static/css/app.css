@@ -19,7 +19,7 @@
 /* Confidence bar */
 .confidence-bar { transition: width 0.6s ease-out; }
 
-/* Trace DAG */
+/* Decision Trace */
 .trace-node { cursor: pointer; transition: transform 0.15s; }
 .trace-node:hover { transform: scale(1.05); }
 .trace-line { stroke-width: 2; fill: none; }
