@@ -95,6 +95,7 @@ async def get_decision_detail(
         "portfolio_value": result_data.get("parameters", {}).get("portfolio_value_inr", ""),
         "parameters": result_data.get("parameters", {}),
         "symbols": result_data.get("symbols", []),
+        "analysis_envelope": result_data.get("analysis_envelope"),
         "agent_outputs": result_data.get("agent_outputs", []),
         "rule_evaluations": result_data.get("rule_evaluations", []),
         "permission_outcome": result_data.get("permission_outcome"),

@@ -29,7 +29,8 @@ window.utils = {
       intent_received: '#60a5fa', evidence_frozen: '#818cf8', agent_invoked: '#a78bfa',
       agent_output: '#7c3aed', rule_evaluated: '#eab308', permission_granted: '#22c55e',
       permission_denied: '#ef4444', escalation_required: '#f59e0b', human_approval: '#14b8a6',
-      execution_submitted: '#15803d', error: '#b91c1c'
+      execution_submitted: '#15803d', analysis_started: '#0d9488', analysis_synthesized: '#0f766e',
+      error: '#b91c1c'
     };
     return map[type] || '#94a3b8';
   },
@@ -40,7 +41,8 @@ window.utils = {
       agent_invoked: 'Agent Invoked', agent_output: 'Agent Output',
       rule_evaluated: 'Rule Evaluated', permission_granted: 'Permission Granted',
       permission_denied: 'Permission Denied', escalation_required: 'Escalation Required',
-      human_approval: 'Human Approval', execution_submitted: 'Execution Submitted', error: 'Error'
+      human_approval: 'Human Approval', execution_submitted: 'Execution Submitted',
+      analysis_started: 'Analysis Started', analysis_synthesized: 'Analysis Synthesized', error: 'Error'
     };
     return map[type] || type;
   },

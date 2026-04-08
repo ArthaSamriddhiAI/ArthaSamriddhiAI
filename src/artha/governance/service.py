@@ -42,6 +42,7 @@ class GovernanceService:
             decision_id=state["decision_id"],
             intent_type=state["intent"].intent_type.value,
             status=state["status"],
+            analysis_envelope=state.get("analysis_envelope"),
             agent_outputs=state.get("agent_outputs", []),
             rule_evaluations=state.get("rule_evaluations", []),
             permission_outcome=state.get("permission_outcome"),

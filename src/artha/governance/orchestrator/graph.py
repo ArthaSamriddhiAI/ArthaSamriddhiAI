@@ -23,6 +23,8 @@ from artha.evidence.service import EvidenceService
 from artha.evidence.store.artifact import ArtifactStore
 from artha.evidence.store.repository import EvidenceRepository
 from artha.evidence.store.snapshot import EvidenceSnapshotService
+from artha.governance.agents.analysis.master.agent import MasterAnalysisAgent
+from artha.governance.agents.analysis.models import AnalysisEnvelope
 from artha.governance.agents.base import AgentOutput, ProposedAction
 from artha.governance.intent.models import GovernanceIntent
 from artha.governance.intent.parser import validate_intent
@@ -71,6 +73,7 @@ class GovernancePipeline:
             "intent": intent,
             "evidence_snapshot": None,
             "evidence_context": {},
+            "analysis_envelope": None,
             "agent_outputs": [],
             "agents_to_consult": [],
             "loop_count": 0,
@@ -168,11 +171,42 @@ class GovernancePipeline:
 
             state["evidence_context"] = evidence_context
 
-            # Step 3: Snapshot rules
+            # Step 3: Analysis layer — multi-lens pre-governance analysis
+            analysis_envelope = await self._run_analysis_layer(
+                intent, evidence_context, _trace, evidence_node
+            )
+            state["analysis_envelope"] = analysis_envelope
+
+            # Enrich evidence context with analysis synthesis for governance agents
+            evidence_context["analysis_synthesis"] = {
+                "summary": analysis_envelope.synthesis_summary,
+                "confidence": analysis_envelope.overall_confidence,
+                "risk_level": analysis_envelope.overall_risk_level.value,
+                "key_drivers": analysis_envelope.key_drivers,
+                "conflicts": analysis_envelope.conflicts,
+                "flags": analysis_envelope.flags,
+                "recommended_actions": [
+                    a.model_dump() for a in analysis_envelope.recommended_actions
+                ],
+                "individual_assessments": [
+                    {
+                        "agent": o.agent_name,
+                        "agent_id": o.agent_id,
+                        "confidence": o.confidence,
+                        "risk_level": o.risk_level.value,
+                        "drivers": o.drivers,
+                        "flags": o.flags,
+                        "summary": o.reasoning_summary,
+                    }
+                    for o in analysis_envelope.individual_outputs
+                ],
+            }
+
+            # Step 4: Snapshot rules
             rule_set = await self._rule_repo.snapshot_rule_set()
             state["rule_set"] = rule_set
 
-            # Step 4: Agent consultation loop
+            # Step 5: Agent consultation loop
             max_loops = settings.max_orchestrator_loops
             last_agent_nodes: list[str] = []
 
@@ -305,6 +339,7 @@ class GovernancePipeline:
             "parameters": intent.parameters,
             "symbols": intent.symbols,
             "holdings": intent.holdings,
+            "analysis_envelope": state.get("analysis_envelope").model_dump(mode="json") if state.get("analysis_envelope") else None,
             "agent_outputs": agent_outputs,
             "rule_evaluations": rule_evals,
             "permission_outcome": perm.model_dump(mode="json") if perm else None,
@@ -322,6 +357,64 @@ class GovernancePipeline:
         )
         self._session.add(row)
         await self._session.flush()
+
+    async def _run_analysis_layer(
+        self,
+        intent: GovernanceIntent,
+        evidence_context: dict[str, Any],
+        trace_fn,
+        parent_node_id: str,
+    ) -> AnalysisEnvelope:
+        """Run the multi-lens analysis layer before governance agents."""
+        from artha.accountability.trace.models import TraceNodeType
+
+        # Trace: analysis started
+        analysis_node = await trace_fn(
+            TraceNodeType.ANALYSIS_STARTED,
+            {"intent_type": intent.intent_type.value, "symbols": intent.symbols},
+            parent_ids=[parent_node_id],
+        )
+
+        master = MasterAnalysisAgent(self._llm)
+        envelope = await master.run(intent, evidence_context)
+
+        # Trace each sub-agent output
+        sub_nodes: list[str] = []
+        for output in envelope.individual_outputs:
+            node = await trace_fn(
+                TraceNodeType.AGENT_OUTPUT,
+                {
+                    "agent_id": output.agent_id,
+                    "agent_name": output.agent_name,
+                    "risk_level": output.risk_level.value,
+                    "confidence": output.confidence,
+                    "drivers": output.drivers,
+                    "flags": output.flags,
+                    "reasoning_summary": (
+                        output.reasoning_summary[:200]
+                        if output.reasoning_summary
+                        else ""
+                    ),
+                },
+                parent_ids=[analysis_node],
+            )
+            sub_nodes.append(node)
+
+        # Trace: synthesis complete
+        await trace_fn(
+            TraceNodeType.ANALYSIS_SYNTHESIZED,
+            {
+                "overall_confidence": envelope.overall_confidence,
+                "overall_risk_level": envelope.overall_risk_level.value,
+                "agents_invoked": [o.agent_id for o in envelope.individual_outputs],
+                "key_drivers": envelope.key_drivers[:5],
+                "conflicts": envelope.conflicts,
+                "flags_count": len(envelope.flags),
+            },
+            parent_ids=sub_nodes or [analysis_node],
+        )
+
+        return envelope
 
     async def _build_evidence_context(
         self, artifact_ids: dict[str, str]

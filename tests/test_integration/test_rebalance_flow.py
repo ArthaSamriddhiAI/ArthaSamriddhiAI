@@ -94,6 +94,22 @@ async def test_rebalance_flow_end_to_end(db_session, frozen_clock, mock_llm):
 @pytest.mark.asyncio
 async def test_rebalance_with_no_actions_produces_approved(db_session, frozen_clock, mock_llm):
     """When agents propose no actions, the pipeline should still complete cleanly."""
+    # Override mock to return no proposed actions for this test
+    mock_llm.set_structured_response("Allocation", {
+        "agent_id": "allocation", "agent_name": "Allocation Reasoning",
+        "risk_level": "low", "confidence": 0.8, "drivers": ["Portfolio balanced"],
+        "proposed_actions": [], "reasoning_summary": "No changes needed.", "flags": [],
+    })
+    mock_llm.set_structured_response("Risk Interpretation", {
+        "agent_id": "risk_interpretation", "agent_name": "Risk Interpretation",
+        "risk_level": "low", "confidence": 0.8, "drivers": ["Risk within bounds"],
+        "proposed_actions": [], "reasoning_summary": "Risk acceptable.", "flags": [],
+    })
+    mock_llm.set_structured_response("Review", {
+        "agent_id": "review", "agent_name": "Review & Explanation",
+        "risk_level": "low", "confidence": 0.8, "drivers": ["All agents agree"],
+        "proposed_actions": [], "reasoning_summary": "Consensus: no action.", "flags": [],
+    })
     intent = GovernanceIntent(
         intent_type=IntentType.REBALANCE,
         symbols=["AAPL", "MSFT"],

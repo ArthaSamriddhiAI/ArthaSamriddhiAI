@@ -20,6 +20,8 @@ class TraceNodeType(str, Enum):
     ESCALATION_REQUIRED = "escalation_required"
     HUMAN_APPROVAL = "human_approval"
     EXECUTION_SUBMITTED = "execution_submitted"
+    ANALYSIS_STARTED = "analysis_started"
+    ANALYSIS_SYNTHESIZED = "analysis_synthesized"
     ERROR = "error"
 
 
