@@ -862,6 +862,7 @@
               <template x-if="portfolio?.portfolio_status==='live'">
                 <button @click="unfreezePortfolio()" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700">Unfreeze to Edit</button>
               </template>
+              <button @click="ptab='review';startPortfolioReview()" :disabled="!portfolio?.holdings_count" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50" :title="!portfolio?.holdings_count?'Portfolio is empty':'Run multi-agent portfolio analysis'">Review Portfolio</button>
               <button @click="window.location.hash='#/intent?investor='+_currentId" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm">Run Governance Review</button>
               <a :href="'/api/v1/portfolio/'+_currentId+'/report'" target="_blank" class="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm">Download Report</a>
               <!-- DRAFT: Import CSV -->
@@ -915,6 +916,7 @@
             <button @click="ptab='scenarios';loadScenario()" class="tab" :class="ptab==='scenarios'&&'active'">Scenarios</button>
             <button @click="ptab='tax';loadTax()" class="tab" :class="ptab==='tax'&&'active'">Tax</button>
             <button @click="ptab='goals';loadGoals()" class="tab" :class="ptab==='goals'&&'active'">Goals</button>
+            <button @click="ptab='review'" class="tab" :class="ptab==='review'&&'active'">Review</button>
             <button @click="ptab='audit';loadEditLog()" class="tab" :class="ptab==='audit'&&'active'">Audit Trail</button>
           </div>
 
@@ -1179,6 +1181,225 @@
               </template>
             </div>
             <div x-show="!goalsData?.length" class="card p-8 text-center text-slate-400">No financial goals set. Click "Add Goal" to get started.</div>
+          </div>
+
+          <!-- PORTFOLIO REVIEW TAB (PAM: CPR + Suggestions) -->
+          <div x-show="ptab==='review'">
+            <!-- Progress Bar (during analysis) -->
+            <div x-show="reviewLoading" class="card p-5 mb-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium" x-text="reviewProgress"></span>
+                <span class="text-xs text-slate-400" x-text="reviewLoading?'Processing...':'Complete'"></span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-3">
+                <div class="h-3 rounded-full bg-teal-500 confidence-bar" :style="'width:'+reviewProgressPct+'%'"></div>
+              </div>
+            </div>
+
+            <!-- No review yet -->
+            <div x-show="!reviewData && !reviewLoading" class="card p-8 text-center">
+              <p class="text-slate-400 mb-3">No portfolio review has been run yet.</p>
+              <button @click="startPortfolioReview()" :disabled="!portfolio?.holdings_count" class="px-6 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50">Run Portfolio Review</button>
+            </div>
+
+            <!-- CPR Display (Phase 1 output) -->
+            <div x-show="reviewData && !reviewLoading">
+              <!-- Health Score Banner -->
+              <div class="card p-5 mb-4 border-l-4" :class="{'border-green-500':reviewData?.health_score?.risk_level==='LOW','border-amber-500':reviewData?.health_score?.risk_level==='MEDIUM','border-red-500':reviewData?.health_score?.risk_level==='HIGH','border-red-800':reviewData?.health_score?.risk_level==='CRITICAL'}[reviewData?.health_score?.risk_level]||'border-slate-300'">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h3 class="font-bold text-lg">Portfolio Health Score</h3>
+                    <p class="text-sm text-slate-600 mt-1" x-text="reviewData?.health_score?.summary||''"></p>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span class="text-3xl font-bold" :class="{'text-green-600':'LOW','text-amber-600':'MEDIUM','text-red-600':'HIGH','text-red-800':'CRITICAL'}[reviewData?.health_score?.risk_level]||'text-slate-500'" x-text="reviewData?.health_score?.risk_level||'N/A'"></span>
+                    <span class="text-sm text-slate-400" x-text="((reviewData?.health_score?.confidence||0)*100).toFixed(0)+'% confidence'"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Data Quality Warning Banner -->
+              <div x-show="reviewData?.data_quality?.holdings_with_gaps>0" class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 flex items-center gap-2 text-sm text-amber-700">
+                <span>&#9888;</span>
+                <span x-text="reviewData?.data_quality?.holdings_with_gaps+' holdings have data gaps: '+(reviewData?.data_quality?.gap_types||[]).join(', ')"></span>
+              </div>
+
+              <!-- Export PDF Button -->
+              <div class="flex justify-end mb-4">
+                <a :href="'/api/v1/portfolio-analysis/'+_currentId+'/review/'+(reviewData?.review_id||'')+'/pdf'" target="_blank" class="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  Export PDF
+                </a>
+              </div>
+
+              <!-- 10 CPR Sections (collapsible) -->
+              <div class="space-y-2">
+                <template x-for="(section, idx) in reviewData?.sections||[]" :key="idx">
+                  <details class="card group" :open="idx<3">
+                    <summary class="p-4 cursor-pointer flex items-center justify-between select-none hover:bg-slate-50">
+                      <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold" x-text="idx+1"></span>
+                        <span class="font-semibold text-sm" x-text="section.title"></span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span x-show="section.risk_level" class="badge text-xs" :class="utils.riskBadge(section.risk_level?.toLowerCase())" x-text="section.risk_level"></span>
+                        <svg class="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      </div>
+                    </summary>
+                    <div class="px-4 pb-4 border-t">
+                      <!-- Section content: text narrative -->
+                      <p class="text-sm text-slate-600 leading-relaxed mt-3" x-show="section.narrative" x-text="section.narrative"></p>
+
+                      <!-- Per-holding table (Section 2) -->
+                      <div x-show="section.holdings_table?.length">
+                        <table class="w-full text-xs mt-3">
+                          <thead class="bg-slate-50"><tr><th class="px-2 py-2 text-left">Holding</th><th class="px-2 py-2 text-left">Asset Class</th><th class="px-2 py-2 text-right">Weight</th><th class="px-2 py-2 text-center">Risk</th><th class="px-2 py-2 text-right">Confidence</th><th class="px-2 py-2 text-left">Key Drivers</th><th class="px-2 py-2 text-left">Flags</th></tr></thead>
+                          <tbody>
+                            <template x-for="h in section.holdings_table||[]" :key="h.holding_id">
+                              <tr class="border-t">
+                                <td class="px-2 py-1.5 font-medium" x-text="h.instrument_name"></td>
+                                <td class="px-2 py-1.5"><span class="badge badge-info text-xs" x-text="h.asset_class"></span></td>
+                                <td class="px-2 py-1.5 text-right" x-text="h.weight_pct?.toFixed(1)+'%'"></td>
+                                <td class="px-2 py-1.5 text-center"><span class="badge text-xs" :class="utils.riskBadge(h.risk_level?.toLowerCase())" x-text="h.risk_level"></span></td>
+                                <td class="px-2 py-1.5 text-right" x-text="((h.confidence||0)*100).toFixed(0)+'%'"></td>
+                                <td class="px-2 py-1.5 text-xs text-slate-500" x-text="(h.top_drivers||[]).join('; ')"></td>
+                                <td class="px-2 py-1.5"><template x-for="f in h.flags||[]"><span class="text-xs text-amber-600 mr-1" x-text="f"></span></template></td>
+                              </tr>
+                            </template>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <!-- Key-value items (for structured sections) -->
+                      <div x-show="section.items?.length" class="space-y-1 mt-3">
+                        <template x-for="item in section.items||[]" :key="item.label">
+                          <div class="flex items-start gap-2 text-sm">
+                            <span class="text-slate-400 mt-0.5">&#8226;</span>
+                            <div><span class="font-medium" x-text="item.label+': '"></span><span class="text-slate-600" x-text="item.value"></span></div>
+                          </div>
+                        </template>
+                      </div>
+
+                      <!-- Flags list (for Key Risks section) -->
+                      <div x-show="section.flags?.length" class="space-y-1 mt-3">
+                        <template x-for="flag in section.flags||[]" :key="flag.text">
+                          <div class="flex items-start gap-2 text-sm bg-amber-50 p-2 rounded">
+                            <span class="badge text-xs" :class="utils.riskBadge(flag.severity?.toLowerCase())" x-text="flag.severity"></span>
+                            <span class="text-amber-800" x-text="flag.text"></span>
+                            <span class="text-xs text-slate-400 ml-auto" x-text="'from: '+flag.source_agent"></span>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </details>
+                </template>
+              </div>
+
+              <!-- Generate Suggestions Button -->
+              <div class="mt-6 text-center" x-show="!suggestionsData && !suggestionsLoading">
+                <button @click="generateSuggestions()" class="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700">Generate Investment Suggestions</button>
+                <p class="text-xs text-slate-400 mt-2">Phase 2: Identify exits and redeployment opportunities through the full EGA cycle.</p>
+              </div>
+
+              <!-- Suggestions Loading -->
+              <div x-show="suggestionsLoading" class="card p-5 mt-6">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-sm font-medium" x-text="suggestionsProgress||'Generating suggestions...'"></span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-3">
+                  <div class="h-3 rounded-full bg-purple-500 confidence-bar" :style="'width:'+suggestionsProgressPct+'%'"></div>
+                </div>
+              </div>
+
+              <!-- Suggestion Panel (Phase 2 output) -->
+              <div x-show="suggestionsData?.suggestions?.length && !suggestionsLoading" class="mt-6">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="font-bold text-lg">Investment Suggestions</h3>
+                  <span class="text-sm text-slate-400" x-text="suggestionsData?.suggestions?.length+' actionable suggestions'"></span>
+                </div>
+
+                <!-- Total Redeployable -->
+                <div class="card p-4 mb-4 bg-purple-50 border-l-4 border-purple-500">
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-purple-800">Total Redeployable Amount (after LTCG)</span>
+                    <span class="text-xl font-bold text-purple-700" x-text="'Rs '+formatINR(suggestionsData?.total_redeployable_inr||0)"></span>
+                  </div>
+                </div>
+
+                <!-- Suggestion Cards -->
+                <div class="space-y-3">
+                  <template x-for="sug in suggestionsData?.suggestions||[]" :key="sug.suggestion_id">
+                    <div class="card p-5" :class="sug.governance_status==='escalation_required'?'border-l-4 border-amber-500':''">
+                      <!-- Header -->
+                      <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                          <span class="px-2 py-1 rounded text-xs font-bold text-white"
+                                :class="{'bg-red-500':'EXIT','bg-blue-600':'REDEPLOY','bg-amber-500':'HOLD_WITH_CONDITIONS'}[sug.suggestion_type]||'bg-slate-400'"
+                                x-text="sug.suggestion_type?.replace('_',' ')"></span>
+                          <span class="font-semibold" x-text="sug.holding_name||sug.proposed_instrument||''"></span>
+                          <span x-show="sug.linked_suggestion_id" class="text-xs text-slate-400" x-text="'Linked to: '+sug.linked_suggestion_id"></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <span class="text-sm font-bold" x-text="'Rs '+formatINR(sug.amount_inr||0)"></span>
+                          <span class="badge text-xs" :class="sug.governance_status==='approved'?'badge-approved':'badge-escalation'" x-text="sug.governance_status==='approved'?'Approved':'Escalation Required'"></span>
+                        </div>
+                      </div>
+
+                      <!-- Rationale -->
+                      <p class="text-sm text-slate-600 mb-3" x-text="sug.rationale"></p>
+
+                      <!-- Escalation Reason (if applicable) -->
+                      <div x-show="sug.governance_status==='escalation_required'" class="bg-amber-50 border border-amber-200 rounded p-3 mb-3 text-sm text-amber-700">
+                        <span class="font-medium">Escalation Required:</span> <span x-text="sug.escalation_reason||'Governance gate requires human review.'"></span>
+                      </div>
+
+                      <!-- Urgency -->
+                      <div class="flex items-center gap-2 mb-3">
+                        <span class="text-xs text-slate-400">Urgency:</span>
+                        <span class="text-xs font-medium px-2 py-0.5 rounded"
+                              :class="{'bg-red-100 text-red-700':'immediate','bg-amber-100 text-amber-700':'within_quarter','bg-slate-100 text-slate-600':'monitor'}[sug.urgency]||'bg-slate-100 text-slate-600'"
+                              x-text="sug.urgency?.replace('_',' ')"></span>
+                      </div>
+
+                      <!-- Withdrawn state (linked EXIT rejected) -->
+                      <div x-show="sug._withdrawn" class="bg-slate-100 rounded p-3 text-sm text-slate-500 text-center mb-3">
+                        Linked exit rejected. This suggestion is withdrawn.
+                      </div>
+
+                      <!-- Action buttons (only if not withdrawn and not yet decided) -->
+                      <div x-show="!sug._withdrawn && !sug._decided" class="flex gap-2 mt-3 border-t pt-3">
+                        <button @click="sug._showAccept=!sug._showAccept" class="px-3 py-1.5 bg-green-600 text-white rounded text-xs font-medium">Accept</button>
+                        <button @click="decideSuggestion(sug, 'rejected')" class="px-3 py-1.5 bg-red-100 text-red-700 rounded text-xs font-medium">Reject</button>
+                        <button @click="sug._showModify=!sug._showModify" class="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">Modify</button>
+                      </div>
+
+                      <!-- Accept form -->
+                      <div x-show="sug._showAccept" class="mt-3 p-3 bg-green-50 rounded">
+                        <textarea x-model="sug._rationale" placeholder="Rationale for acceptance..." class="w-full px-3 py-2 border rounded text-sm mb-2" rows="2"></textarea>
+                        <button @click="decideSuggestion(sug, 'accepted')" class="px-4 py-1.5 bg-green-600 text-white rounded text-xs font-medium">Confirm Accept</button>
+                      </div>
+
+                      <!-- Modify form -->
+                      <div x-show="sug._showModify" class="mt-3 p-3 bg-slate-50 rounded">
+                        <textarea x-model="sug._modification" placeholder="Describe your modification..." class="w-full px-3 py-2 border rounded text-sm mb-2" rows="2"></textarea>
+                        <button @click="decideSuggestion(sug, 'modified')" class="px-4 py-1.5 bg-blue-600 text-white rounded text-xs font-medium">Submit Modification</button>
+                      </div>
+
+                      <!-- Decided state -->
+                      <div x-show="sug._decided" class="mt-3 p-3 rounded text-sm"
+                           :class="sug._decided==='accepted'?'bg-green-50 text-green-700':sug._decided==='rejected'?'bg-red-50 text-red-700':'bg-blue-50 text-blue-700'">
+                        Decision recorded: <span class="font-bold capitalize" x-text="sug._decided"></span>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+
+                <!-- No suggestions after filtering -->
+                <div x-show="suggestionsData && !suggestionsData?.suggestions?.length && !suggestionsLoading" class="card p-8 text-center text-slate-400 mt-4">
+                  All suggestions were within governance constraints. No actionable recommendations at this time.
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- AUDIT TRAIL TAB (T-2: portfolio-level audit) -->
@@ -2226,6 +2447,9 @@ function portfolioScreen() {
     ptab: 'overview',
     // Feature data
     perfData: null, rebalData: null, scenarioData: null, taxData: null, goalsData: [], editLogData: [],
+    // PAM state
+    reviewData: null, reviewLoading: false, reviewProgress: '', reviewProgressPct: 0,
+    suggestionsData: null, suggestionsLoading: false, suggestionsProgress: '', suggestionsProgressPct: 0,
     selectedScenario: 'nifty_crash_20', scenarios: [],
     showGoalForm: false, goalForm: { goal_name: '', target_amount: 0, target_date: '2030-01-01' },
     initRouteListener() {
@@ -2237,6 +2461,7 @@ function portfolioScreen() {
           self._currentId = parts[1];
           self.ptab = 'overview';
           self.perfData = null; self.rebalData = null; self.scenarioData = null; self.taxData = null; self.goalsData = []; self.editLogData = [];
+          self.reviewData = null; self.suggestionsData = null; self._pamPortfolio = null;
           self.load(parts[1]);
         }
       };
@@ -2258,6 +2483,118 @@ function portfolioScreen() {
     async loadTax() { if (!this._currentId || this.taxData) return; this.taxData = await api.portfolioTax(this._currentId); if (this.taxData?.error) this.taxData = null; },
     async loadGoals() { if (!this._currentId) return; const r = await api.portfolioGoals(this._currentId); this.goalsData = r.error ? [] : r; },
     async loadEditLog() { if (!this._currentId) return; try { const r = await fetch(`/api/v1/portfolio/${this._currentId}/edit-log`); const d = await r.json(); this.editLogData = Array.isArray(d) ? d : []; } catch(e) { this.editLogData = []; } },
+
+    // ── PAM: Portfolio Review ──
+    _pamPortfolio: null, // cached canonical portfolio for Phase 2
+    async startPortfolioReview() {
+      if (!this._currentId || !this.portfolio?.holdings_count) return;
+      this.reviewLoading = true; this.reviewData = null; this.suggestionsData = null;
+      this.reviewProgress = 'Preparing portfolio data...'; this.reviewProgressPct = 10;
+
+      // Build canonical portfolio from existing holdings
+      const holdings = (this.portfolio?.holdings || []).map((h, i) => ({
+        holding_id: 'h-' + String(i+1).padStart(3, '0'),
+        instrument_name: h.description || h.symbol_or_id,
+        isin: null,
+        asset_class: this._mapAssetClass(h.asset_class),
+        current_value_inr: h.current_value || 0,
+        weight_pct: this.portfolio.current_value > 0 ? ((h.current_value || 0) / this.portfolio.current_value * 100) : 0,
+        purchase_date: h.acquisition_date,
+        purchase_price_per_unit: h.acquisition_price,
+        current_price_per_unit: h.current_price,
+        unrealised_pnl_pct: h.gain_loss_pct,
+        holding_period_days: h.acquisition_date ? Math.floor((Date.now() - new Date(h.acquisition_date)) / 86400000) : null,
+        ltcg_eligible: h.acquisition_date ? (Math.floor((Date.now() - new Date(h.acquisition_date)) / 86400000) > 365) : null,
+        data_gaps: [],
+      }));
+
+      const canonicalPortfolio = {
+        portfolio_id: 'pam-' + this._currentId + '-' + Date.now(),
+        client_id: this._currentId,
+        ingestion_method: 'existing_portfolio',
+        ingestion_timestamp: new Date().toISOString(),
+        total_aum_inr: this.portfolio.current_value || 0,
+        asset_class_breakdown: {},
+        holdings: holdings,
+        data_quality_summary: { holdings_with_gaps: 0, gap_types: [] },
+      };
+
+      // Compute asset class breakdown
+      holdings.forEach(h => { canonicalPortfolio.asset_class_breakdown[h.asset_class] = (canonicalPortfolio.asset_class_breakdown[h.asset_class] || 0) + h.weight_pct; });
+
+      this._pamPortfolio = canonicalPortfolio;
+      this.reviewProgress = 'Running multi-agent analysis...'; this.reviewProgressPct = 30;
+
+      try {
+        const res = await fetch(`/api/v1/portfolio-analysis/${this._currentId}/review`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ portfolio: canonicalPortfolio, client_profile: {} })
+        });
+        this.reviewProgressPct = 90;
+        this.reviewProgress = 'Finalizing review...';
+
+        if (res.ok) {
+          this.reviewData = await res.json();
+          Alpine.store('notifications').add('success', 'Portfolio review complete');
+        } else {
+          const err = await res.json();
+          Alpine.store('notifications').add('error', err.detail || 'Review failed');
+        }
+      } catch (e) {
+        Alpine.store('notifications').add('error', 'Review failed: ' + e.message);
+      }
+      this.reviewLoading = false; this.reviewProgressPct = 100;
+    },
+
+    async generateSuggestions() {
+      if (!this._currentId || !this.reviewData) return;
+      this.suggestionsLoading = true; this.suggestionsData = null;
+      this.suggestionsProgress = 'Calculating exit proceeds...'; this.suggestionsProgressPct = 20;
+
+      try {
+        this.suggestionsProgress = 'Running EGA cycle per suggestion...'; this.suggestionsProgressPct = 50;
+        const res = await fetch(`/api/v1/portfolio-analysis/${this._currentId}/suggestions`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ portfolio: this._pamPortfolio, cpr: this.reviewData, review_id: this.reviewData?.review_id || '' })
+        });
+        this.suggestionsProgressPct = 90;
+        if (res.ok) {
+          this.suggestionsData = await res.json();
+          // Initialise UI state on each suggestion
+          (this.suggestionsData?.suggestions || []).forEach(s => { s._showAccept = false; s._showModify = false; s._rationale = ''; s._modification = ''; s._decided = null; s._withdrawn = false; });
+          Alpine.store('notifications').add('success', 'Suggestions generated');
+        } else {
+          const err = await res.json();
+          Alpine.store('notifications').add('error', err.detail || 'Suggestion generation failed');
+        }
+      } catch (e) {
+        Alpine.store('notifications').add('error', 'Suggestions failed: ' + e.message);
+      }
+      this.suggestionsLoading = false; this.suggestionsProgressPct = 100;
+    },
+
+    async decideSuggestion(sug, decision) {
+      const res = await fetch(`/api/v1/portfolio-analysis/${this._currentId}/suggestion/${sug.suggestion_id}/decide`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision, rationale: sug._rationale || '', modification_note: sug._modification || '', review_id: this.reviewData?.review_id || '', linked_suggestion_id: sug.linked_suggestion_id })
+      });
+      if (res.ok) {
+        sug._decided = decision;
+        sug._showAccept = false; sug._showModify = false;
+        Alpine.store('notifications').add('success', 'Decision recorded: ' + decision);
+        // If rejecting an EXIT, withdraw linked REDEPLOY
+        if (decision === 'rejected' && sug.suggestion_type === 'EXIT') {
+          (this.suggestionsData?.suggestions || []).filter(s => s.linked_suggestion_id === sug.suggestion_id).forEach(s => { s._withdrawn = true; });
+        }
+      } else {
+        Alpine.store('notifications').add('error', 'Failed to record decision');
+      }
+    },
+
+    _mapAssetClass(ac) {
+      const map = { equity: 'listed_equity', mutual_fund: 'mutual_fund', pms: 'pms', aif: 'aif_cat2', gold: 'cash', silver: 'cash', fd: 'cash', bond: 'cash', real_estate: 'cash', insurance: 'cash', crypto: 'listed_equity', ppf: 'cash', nps: 'cash', other: 'cash' };
+      return map[ac] || 'cash';
+    },
     async addGoalAction() {
       if (!this._currentId || !this.goalForm.goal_name) return;
       await api.addGoal(this._currentId, this.goalForm);

@@ -1,0 +1,54 @@
+version: "v1.0"
+effective_date: "2026-04-01"
+next_review: "2027-04-01"
+
+rates:
+  listed_equity:
+    short_term_threshold_days: 365
+    short_term_rate: 0.20
+    long_term_rate: 0.125
+    long_term_exemption_inr: 125000
+
+  mutual_fund_equity:
+    short_term_threshold_days: 365
+    short_term_rate: 0.20
+    long_term_rate: 0.125
+    long_term_exemption_inr: 125000
+
+  mutual_fund_debt:
+    short_term_threshold_days: 1095
+    short_term_rate: "slab_rate"
+    long_term_rate: 0.20
+    indexation_benefit: false
+
+  unlisted_equity:
+    short_term_threshold_days: 730
+    short_term_rate: "slab_rate"
+    long_term_rate: 0.125
+
+  pms:
+    note: "PMS is a pass-through vehicle. Apply rates based on underlying asset class (typically listed_equity)."
+    default_rate: "listed_equity"
+
+  aif_cat1:
+    short_term_threshold_days: 1095
+    short_term_rate: "slab_rate"
+    long_term_rate: 0.20
+    note: "Cat I AIF pass-through taxation."
+
+  aif_cat2:
+    short_term_threshold_days: 1095
+    short_term_rate: "slab_rate"
+    long_term_rate: 0.20
+    note: "Cat II AIF pass-through taxation."
+
+  aif_cat3:
+    short_term_threshold_days: 365
+    short_term_rate: 0.30
+    long_term_rate: 0.125
+    note: "Cat III AIFs taxed at fund level."
+
+  cash:
+    short_term_rate: 0.0
+    long_term_rate: 0.0
+    note: "No tax on cash holdings."

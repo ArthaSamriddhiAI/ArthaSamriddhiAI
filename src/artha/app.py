@@ -32,6 +32,7 @@ import artha.portfolio.models  # noqa: F401 — register portfolio tables
 import artha.portfolio.goals  # noqa: F401 — register goals table
 from artha.portfolio.router import router as portfolio_router
 from artha.help.router import router as help_router
+from artha.portfolio_analysis.router import router as pam_router
 
 
 @asynccontextmanager
@@ -63,6 +64,7 @@ def create_app() -> FastAPI:
     app.include_router(data_explorer_router, prefix="/api/v1")
     app.include_router(portfolio_router, prefix="/api/v1")
     app.include_router(help_router, prefix="/api/v1")
+    app.include_router(pam_router, prefix="/api/v1")
 
     @app.get("/api/v1/health")
     async def health():

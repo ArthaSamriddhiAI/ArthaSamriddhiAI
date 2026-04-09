@@ -22,6 +22,10 @@ class TraceNodeType(str, Enum):
     EXECUTION_SUBMITTED = "execution_submitted"
     ANALYSIS_STARTED = "analysis_started"
     ANALYSIS_SYNTHESIZED = "analysis_synthesized"
+    PORTFOLIO_REVIEW_STARTED = "portfolio_review_started"
+    PORTFOLIO_REVIEW_COMPLETE = "portfolio_review_complete"
+    SUGGESTION_SET_GENERATED = "suggestion_set_generated"
+    SUGGESTION_EGA_RESULT = "suggestion_ega_result"
     ERROR = "error"
 
 

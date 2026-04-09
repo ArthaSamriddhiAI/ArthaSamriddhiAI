@@ -30,6 +30,8 @@ window.utils = {
       agent_output: '#7c3aed', rule_evaluated: '#eab308', permission_granted: '#22c55e',
       permission_denied: '#ef4444', escalation_required: '#f59e0b', human_approval: '#14b8a6',
       execution_submitted: '#15803d', analysis_started: '#0d9488', analysis_synthesized: '#0f766e',
+      portfolio_review_started: '#0891b2', portfolio_review_complete: '#0e7490',
+      suggestion_set_generated: '#7c3aed', suggestion_ega_result: '#6d28d9',
       error: '#b91c1c'
     };
     return map[type] || '#94a3b8';
@@ -42,7 +44,10 @@ window.utils = {
       rule_evaluated: 'Rule Evaluated', permission_granted: 'Permission Granted',
       permission_denied: 'Permission Denied', escalation_required: 'Escalation Required',
       human_approval: 'Human Approval', execution_submitted: 'Execution Submitted',
-      analysis_started: 'Analysis Started', analysis_synthesized: 'Analysis Synthesized', error: 'Error'
+      analysis_started: 'Analysis Started', analysis_synthesized: 'Analysis Synthesized',
+      portfolio_review_started: 'Portfolio Review Started', portfolio_review_complete: 'Portfolio Review Complete',
+      suggestion_set_generated: 'Suggestions Generated', suggestion_ega_result: 'Suggestion EGA Result',
+      error: 'Error'
     };
     return map[type] || type;
   },

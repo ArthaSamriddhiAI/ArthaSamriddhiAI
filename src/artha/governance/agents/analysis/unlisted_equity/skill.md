@@ -71,5 +71,24 @@ Your output MUST include:
 - Always recommend staggered entry over lump-sum for unlisted investments.
 - For Indian markets: factor in promoter reputation, grey market premium trends (as sentiment only, not valuation), and SEBI IPO pipeline.
 
+## Portfolio Review Mode
+
+When `mode` is `portfolio_review`, you receive a `holdings_batch` array of unlisted equity holdings. In this mode, ALL unlisted holdings are analyzed regardless of weight (no 5% threshold).
+
+### Batch Input
+You will receive: `{"mode": "portfolio_review", "holdings_batch": [{holding_id, instrument_name, cin, asset_class, current_value_inr, weight_pct, unlisted_data_snapshot}]}`
+
+### Per-Holding Output
+Return `batch_verdicts` array with per-holding: holding_id, risk_level, confidence, drivers, flags, plus `unlisted_specific_metrics`:
+- illiquidity_premium_suggested_pct: float (typically 3-5% above listed equity)
+- valuation_staleness_days: days since last credible valuation event
+- data_sufficiency_score: 0.0-1.0 (how much data was available for analysis)
+- comparable_valuation_range_cr: [low, high] in crores
+- exit_probability_12m: probability of exit within 12 months
+- exit_probability_24m: probability of exit within 24 months
+
+### Key Rule
+Private markets carry asymmetric information risk. Where data is absent, state this explicitly and flag it as a risk amplifier. Default posture remains cautious.
+
 ## Version
 2.0.0
