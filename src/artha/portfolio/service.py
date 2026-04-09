@@ -1,9 +1,11 @@
-"""Portfolio service — CRUD + valuation by joining holdings with market prices."""
+"""Portfolio service — CRUD + valuation + lifecycle (DRAFT/LIVE)."""
 
 from __future__ import annotations
 
 import csv
 import io
+import json
+import logging
 import uuid
 from datetime import UTC, datetime
 from collections import defaultdict
@@ -11,23 +13,184 @@ from collections import defaultdict
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from artha.portfolio.models import PortfolioHoldingRow
+from artha.portfolio.models import (
+    PortfolioEditLogRow,
+    PortfolioHoldingRow,
+    PortfolioSnapshotRow,
+    PortfolioStateRow,
+)
 from artha.portfolio.schemas import (
     ASSET_CLASS_LABELS,
     AddHoldingRequest,
     AllocationItem,
+    EditLogEntry,
+    FreezeRequest,
     HoldingResponse,
+    PortfolioStatusResponse,
     PortfolioSummary,
+    UnfreezeRequest,
+    UpdateHoldingRequest,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class PortfolioService:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    # ── CRUD ──
+    # ── Lifecycle ──
+
+    async def get_or_create_state(self, investor_id: str) -> PortfolioStateRow:
+        """Get portfolio state, creating DRAFT if none exists."""
+        stmt = select(PortfolioStateRow).where(PortfolioStateRow.investor_id == investor_id)
+        result = await self._session.execute(stmt)
+        state = result.scalar_one_or_none()
+        if state is None:
+            now = datetime.now(UTC)
+            state = PortfolioStateRow(
+                id=str(uuid.uuid4()),
+                investor_id=investor_id,
+                status="draft",
+                version=1,
+                created_at=now,
+                updated_at=now,
+            )
+            self._session.add(state)
+            await self._session.flush()
+        return state
+
+    async def get_status(self, investor_id: str) -> PortfolioStatusResponse:
+        state = await self.get_or_create_state(investor_id)
+        return PortfolioStatusResponse(
+            investor_id=investor_id,
+            status=state.status,
+            version=state.version,
+            onboarding_type=state.onboarding_type,
+            frozen_at=state.frozen_at.isoformat() if state.frozen_at else None,
+            frozen_by=state.frozen_by,
+            is_editable=state.status == "draft",
+        )
+
+    async def set_onboarding_type(self, investor_id: str, onboarding_type: str) -> PortfolioStatusResponse:
+        state = await self.get_or_create_state(investor_id)
+        state.onboarding_type = onboarding_type
+        state.updated_at = datetime.now(UTC)
+        await self._session.flush()
+        await self._log_edit(investor_id, None, "set_onboarding_type", "onboarding_type", None, onboarding_type)
+        return await self.get_status(investor_id)
+
+    async def freeze_portfolio(self, investor_id: str, req: FreezeRequest) -> PortfolioStatusResponse:
+        """Transition portfolio from DRAFT to LIVE. Creates immutable snapshot."""
+        state = await self.get_or_create_state(investor_id)
+        if state.status == "live":
+            raise ValueError("Portfolio is already LIVE. Unfreeze first to make changes.")
+
+        now = datetime.now(UTC)
+
+        # Build snapshot of current holdings
+        summary = await self.get_portfolio_summary(investor_id)
+        holdings_data = [h.model_dump(mode="json") for h in summary.holdings]
+
+        snapshot = PortfolioSnapshotRow(
+            id=str(uuid.uuid4()),
+            investor_id=investor_id,
+            version=state.version,
+            holdings_json=json.dumps(holdings_data, default=str),
+            total_invested=summary.total_invested,
+            current_value=summary.current_value,
+            frozen_at=now,
+            frozen_by=req.frozen_by,
+        )
+        self._session.add(snapshot)
+
+        # Update state
+        state.status = "live"
+        state.frozen_at = now
+        state.frozen_by = req.frozen_by
+        state.updated_at = now
+        await self._session.flush()
+
+        await self._log_edit(
+            investor_id, None, "freeze", None, "draft", "live",
+            actor=req.frozen_by,
+            detail=f"Portfolio frozen at version {state.version} with {summary.holdings_count} holdings",
+        )
+        return await self.get_status(investor_id)
+
+    async def unfreeze_portfolio(self, investor_id: str, req: UnfreezeRequest) -> PortfolioStatusResponse:
+        """Transition portfolio from LIVE to DRAFT. Preserves LIVE snapshot in history."""
+        state = await self.get_or_create_state(investor_id)
+        if state.status == "draft":
+            raise ValueError("Portfolio is already in DRAFT state.")
+
+        now = datetime.now(UTC)
+        state.status = "draft"
+        state.version += 1
+        state.unfrozen_at = now
+        state.unfrozen_by = req.unfrozen_by
+        state.frozen_at = None
+        state.frozen_by = None
+        state.updated_at = now
+        await self._session.flush()
+
+        await self._log_edit(
+            investor_id, None, "unfreeze", None, "live", "draft",
+            actor=req.unfrozen_by,
+            detail=f"Portfolio unfrozen to version {state.version}. Reason: {req.reason}",
+        )
+        return await self.get_status(investor_id)
+
+    async def _check_editable(self, investor_id: str) -> None:
+        """Raise if portfolio is LIVE (not editable)."""
+        state = await self.get_or_create_state(investor_id)
+        if state.status == "live":
+            raise ValueError("Portfolio is LIVE and immutable. Unfreeze to make changes.")
+
+    async def _log_edit(
+        self, investor_id: str, holding_id: str | None, action: str,
+        field_changed: str | None = None, old_value: str | None = None,
+        new_value: str | None = None, actor: str = "advisor", detail: str | None = None,
+    ) -> None:
+        """Log a portfolio edit for audit trail."""
+        log = PortfolioEditLogRow(
+            id=str(uuid.uuid4()),
+            investor_id=investor_id,
+            holding_id=holding_id,
+            action=action,
+            field_changed=field_changed,
+            old_value=str(old_value) if old_value is not None else None,
+            new_value=str(new_value) if new_value is not None else None,
+            actor=actor,
+            detail=detail,
+            created_at=datetime.now(UTC),
+        )
+        self._session.add(log)
+
+    async def get_edit_log(self, investor_id: str, limit: int = 50) -> list[EditLogEntry]:
+        """Get portfolio edit history for audit trail."""
+        stmt = (
+            select(PortfolioEditLogRow)
+            .where(PortfolioEditLogRow.investor_id == investor_id)
+            .order_by(PortfolioEditLogRow.created_at.desc())
+            .limit(limit)
+        )
+        result = await self._session.execute(stmt)
+        rows = result.scalars().all()
+        return [
+            EditLogEntry(
+                id=r.id, action=r.action, holding_id=r.holding_id,
+                field_changed=r.field_changed, old_value=r.old_value,
+                new_value=r.new_value, actor=r.actor, detail=r.detail,
+                created_at=r.created_at.isoformat() if r.created_at else "",
+            )
+            for r in rows
+        ]
+
+    # ── CRUD (with DRAFT guard) ──
 
     async def add_holding(self, investor_id: str, req: AddHoldingRequest) -> HoldingResponse:
+        await self._check_editable(investor_id)
         now = datetime.now(UTC)
         row = PortfolioHoldingRow(
             id=str(uuid.uuid4()),
@@ -46,20 +209,63 @@ class PortfolioService:
         )
         self._session.add(row)
         await self._session.flush()
+        await self._log_edit(
+            investor_id, row.id, "add", None, None,
+            f"{req.asset_class}: {req.symbol_or_id} ({req.description})",
+            detail=f"Added {req.quantity} units at Rs {req.acquisition_price}",
+        )
         return self._to_response(row)
 
-    async def delete_holding(self, holding_id: str) -> bool:
+    async def update_holding(self, investor_id: str, holding_id: str, req: UpdateHoldingRequest) -> HoldingResponse:
+        """Update fields on an existing holding (DRAFT only)."""
+        await self._check_editable(investor_id)
+        stmt = select(PortfolioHoldingRow).where(
+            PortfolioHoldingRow.id == holding_id,
+            PortfolioHoldingRow.investor_id == investor_id,
+            PortfolioHoldingRow.active == True,
+        )
+        result = await self._session.execute(stmt)
+        row = result.scalar_one_or_none()
+        if row is None:
+            raise ValueError("Holding not found")
+
+        now = datetime.now(UTC)
+        update_data = req.model_dump(exclude_none=True)
+        for field, new_val in update_data.items():
+            old_val = getattr(row, field, None)
+            if old_val != new_val:
+                await self._log_edit(
+                    investor_id, holding_id, "edit", field,
+                    str(old_val), str(new_val),
+                )
+                setattr(row, field, new_val)
+        row.updated_at = now
+        await self._session.flush()
+        return self._to_response(row)
+
+    async def delete_holding(self, holding_id: str, investor_id: str | None = None) -> bool:
         stmt = select(PortfolioHoldingRow).where(PortfolioHoldingRow.id == holding_id)
         result = await self._session.execute(stmt)
         row = result.scalar_one_or_none()
         if row is None:
             return False
+        # Check editable
+        if investor_id:
+            await self._check_editable(investor_id)
+        else:
+            await self._check_editable(row.investor_id)
         row.active = False
         row.updated_at = datetime.now(UTC)
         await self._session.flush()
+        await self._log_edit(
+            row.investor_id, holding_id, "delete", None, None,
+            f"{row.asset_class}: {row.symbol_or_id} ({row.description})",
+            detail=f"Deleted holding of {row.quantity} units",
+        )
         return True
 
     async def import_csv(self, investor_id: str, csv_text: str) -> dict:
+        await self._check_editable(investor_id)
         reader = csv.DictReader(io.StringIO(csv_text))
         now = datetime.now(UTC)
         added = 0
@@ -105,6 +311,12 @@ class PortfolioService:
                 errors.append(f"Row {i+2}: {str(e)[:80]}")
 
         await self._session.flush()
+        if added > 0:
+            await self._log_edit(
+                investor_id, None, "import_csv", None, None,
+                f"{added} holdings imported",
+                detail=f"CSV import: {added} added, {len(errors)} errors",
+            )
         return {"added": added, "errors": errors}
 
     # ── Valuation ──
@@ -120,8 +332,18 @@ class PortfolioService:
         result = await self._session.execute(stmt)
         rows = list(result.scalars().all())
 
+        # Get portfolio lifecycle state
+        state = await self.get_or_create_state(investor_id)
+
         if not rows:
-            return PortfolioSummary(investor_id=investor_id)
+            return PortfolioSummary(
+                investor_id=investor_id,
+                portfolio_status=state.status,
+                portfolio_version=state.version,
+                onboarding_type=state.onboarding_type,
+                frozen_at=state.frozen_at.isoformat() if state.frozen_at else None,
+                frozen_by=state.frozen_by,
+            )
 
         # Fetch latest market prices
         stock_prices = await self._get_latest_stock_prices()
@@ -198,6 +420,11 @@ class PortfolioService:
         return PortfolioSummary(
             investor_id=investor_id,
             investor_name=investor_name,
+            portfolio_status=state.status,
+            portfolio_version=state.version,
+            onboarding_type=state.onboarding_type,
+            frozen_at=state.frozen_at.isoformat() if state.frozen_at else None,
+            frozen_by=state.frozen_by,
             total_invested=round(total_invested, 2),
             current_value=round(total_current, 2),
             total_gain_loss=round(total_gain, 2),

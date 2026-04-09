@@ -76,6 +76,11 @@ class AllocationItem(BaseModel):
 class PortfolioSummary(BaseModel):
     investor_id: str
     investor_name: str = ""
+    portfolio_status: str = "draft"  # draft | live
+    portfolio_version: int = 1
+    onboarding_type: str | None = None  # existing | partial | new_capital
+    frozen_at: str | None = None
+    frozen_by: str | None = None
     total_invested: float = 0.0
     current_value: float = 0.0
     total_gain_loss: float = 0.0
@@ -84,3 +89,48 @@ class PortfolioSummary(BaseModel):
     asset_classes_count: int = 0
     allocation: list[AllocationItem] = Field(default_factory=list)
     holdings: list[HoldingResponse] = Field(default_factory=list)
+
+
+class UpdateHoldingRequest(BaseModel):
+    """Update fields on an existing holding (DRAFT only)."""
+    asset_class: str | None = None
+    symbol_or_id: str | None = None
+    description: str | None = None
+    quantity: float | None = None
+    acquisition_date: date | None = None
+    acquisition_price: float | None = None
+    current_price: float | None = None
+    notes: str | None = None
+
+
+class FreezeRequest(BaseModel):
+    """Request to freeze (DRAFT→LIVE) a portfolio."""
+    frozen_by: str = "advisor"
+
+
+class UnfreezeRequest(BaseModel):
+    """Request to unfreeze (LIVE→DRAFT) a portfolio."""
+    unfrozen_by: str = "advisor"
+    reason: str = ""
+
+
+class PortfolioStatusResponse(BaseModel):
+    investor_id: str
+    status: str  # draft | live
+    version: int
+    onboarding_type: str | None = None
+    frozen_at: str | None = None
+    frozen_by: str | None = None
+    is_editable: bool = True
+
+
+class EditLogEntry(BaseModel):
+    id: str
+    action: str
+    holding_id: str | None = None
+    field_changed: str | None = None
+    old_value: str | None = None
+    new_value: str | None = None
+    actor: str = ""
+    detail: str | None = None
+    created_at: str = ""

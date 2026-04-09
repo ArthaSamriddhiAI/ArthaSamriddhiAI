@@ -809,16 +809,42 @@
               <button @click="window.location.hash='#/investors'" class="text-slate-400 hover:text-slate-600">&larr;</button>
               <div>
                 <h2 class="text-2xl font-bold" x-text="portfolio?.investor_name"></h2>
-                <p class="text-sm text-slate-400">Client Portfolio</p>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="px-2 py-0.5 rounded text-xs font-bold uppercase"
+                        :class="portfolio?.portfolio_status==='live'?'bg-green-100 text-green-700 border border-green-300':'bg-amber-100 text-amber-700 border border-amber-300'"
+                        x-text="portfolio?.portfolio_status==='live'?'LIVE':'DRAFT'"></span>
+                  <span class="text-xs text-slate-400" x-text="'v'+portfolio?.portfolio_version"></span>
+                  <span x-show="portfolio?.portfolio_status==='live'&&portfolio?.frozen_by" class="text-xs text-slate-400" x-text="'Frozen by '+portfolio?.frozen_by"></span>
+                </div>
               </div>
             </div>
             <div class="flex gap-2">
+              <!-- DRAFT-only actions -->
+              <template x-if="portfolio?.portfolio_status==='draft'">
+                <button @click="freezePortfolio()" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">Freeze Portfolio</button>
+              </template>
+              <!-- LIVE-only actions -->
+              <template x-if="portfolio?.portfolio_status==='live'">
+                <button @click="unfreezePortfolio()" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700">Unfreeze to Edit</button>
+              </template>
               <button @click="window.location.hash='#/intent?investor='+_currentId" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm">Run Governance Review</button>
               <a :href="'/api/v1/portfolio/'+_currentId+'/report'" target="_blank" class="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm">Download Report</a>
-              <label class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm cursor-pointer">
-                Import CSV
-                <input type="file" accept=".csv" class="hidden" @change="importCSV($event)">
-              </label>
+              <!-- DRAFT: Import CSV -->
+              <template x-if="portfolio?.portfolio_status==='draft'">
+                <label class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm cursor-pointer">
+                  Import CSV
+                  <input type="file" accept=".csv" class="hidden" @change="importCSV($event)">
+                </label>
+              </template>
+            </div>
+          </div>
+
+          <!-- LIVE notice -->
+          <div x-show="portfolio?.portfolio_status==='live'" class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 flex items-center gap-2">
+            <span class="text-green-600 font-bold text-lg">&#x1f512;</span>
+            <div>
+              <p class="text-sm text-green-800 font-medium">Portfolio is LIVE and immutable</p>
+              <p class="text-xs text-green-600">All changes must go through the governed intent workflow. Click "Unfreeze to Edit" to make direct changes.</p>
             </div>
           </div>
 
@@ -876,22 +902,77 @@
             <div class="card overflow-hidden">
               <div class="p-3 border-b flex items-center justify-between">
                 <h3 class="font-semibold text-sm">Holdings</h3>
-                <input type="text" x-model="searchHoldings" placeholder="Search..." class="px-2 py-1 border rounded text-xs w-48">
+                <div class="flex items-center gap-2">
+                  <input type="text" x-model="searchHoldings" placeholder="Search..." class="px-2 py-1 border rounded text-xs w-48">
+                  <button x-show="portfolio?.portfolio_status==='draft'" @click="showAddForm=!showAddForm" class="px-3 py-1 bg-blue-600 text-white rounded text-xs font-medium" x-text="showAddForm?'Cancel':'+ Add Holding'"></button>
+                </div>
               </div>
+
+              <!-- Add Holding Form (DRAFT only) -->
+              <div x-show="showAddForm && portfolio?.portfolio_status==='draft'" class="p-4 bg-blue-50 border-b">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                  <div>
+                    <label class="text-slate-500 block mb-1">Asset Class</label>
+                    <select x-model="addForm.asset_class" class="w-full px-2 py-1.5 border rounded text-xs">
+                      <option value="equity">Equity</option><option value="mutual_fund">Mutual Fund</option>
+                      <option value="gold">Gold</option><option value="silver">Silver</option>
+                      <option value="fd">Fixed Deposit</option><option value="bond">Bond</option>
+                      <option value="pms">PMS</option><option value="aif">AIF</option>
+                      <option value="real_estate">Real Estate</option><option value="insurance">Insurance</option>
+                      <option value="crypto">Crypto</option><option value="ppf">PPF/EPF</option>
+                      <option value="nps">NPS</option><option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div><label class="text-slate-500 block mb-1">Symbol/ID</label><input type="text" x-model="addForm.symbol_or_id" class="w-full px-2 py-1.5 border rounded" placeholder="e.g. RELIANCE"></div>
+                  <div><label class="text-slate-500 block mb-1">Description</label><input type="text" x-model="addForm.description" class="w-full px-2 py-1.5 border rounded" placeholder="Reliance Industries"></div>
+                  <div><label class="text-slate-500 block mb-1">Quantity</label><input type="number" x-model.number="addForm.quantity" class="w-full px-2 py-1.5 border rounded" min="0" step="1"></div>
+                  <div><label class="text-slate-500 block mb-1">Acquisition Date</label><input type="date" x-model="addForm.acquisition_date" class="w-full px-2 py-1.5 border rounded"></div>
+                  <div><label class="text-slate-500 block mb-1">Acquisition Price</label><input type="number" x-model.number="addForm.acquisition_price" class="w-full px-2 py-1.5 border rounded" min="0" step="0.01"></div>
+                  <div><label class="text-slate-500 block mb-1">Current Price (optional)</label><input type="number" x-model.number="addForm.current_price" class="w-full px-2 py-1.5 border rounded" min="0" step="0.01"></div>
+                  <div class="flex items-end"><button @click="addHoldingAction()" class="px-4 py-1.5 bg-blue-600 text-white rounded text-xs font-medium w-full">Add Holding</button></div>
+                </div>
+              </div>
+
               <table class="w-full text-xs">
-                <thead class="bg-slate-50"><tr><th class="px-2 py-2 text-left">Class</th><th class="px-2 py-2 text-left">Symbol</th><th class="px-2 py-2 text-left">Description</th><th class="px-2 py-2 text-right">Qty</th><th class="px-2 py-2 text-right">Cost</th><th class="px-2 py-2 text-right">Current</th><th class="px-2 py-2 text-right">Value</th><th class="px-2 py-2 text-right">G/L</th><th class="px-2 py-2 text-right">Return</th></tr></thead>
+                <thead class="bg-slate-50"><tr>
+                  <th class="px-2 py-2 text-left">Class</th><th class="px-2 py-2 text-left">Symbol</th><th class="px-2 py-2 text-left">Description</th><th class="px-2 py-2 text-right">Qty</th><th class="px-2 py-2 text-right">Cost</th><th class="px-2 py-2 text-right">Current</th><th class="px-2 py-2 text-right">Value</th><th class="px-2 py-2 text-right">G/L</th><th class="px-2 py-2 text-right">Return</th>
+                  <th x-show="portfolio?.portfolio_status==='draft'" class="px-2 py-2 text-center w-20">Actions</th>
+                </tr></thead>
                 <tbody>
                   <template x-for="h in filteredHoldings" :key="h.id">
                     <tr class="border-t hover:bg-slate-50">
                       <td class="px-2 py-1.5"><span class="badge badge-info" style="font-size:0.6rem" x-text="h.asset_class_label"></span></td>
                       <td class="px-2 py-1.5 font-mono font-bold" x-text="h.symbol_or_id"></td>
                       <td class="px-2 py-1.5" x-text="h.description"></td>
-                      <td class="px-2 py-1.5 text-right" x-text="h.quantity.toLocaleString()"></td>
-                      <td class="px-2 py-1.5 text-right" x-text="h.acquisition_price?.toLocaleString(undefined,{maximumFractionDigits:2})"></td>
+                      <!-- Editable qty -->
+                      <td class="px-2 py-1.5 text-right">
+                        <span x-show="editingId!==h.id" x-text="h.quantity.toLocaleString()"></span>
+                        <input x-show="editingId===h.id" type="number" x-model.number="editForm.quantity" class="w-20 px-1 py-0.5 border rounded text-right text-xs">
+                      </td>
+                      <!-- Editable cost -->
+                      <td class="px-2 py-1.5 text-right">
+                        <span x-show="editingId!==h.id" x-text="h.acquisition_price?.toLocaleString(undefined,{maximumFractionDigits:2})"></span>
+                        <input x-show="editingId===h.id" type="number" x-model.number="editForm.acquisition_price" class="w-20 px-1 py-0.5 border rounded text-right text-xs" step="0.01">
+                      </td>
                       <td class="px-2 py-1.5 text-right" x-text="h.current_price?.toLocaleString(undefined,{maximumFractionDigits:2})||'-'"></td>
                       <td class="px-2 py-1.5 text-right font-medium" x-text="formatINR(h.current_value)"></td>
                       <td class="px-2 py-1.5 text-right" :class="h.gain_loss>=0?'text-green-600':'text-red-600'" x-text="(h.gain_loss>=0?'+':'')+formatINR(h.gain_loss)"></td>
                       <td class="px-2 py-1.5 text-right font-medium" :class="h.gain_loss_pct>=0?'text-green-600':'text-red-600'" x-text="(h.gain_loss_pct>=0?'+':'')+h.gain_loss_pct?.toFixed(1)+'%'"></td>
+                      <!-- Actions (DRAFT only) -->
+                      <td x-show="portfolio?.portfolio_status==='draft'" class="px-2 py-1.5 text-center">
+                        <template x-if="editingId!==h.id">
+                          <div class="flex gap-1 justify-center">
+                            <button @click="startEdit(h)" class="text-blue-500 hover:text-blue-700" title="Edit">&#9998;</button>
+                            <button @click="deleteHolding(h.id, h.description)" class="text-red-400 hover:text-red-600" title="Delete">&#10005;</button>
+                          </div>
+                        </template>
+                        <template x-if="editingId===h.id">
+                          <div class="flex gap-1 justify-center">
+                            <button @click="saveEdit(h.id)" class="text-green-600 hover:text-green-800 font-bold" title="Save">&#10003;</button>
+                            <button @click="cancelEdit()" class="text-slate-400 hover:text-slate-600" title="Cancel">&#10005;</button>
+                          </div>
+                        </template>
+                      </td>
                     </tr>
                   </template>
                 </tbody>
@@ -2009,6 +2090,71 @@ function portfolioScreen() {
     },
     allocationColor(ac) { return COLORS[ac] || '#94a3b8'; },
     formatINR(v) { if (v == null) return '0'; const abs = Math.abs(v); if (abs >= 10000000) return (v/10000000).toFixed(2)+' Cr'; if (abs >= 100000) return (v/100000).toFixed(2)+' L'; return v.toLocaleString(undefined,{maximumFractionDigits:0}); },
+
+    // ── Lifecycle ──
+    async freezePortfolio() {
+      if (!this._currentId) return;
+      if (!confirm('Freeze this portfolio? It will become immutable. Changes will require the governed intent workflow.')) return;
+      const res = await fetch(`/api/v1/portfolio/${this._currentId}/freeze`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({frozen_by: 'advisor'}) });
+      const data = await res.json();
+      if (res.ok) { Alpine.store('notifications').add('success', 'Portfolio frozen (LIVE)'); await this.load(this._currentId); }
+      else { Alpine.store('notifications').add('error', data.detail || 'Freeze failed'); }
+    },
+    async unfreezePortfolio() {
+      if (!this._currentId) return;
+      const reason = prompt('Reason for unfreezing? (for audit trail)');
+      if (reason === null) return;
+      const res = await fetch(`/api/v1/portfolio/${this._currentId}/unfreeze`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({unfrozen_by: 'advisor', reason: reason || ''}) });
+      const data = await res.json();
+      if (res.ok) { Alpine.store('notifications').add('success', 'Portfolio unfrozen (DRAFT)'); await this.load(this._currentId); }
+      else { Alpine.store('notifications').add('error', data.detail || 'Unfreeze failed'); }
+    },
+
+    // ── Holding CRUD ──
+    showAddForm: false,
+    addForm: { asset_class: 'equity', symbol_or_id: '', description: '', quantity: 0, acquisition_date: '2025-01-01', acquisition_price: 0, current_price: null, notes: '' },
+    editingId: null,
+    editForm: {},
+    async addHoldingAction() {
+      if (!this._currentId || !this.addForm.symbol_or_id) return;
+      const res = await fetch(`/api/v1/portfolio/${this._currentId}/holdings`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(this.addForm) });
+      if (res.ok) {
+        Alpine.store('notifications').add('success', 'Holding added');
+        this.showAddForm = false;
+        this.addForm = { asset_class: 'equity', symbol_or_id: '', description: '', quantity: 0, acquisition_date: '2025-01-01', acquisition_price: 0, current_price: null, notes: '' };
+        await this.load(this._currentId);
+      } else {
+        const data = await res.json();
+        Alpine.store('notifications').add('error', data.detail || 'Add failed');
+      }
+    },
+    startEdit(holding) {
+      this.editingId = holding.id;
+      this.editForm = { quantity: holding.quantity, acquisition_price: holding.acquisition_price, current_price: holding.current_price, notes: holding.notes || '' };
+    },
+    cancelEdit() { this.editingId = null; this.editForm = {}; },
+    async saveEdit(holdingId) {
+      const res = await fetch(`/api/v1/portfolio/${this._currentId}/holdings/${holdingId}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(this.editForm) });
+      if (res.ok) {
+        Alpine.store('notifications').add('success', 'Holding updated');
+        this.editingId = null;
+        await this.load(this._currentId);
+      } else {
+        const data = await res.json();
+        Alpine.store('notifications').add('error', data.detail || 'Update failed');
+      }
+    },
+    async deleteHolding(holdingId, desc) {
+      if (!confirm(`Delete holding: ${desc}?`)) return;
+      const res = await fetch(`/api/v1/portfolio/holdings/${holdingId}`, { method: 'DELETE' });
+      if (res.ok) {
+        Alpine.store('notifications').add('success', 'Holding deleted');
+        await this.load(this._currentId);
+      } else {
+        const data = await res.json();
+        Alpine.store('notifications').add('error', data.detail || 'Delete failed');
+      }
+    },
     async importCSV(event) {
       const file = event.target.files[0];
       if (!file || !this._currentId) return;
@@ -2017,8 +2163,8 @@ function portfolioScreen() {
       try {
         const res = await fetch(`/api/v1/portfolio/${this._currentId}/import-csv`, { method: 'POST', body: formData });
         const data = await res.json();
-        Alpine.store('notifications').add('success', `Imported ${data.added} holdings`);
-        await this.load(this._currentId);
+        if (res.ok) { Alpine.store('notifications').add('success', `Imported ${data.added} holdings`); await this.load(this._currentId); }
+        else { Alpine.store('notifications').add('error', data.detail || 'Import failed'); }
       } catch (e) { Alpine.store('notifications').add('error', e.message); }
       event.target.value = '';
     },

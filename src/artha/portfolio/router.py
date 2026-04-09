@@ -7,7 +7,15 @@ from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from artha.common.db.session import get_session
-from artha.portfolio.schemas import AddHoldingRequest, HoldingResponse, PortfolioSummary
+from artha.portfolio.schemas import (
+    AddHoldingRequest,
+    FreezeRequest,
+    HoldingResponse,
+    PortfolioStatusResponse,
+    PortfolioSummary,
+    UnfreezeRequest,
+    UpdateHoldingRequest,
+)
 from artha.portfolio.service import PortfolioService
 
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
@@ -31,6 +39,48 @@ async def list_scenarios_endpoint():
     return list_scenarios()
 
 
+# ── Portfolio Lifecycle ──
+
+@router.get("/{investor_id}/status", response_model=PortfolioStatusResponse)
+async def get_portfolio_status(investor_id: str, svc: PortfolioService = Depends(_svc)):
+    return await svc.get_status(investor_id)
+
+
+@router.post("/{investor_id}/freeze", response_model=PortfolioStatusResponse)
+async def freeze_portfolio(investor_id: str, req: FreezeRequest = FreezeRequest(), svc: PortfolioService = Depends(_svc), session: AsyncSession = Depends(get_session)):
+    try:
+        result = await svc.freeze_portfolio(investor_id, req)
+        await session.commit()
+        return result
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@router.post("/{investor_id}/unfreeze", response_model=PortfolioStatusResponse)
+async def unfreeze_portfolio(investor_id: str, req: UnfreezeRequest = UnfreezeRequest(), svc: PortfolioService = Depends(_svc), session: AsyncSession = Depends(get_session)):
+    try:
+        result = await svc.unfreeze_portfolio(investor_id, req)
+        await session.commit()
+        return result
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@router.post("/{investor_id}/onboarding-type")
+async def set_onboarding_type(investor_id: str, data: dict, svc: PortfolioService = Depends(_svc), session: AsyncSession = Depends(get_session)):
+    ob_type = data.get("onboarding_type", "existing")
+    if ob_type not in ("existing", "partial", "new_capital"):
+        raise HTTPException(400, "onboarding_type must be: existing, partial, or new_capital")
+    result = await svc.set_onboarding_type(investor_id, ob_type)
+    await session.commit()
+    return result
+
+
+@router.get("/{investor_id}/edit-log")
+async def get_edit_log(investor_id: str, limit: int = Query(50, le=200), svc: PortfolioService = Depends(_svc)):
+    return await svc.get_edit_log(investor_id, limit)
+
+
 # ── Core Portfolio ──
 
 @router.get("/{investor_id}/summary", response_model=PortfolioSummary)
@@ -46,27 +96,46 @@ async def get_holdings(investor_id: str, svc: PortfolioService = Depends(_svc)):
 
 @router.post("/{investor_id}/holdings", response_model=HoldingResponse)
 async def add_holding(investor_id: str, req: AddHoldingRequest, svc: PortfolioService = Depends(_svc), session: AsyncSession = Depends(get_session)):
-    result = await svc.add_holding(investor_id, req)
-    await session.commit()
-    return result
+    try:
+        result = await svc.add_holding(investor_id, req)
+        await session.commit()
+        return result
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@router.put("/{investor_id}/holdings/{holding_id}", response_model=HoldingResponse)
+async def update_holding(investor_id: str, holding_id: str, req: UpdateHoldingRequest, svc: PortfolioService = Depends(_svc), session: AsyncSession = Depends(get_session)):
+    try:
+        result = await svc.update_holding(investor_id, holding_id, req)
+        await session.commit()
+        return result
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 @router.delete("/holdings/{holding_id}")
 async def delete_holding(holding_id: str, svc: PortfolioService = Depends(_svc), session: AsyncSession = Depends(get_session)):
-    ok = await svc.delete_holding(holding_id)
-    if not ok:
-        raise HTTPException(404, "Holding not found")
-    await session.commit()
-    return {"status": "deleted"}
+    try:
+        ok = await svc.delete_holding(holding_id)
+        if not ok:
+            raise HTTPException(404, "Holding not found")
+        await session.commit()
+        return {"status": "deleted"}
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 @router.post("/{investor_id}/import-csv")
 async def import_csv(investor_id: str, file: UploadFile = File(...), svc: PortfolioService = Depends(_svc), session: AsyncSession = Depends(get_session)):
-    content = await file.read()
-    csv_text = content.decode("utf-8-sig")
-    result = await svc.import_csv(investor_id, csv_text)
-    await session.commit()
-    return result
+    try:
+        content = await file.read()
+        csv_text = content.decode("utf-8-sig")
+        result = await svc.import_csv(investor_id, csv_text)
+        await session.commit()
+        return result
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 # ── Performance Analytics ──
