@@ -68,4 +68,33 @@ window.utils = {
   },
 
   formatPercent: (v) => v != null ? (v * 100).toFixed(1) + '%' : '-',
+
+  // T-6: Indian number formatting (1,00,000 not 100,000)
+  formatINR: (v) => {
+    if (v == null || isNaN(v)) return '0';
+    const abs = Math.abs(v);
+    const sign = v < 0 ? '-' : '';
+    if (abs >= 10000000) return sign + 'Rs ' + (abs / 10000000).toFixed(2) + ' Cr';
+    if (abs >= 100000) return sign + 'Rs ' + (abs / 100000).toFixed(2) + ' L';
+    // Indian grouping: last 3, then groups of 2
+    const str = Math.round(abs).toString();
+    if (str.length <= 3) return sign + 'Rs ' + str;
+    const last3 = str.slice(-3);
+    const rest = str.slice(0, -3);
+    const grouped = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+    return sign + 'Rs ' + grouped + ',' + last3;
+  },
+
+  // T-6: Capitalise known abbreviations
+  capitalize: (s) => {
+    if (!s) return '';
+    const abbrs = { 'hni': 'HNI', 'aum': 'AUM', 'aif': 'AIF', 'pms': 'PMS', 'nps': 'NPS', 'ppf': 'PPF', 'fd': 'FD', 'emi': 'EMI', 'sip': 'SIP', 'nav': 'NAV', 'sebi': 'SEBI', 'nse': 'NSE', 'bse': 'BSE' };
+    return s.replace(/\b\w+\b/g, w => abbrs[w.toLowerCase()] || w);
+  },
+
+  // T-6: Strip em dashes from LLM text
+  cleanText: (s) => {
+    if (!s) return '';
+    return s.replace(/\s*—\s*/g, ', ').replace(/\s*–\s*/g, ', ');
+  },
 };

@@ -49,17 +49,11 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         New Intent
       </a>
-      <a @click.prevent="navigate('history')" href="#/history"
+      <a @click.prevent="navigate('audit')" href="#/audit"
          class="sidebar-link flex items-center gap-2 px-3 py-2 rounded text-sm"
-         :class="isActive('history')&&'active'">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-        Decisions
-      </a>
-      <a @click.prevent="navigate('telemetry')" href="#/telemetry"
-         class="sidebar-link flex items-center gap-2 px-3 py-2 rounded text-sm"
-         :class="isActive('telemetry')&&'active'">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        Telemetry
+         :class="(isActive('audit')||isActive('history')||isActive('decision'))&&'active'">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        Audit Explorer
       </a>
       <a @click.prevent="navigate('investors')" href="#/investors"
          class="sidebar-link flex items-center gap-2 px-3 py-2 rounded text-sm"
@@ -350,25 +344,63 @@
     </div>
 
     <!-- Decision History -->
-    <div x-show="screen==='history'" x-cloak>
-      <div x-data="historyScreen()" x-init="load()">
+    <!-- Audit Explorer (T-2: replaces Decisions + Telemetry) -->
+    <div x-show="screen==='audit'||screen==='history'" x-cloak>
+      <div x-data="auditExplorerScreen()" x-init="load()">
         <div class="p-6">
-          <h2 class="text-2xl font-bold mb-6">Decision History</h2>
-          <div class="card">
-            <div class="p-4 border-b">
-              <input type="text" x-model="search" placeholder="Search by client name, intent type, or ID..." class="w-full px-3 py-2 border rounded-lg text-sm">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-2xl font-bold">Audit Explorer</h2>
+            <span class="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full">Accountability Layer</span>
+          </div>
+          <p class="text-sm text-slate-500 mb-6 flex items-center gap-2">
+            <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            Every action taken in this system is recorded here.
+          </p>
+
+          <!-- Filters -->
+          <div class="card p-4 mb-4">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <input type="text" x-model="search" placeholder="Search client, ID, type..." class="px-3 py-2 border rounded-lg text-sm">
+              <select x-model="filterStatus" class="px-3 py-2 border rounded-lg text-sm">
+                <option value="">All Statuses</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="escalation_required">Escalation Required</option>
+              </select>
+              <select x-model="filterType" class="px-3 py-2 border rounded-lg text-sm">
+                <option value="">All Intent Types</option>
+                <option value="rebalance">Rebalance</option>
+                <option value="risk_review">Risk Review</option>
+                <option value="trade_proposal">Trade Proposal</option>
+                <option value="scheduled_evaluation">Scheduled Evaluation</option>
+              </select>
+              <input type="date" x-model="filterDateFrom" class="px-3 py-2 border rounded-lg text-sm" placeholder="From">
+              <input type="date" x-model="filterDateTo" class="px-3 py-2 border rounded-lg text-sm" placeholder="To">
             </div>
-            <div x-show="filtered.length===0" class="p-8 text-center text-slate-400">No decisions found.</div>
+          </div>
+
+          <!-- Summary stats -->
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+            <div class="card p-3 text-center"><div class="text-2xl font-bold text-slate-700" x-text="decisions.length"></div><div class="text-xs text-slate-400">Total Decisions</div></div>
+            <div class="card p-3 text-center"><div class="text-2xl font-bold text-green-600" x-text="decisions.filter(d=>d.status==='approved').length"></div><div class="text-xs text-slate-400">Approved</div></div>
+            <div class="card p-3 text-center"><div class="text-2xl font-bold text-red-600" x-text="decisions.filter(d=>d.status==='rejected').length"></div><div class="text-xs text-slate-400">Rejected</div></div>
+            <div class="card p-3 text-center"><div class="text-2xl font-bold text-amber-600" x-text="decisions.filter(d=>d.status==='escalation_required').length"></div><div class="text-xs text-slate-400">Escalated</div></div>
+            <div class="card p-3 text-center"><div class="text-2xl font-bold text-blue-600" x-text="new Set(decisions.map(d=>d.client_name).filter(Boolean)).size"></div><div class="text-xs text-slate-400">Clients</div></div>
+          </div>
+
+          <!-- Decisions table -->
+          <div class="card overflow-hidden">
+            <div x-show="filtered.length===0" class="p-8 text-center text-slate-400">No audit records match your filters.</div>
             <table class="w-full text-sm" x-show="filtered.length>0">
               <thead class="bg-slate-50 text-xs text-slate-500 uppercase"><tr>
                 <th class="px-4 py-3 text-left">Client / Decision</th>
-                <th class="px-4 py-3 text-left">Intent Type</th>
+                <th class="px-4 py-3 text-left">Action Type</th>
                 <th class="px-4 py-3 text-left">Portfolio</th>
-                <th class="px-4 py-3 text-left">Status</th>
+                <th class="px-4 py-3 text-left">Governance Outcome</th>
                 <th class="px-4 py-3 text-left">Agents</th>
                 <th class="px-4 py-3 text-left">Rules</th>
                 <th class="px-4 py-3 text-left">Time</th>
-                <th class="px-4 py-3 text-right">Actions</th>
+                <th class="px-4 py-3 text-center">Why</th>
               </tr></thead>
               <tbody>
                 <template x-for="d in filtered" :key="d.decision_id">
@@ -382,9 +414,12 @@
                     <td class="px-4 py-3"><span class="badge" :class="utils.statusBadge(d.status)" x-text="utils.statusLabel(d.status)"></span></td>
                     <td class="px-4 py-3 text-center" x-text="d.agent_count||0"></td>
                     <td class="px-4 py-3 text-center" x-text="d.rule_count||0"></td>
-                    <td class="px-4 py-3 text-xs text-slate-500" x-text="utils.relativeTime(d.created_at)"></td>
-                    <td class="px-4 py-3 text-right">
-                      <button class="text-blue-600 hover:underline">View &rarr;</button>
+                    <td class="px-4 py-3 text-xs text-slate-500">
+                      <div x-text="utils.relativeTime(d.created_at)"></div>
+                      <div class="text-slate-300" x-text="d.created_at?.substring(0,10)"></div>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                      <button class="text-blue-600 hover:underline text-xs">View &rarr;</button>
                     </td>
                   </tr>
                 </template>
@@ -880,6 +915,7 @@
             <button @click="ptab='scenarios';loadScenario()" class="tab" :class="ptab==='scenarios'&&'active'">Scenarios</button>
             <button @click="ptab='tax';loadTax()" class="tab" :class="ptab==='tax'&&'active'">Tax</button>
             <button @click="ptab='goals';loadGoals()" class="tab" :class="ptab==='goals'&&'active'">Goals</button>
+            <button @click="ptab='audit';loadEditLog()" class="tab" :class="ptab==='audit'&&'active'">Audit Trail</button>
           </div>
 
           <!-- OVERVIEW TAB -->
@@ -1031,7 +1067,7 @@
                   <span class="text-sm text-slate-400" x-text="'Max drift: '+rebalData?.max_drift_pct+'%'"></span>
                 </div>
                 <table class="w-full text-sm">
-                  <thead class="bg-slate-50"><tr><th class="px-3 py-2 text-left">Asset Class</th><th class="px-3 py-2 text-right">Target</th><th class="px-3 py-2 text-right">Actual</th><th class="px-3 py-2 text-right">Drift</th><th class="px-3 py-2 text-left">Status</th></tr></thead>
+                  <thead class="bg-slate-50"><tr><th class="px-3 py-2 text-left">Asset Class</th><th class="px-3 py-2 text-right">Target</th><th class="px-3 py-2 text-right">Actual</th><th class="px-3 py-2 text-right">Drift</th><th class="px-3 py-2 text-left">Status</th><th class="px-3 py-2 text-center">Action</th></tr></thead>
                   <tbody>
                     <template x-for="d in rebalData?.drift_items||[]" :key="d.asset_class">
                       <tr class="border-t" :class="d.abs_drift>5?'bg-amber-50':''">
@@ -1040,6 +1076,9 @@
                         <td class="px-3 py-2 text-right font-medium" x-text="d.actual_pct+'%'"></td>
                         <td class="px-3 py-2 text-right font-bold" :class="d.drift_pct>0?'text-amber-600':'text-blue-600'" x-text="(d.drift_pct>0?'+':'')+d.drift_pct+'%'"></td>
                         <td class="px-3 py-2 capitalize text-xs" :class="d.status==='on_target'?'text-green-600':'text-amber-600'" x-text="d.status.replace('_',' ')"></td>
+                        <td class="px-3 py-2 text-center">
+                          <button x-show="d.status!=='on_target'" @click="window.location.hash='#/intent?investor='+_currentId+'&source=rebalance&asset_class='+d.asset_class+'&drift='+d.drift_pct" class="text-xs px-2 py-1 bg-amber-500 text-white rounded hover:bg-amber-600">Create Intent</button>
+                        </td>
                       </tr>
                     </template>
                   </tbody>
@@ -1140,6 +1179,41 @@
               </template>
             </div>
             <div x-show="!goalsData?.length" class="card p-8 text-center text-slate-400">No financial goals set. Click "Add Goal" to get started.</div>
+          </div>
+
+          <!-- AUDIT TRAIL TAB (T-2: portfolio-level audit) -->
+          <div x-show="ptab==='audit'">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold">Portfolio Audit Trail</h3>
+              <span class="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full">All actions on this portfolio</span>
+            </div>
+            <div x-show="!editLogData?.length" class="card p-8 text-center text-slate-400">No audit events recorded yet for this portfolio.</div>
+            <div class="space-y-2" x-show="editLogData?.length">
+              <template x-for="entry in editLogData" :key="entry.id">
+                <div class="card p-4">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                      <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                            :class="{'bg-green-500':entry.action==='freeze','bg-amber-500':entry.action==='unfreeze','bg-blue-500':entry.action==='add'||entry.action==='import_csv','bg-purple-500':entry.action==='edit','bg-red-400':entry.action==='delete','bg-slate-400':true}[entry.action]||'bg-slate-400'"
+                            x-text="{'freeze':'F','unfreeze':'U','add':'+','edit':'E','delete':'D','import_csv':'CSV','set_onboarding_type':'OB'}[entry.action]||'?'"></span>
+                      <div>
+                        <div class="font-medium text-sm capitalize" x-text="entry.action.replace('_',' ')"></div>
+                        <div class="text-xs text-slate-500" x-text="entry.detail || entry.new_value || ''"></div>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <div class="text-xs text-slate-500" x-text="entry.actor"></div>
+                      <div class="text-xs text-slate-400" x-text="utils.relativeTime(entry.created_at)"></div>
+                    </div>
+                  </div>
+                  <div x-show="entry.field_changed" class="mt-2 text-xs text-slate-500 bg-slate-50 rounded p-2">
+                    <span class="font-medium" x-text="entry.field_changed"></span>:
+                    <span class="text-red-500 line-through" x-text="entry.old_value"></span>
+                    &rarr; <span class="text-green-600" x-text="entry.new_value"></span>
+                  </div>
+                </div>
+              </template>
+            </div>
           </div>
         </div>
         <div x-show="loading" class="p-6"><div class="skeleton h-8 w-48 mb-4"></div><div class="skeleton h-64 w-full"></div></div>
@@ -1869,6 +1943,45 @@
     </div>
 
   </main>
+
+  <!-- T-3: Samriddhi Help Chat Widget -->
+  <div x-data="helpChatWidget()" class="fixed bottom-6 right-6 z-50">
+    <!-- Chat toggle button -->
+    <button x-show="!chatOpen" @click="chatOpen=true" class="w-14 h-14 bg-amber-500 hover:bg-amber-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    </button>
+
+    <!-- Chat panel -->
+    <div x-show="chatOpen" x-transition class="w-96 h-[480px] bg-white rounded-xl shadow-2xl border flex flex-col overflow-hidden">
+      <!-- Header -->
+      <div class="bg-slate-800 text-white px-4 py-3 flex items-center justify-between">
+        <div>
+          <div class="font-semibold text-sm">Samriddhi Help</div>
+          <div class="text-xs text-slate-400">Platform guide, not investment advice</div>
+        </div>
+        <button @click="chatOpen=false" class="text-slate-400 hover:text-white">&times;</button>
+      </div>
+
+      <!-- Messages -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-3" id="helpChatMessages">
+        <template x-for="(msg, i) in messages" :key="i">
+          <div :class="msg.role==='user'?'text-right':'text-left'">
+            <div class="inline-block max-w-[80%] px-3 py-2 rounded-lg text-sm"
+                 :class="msg.role==='user'?'bg-blue-600 text-white':'bg-slate-100 text-slate-700'"
+                 x-text="msg.content"></div>
+          </div>
+        </template>
+        <div x-show="loading" class="text-left"><div class="inline-block bg-slate-100 px-3 py-2 rounded-lg text-sm text-slate-400">Thinking...</div></div>
+      </div>
+
+      <!-- Input -->
+      <div class="border-t p-3 flex gap-2">
+        <input type="text" x-model="input" @keydown.enter="send()" placeholder="Ask about the platform..." class="flex-1 px-3 py-2 border rounded-lg text-sm" :disabled="loading">
+        <button @click="send()" :disabled="loading||!input.trim()" class="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium disabled:opacity-50">Send</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- Screen components -->
@@ -1954,19 +2067,32 @@ function intentScreen() {
 }
 
 function historyScreen() {
+  // Legacy compat — redirects to auditExplorerScreen
+  return auditExplorerScreen();
+}
+
+function auditExplorerScreen() {
   return {
     decisions: [], search: '',
+    filterStatus: '', filterType: '', filterDateFrom: '', filterDateTo: '',
     get filtered() {
-      if (!this.search) return this.decisions;
-      const q = this.search.toLowerCase();
-      return this.decisions.filter(d =>
-        (d.client_name||'').toLowerCase().includes(q) ||
-        (d.intent_type||'').toLowerCase().includes(q) ||
-        (d.decision_id||'').toLowerCase().includes(q) ||
-        (d.status||'').toLowerCase().includes(q)
-      );
+      let list = this.decisions;
+      if (this.search) {
+        const q = this.search.toLowerCase();
+        list = list.filter(d =>
+          (d.client_name||'').toLowerCase().includes(q) ||
+          (d.intent_type||'').toLowerCase().includes(q) ||
+          (d.decision_id||'').toLowerCase().includes(q) ||
+          (d.status||'').toLowerCase().includes(q)
+        );
+      }
+      if (this.filterStatus) list = list.filter(d => d.status === this.filterStatus);
+      if (this.filterType) list = list.filter(d => d.intent_type === this.filterType);
+      if (this.filterDateFrom) list = list.filter(d => (d.created_at||'') >= this.filterDateFrom);
+      if (this.filterDateTo) list = list.filter(d => (d.created_at||'').substring(0,10) <= this.filterDateTo);
+      return list;
     },
-    async load() { const d = await api.listDecisionsSummary(100); if (!d.error) this.decisions = d; }
+    async load() { const d = await api.listDecisionsSummary(200); if (!d.error) this.decisions = d; }
   };
 }
 
@@ -2043,7 +2169,7 @@ function portfolioScreen() {
     portfolio: null, loading: false, searchHoldings: '', _currentId: null,
     ptab: 'overview',
     // Feature data
-    perfData: null, rebalData: null, scenarioData: null, taxData: null, goalsData: [],
+    perfData: null, rebalData: null, scenarioData: null, taxData: null, goalsData: [], editLogData: [],
     selectedScenario: 'nifty_crash_20', scenarios: [],
     showGoalForm: false, goalForm: { goal_name: '', target_amount: 0, target_date: '2030-01-01' },
     initRouteListener() {
@@ -2054,7 +2180,7 @@ function portfolioScreen() {
         if (parts[0] === 'portfolio' && parts[1] && parts[1] !== self._currentId) {
           self._currentId = parts[1];
           self.ptab = 'overview';
-          self.perfData = null; self.rebalData = null; self.scenarioData = null; self.taxData = null; self.goalsData = [];
+          self.perfData = null; self.rebalData = null; self.scenarioData = null; self.taxData = null; self.goalsData = []; self.editLogData = [];
           self.load(parts[1]);
         }
       };
@@ -2075,6 +2201,7 @@ function portfolioScreen() {
     async loadScenario() { if (!this._currentId) return; const r = await api.portfolioScenario(this._currentId, this.selectedScenario); this.scenarioData = r.error ? null : r; },
     async loadTax() { if (!this._currentId || this.taxData) return; this.taxData = await api.portfolioTax(this._currentId); if (this.taxData?.error) this.taxData = null; },
     async loadGoals() { if (!this._currentId) return; const r = await api.portfolioGoals(this._currentId); this.goalsData = r.error ? [] : r; },
+    async loadEditLog() { if (!this._currentId) return; try { const r = await fetch(`/api/v1/portfolio/${this._currentId}/edit-log`); const d = await r.json(); this.editLogData = Array.isArray(d) ? d : []; } catch(e) { this.editLogData = []; } },
     async addGoalAction() {
       if (!this._currentId || !this.goalForm.goal_name) return;
       await api.addGoal(this._currentId, this.goalForm);
@@ -2274,6 +2401,41 @@ function telemetryScreen() {
     async load() {
       const r = await api.telemetryAnalytics();
       this.data = r.error ? null : r;
+    }
+  };
+}
+
+function helpChatWidget() {
+  return {
+    chatOpen: false,
+    messages: [{ role: 'assistant', content: 'Welcome to Samriddhi AI. I can help you navigate the platform, understand modules, and interpret outputs. What would you like to know?' }],
+    input: '',
+    loading: false,
+    async send() {
+      if (!this.input.trim() || this.loading) return;
+      const userMsg = this.input.trim();
+      this.messages.push({ role: 'user', content: userMsg });
+      this.input = '';
+      this.loading = true;
+
+      // Detect current screen for context
+      const screen = window.location.hash.replace('#/', '') || 'dashboard';
+
+      try {
+        const res = await fetch('/api/v1/help/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: userMsg, screen: screen, history: this.messages.slice(-10) })
+        });
+        const data = await res.json();
+        this.messages.push({ role: 'assistant', content: data.response || data.error || 'Sorry, I could not process that.' });
+      } catch (e) {
+        this.messages.push({ role: 'assistant', content: 'Connection error. Please try again.' });
+      }
+      this.loading = false;
+
+      // Scroll to bottom
+      this.$nextTick(() => { const el = document.getElementById('helpChatMessages'); if (el) el.scrollTop = el.scrollHeight; });
     }
   };
 }

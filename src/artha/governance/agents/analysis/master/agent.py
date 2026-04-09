@@ -22,7 +22,10 @@ logger = logging.getLogger(__name__)
 SKILL_PATH = Path(__file__).parent / "skill.md"
 
 # Core analysis agents — always available
-CORE_AGENTS = ["fundamental", "technical", "sectoral", "macro", "sentiment"]
+CORE_AGENTS = [
+    "fundamental", "technical", "sectoral", "macro", "sentiment",
+    "financial_risk", "industry_business", "behavioural_historical",
+]
 
 # Specialist agents — invoked only when classification says so
 SPECIALIST_AGENTS = ["unlisted_equity", "pms_aif"]
@@ -31,12 +34,15 @@ SPECIALIST_AGENTS = ["unlisted_equity", "pms_aif"]
 def _get_analysis_agent_registry(llm: LLMProvider) -> dict[str, Any]:
     """Lazy import to avoid circular deps. Returns agent instances by ID."""
     from artha.governance.agents.analysis.fundamental.agent import FundamentalAnalysisAgent
-    from artha.governance.agents.analysis.macro.agent import MacroAnalysisAgent
-    from artha.governance.agents.analysis.pms_aif.agent import PmsAifAgent
-    from artha.governance.agents.analysis.sectoral.agent import SectoralAnalysisAgent
-    from artha.governance.agents.analysis.sentiment.agent import SentimentAnalysisAgent
     from artha.governance.agents.analysis.technical.agent import TechnicalAnalysisAgent
+    from artha.governance.agents.analysis.sectoral.agent import SectoralAnalysisAgent
+    from artha.governance.agents.analysis.macro.agent import MacroAnalysisAgent
+    from artha.governance.agents.analysis.sentiment.agent import SentimentAnalysisAgent
+    from artha.governance.agents.analysis.financial_risk.agent import FinancialRiskAgent
+    from artha.governance.agents.analysis.industry_business.agent import IndustryBusinessAgent
+    from artha.governance.agents.analysis.behavioural_historical.agent import BehaviouralHistoricalAgent
     from artha.governance.agents.analysis.unlisted_equity.agent import UnlistedEquityAgent
+    from artha.governance.agents.analysis.pms_aif.agent import PmsAifAgent
 
     return {
         "fundamental": FundamentalAnalysisAgent(llm),
@@ -44,6 +50,9 @@ def _get_analysis_agent_registry(llm: LLMProvider) -> dict[str, Any]:
         "sectoral": SectoralAnalysisAgent(llm),
         "macro": MacroAnalysisAgent(llm),
         "sentiment": SentimentAnalysisAgent(llm),
+        "financial_risk": FinancialRiskAgent(llm),
+        "industry_business": IndustryBusinessAgent(llm),
+        "behavioural_historical": BehaviouralHistoricalAgent(llm),
         "unlisted_equity": UnlistedEquityAgent(llm),
         "pms_aif": PmsAifAgent(llm),
     }
