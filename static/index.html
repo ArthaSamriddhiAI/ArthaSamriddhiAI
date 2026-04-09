@@ -1406,77 +1406,91 @@
     <div x-show="screen==='help'" x-cloak>
       <div x-data="helpScreen()">
         <div class="p-6 max-w-5xl mx-auto">
-          <h2 class="text-2xl font-bold mb-6">Help & Documentation</h2>
+          <h2 class="text-2xl font-bold mb-2">Help & Documentation</h2>
+          <p class="text-sm text-slate-500 mb-6">Everything you need to understand and operate the Samriddhi AI platform.</p>
 
           <!-- Tabs -->
           <div class="flex gap-0 border-b mb-6">
             <button @click="tab='ega'" class="tab" :class="tab==='ega'&&'active'">EGA Architecture</button>
             <button @click="tab='howto'" class="tab" :class="tab==='howto'&&'active'">How to Use</button>
+            <button @click="tab='agents'" class="tab" :class="tab==='agents'&&'active'">Analysis Agents</button>
+            <button @click="tab='faq'" class="tab" :class="tab==='faq'&&'active'">FAQ</button>
             <button @click="tab='glossary'" class="tab" :class="tab==='glossary'&&'active'">Glossary</button>
           </div>
 
-          <!-- EGA Architecture -->
+          <!-- ═══ EGA Architecture ═══ -->
           <div x-show="tab==='ega'" class="space-y-6">
-            <!-- Three Layer Diagram -->
             <div class="card p-6">
               <h3 class="font-semibold text-lg mb-4">The Three-Layer Mental Model</h3>
               <p class="text-sm text-slate-600 mb-6">Any system that allows agents to act under uncertainty must separate three questions without collapsing them:</p>
               <div class="space-y-3">
                 <div class="flex items-stretch gap-4 p-4 rounded-lg bg-blue-50 border-l-4 border-blue-500">
-                  <div class="flex-shrink-0 w-8 h-8 rounded bg-blue-500 text-white flex items-center justify-center font-bold">1</div>
+                  <div class="flex-shrink-0 w-8 h-8 rounded bg-blue-500 text-white flex items-center justify-center font-bold">E</div>
                   <div><h4 class="font-semibold text-blue-800">Evidence Layer</h4>
-                  <p class="text-sm text-blue-700 mt-1">"What does the system believe about the world?" Market observations, risk estimates, regime inference, model-derived outputs with uncertainty. ML belongs here as evidence generation, not authority. <strong>Produces beliefs, not decisions.</strong></p></div>
+                  <p class="text-sm text-blue-700 mt-1">"What does the system believe about the world?" 10 analysis agents (Fundamental, Technical, Sectoral, Macro, Sentiment, Financial Risk, Industry and Business Model, Behavioural and Historical, Unlisted Equity, PMS/AIF) produce structured, framework-grounded assessments. A Master Synthesis Agent acts as investment committee chair. <strong>Produces beliefs, not decisions.</strong></p></div>
                 </div>
                 <div class="flex items-stretch gap-4 p-4 rounded-lg bg-amber-50 border-l-4 border-amber-500">
-                  <div class="flex-shrink-0 w-8 h-8 rounded bg-amber-500 text-white flex items-center justify-center font-bold">2</div>
+                  <div class="flex-shrink-0 w-8 h-8 rounded bg-amber-500 text-white flex items-center justify-center font-bold">G</div>
                   <div><h4 class="font-semibold text-amber-800">Governance Layer</h4>
-                  <p class="text-sm text-amber-700 mt-1">"What actions are permitted right now?" The control plane. Encodes mandates, constraints, policies, limits. Deterministic, executable, versioned. <strong>Real-time permissioning, not retrospective compliance.</strong></p></div>
+                  <p class="text-sm text-amber-700 mt-1">"What actions are permitted right now?" The control plane. 3 governance agents (Allocation, Risk Interpretation, Review) assess proposals against mandates, concentration limits, and investor constraints. A deterministic rule engine evaluates hard and soft constraints. <strong>Real-time permissioning, not retrospective compliance.</strong></p></div>
                 </div>
                 <div class="flex items-stretch gap-4 p-4 rounded-lg bg-green-50 border-l-4 border-green-500">
-                  <div class="flex-shrink-0 w-8 h-8 rounded bg-green-500 text-white flex items-center justify-center font-bold">3</div>
+                  <div class="flex-shrink-0 w-8 h-8 rounded bg-green-500 text-white flex items-center justify-center font-bold">A</div>
                   <div><h4 class="font-semibold text-green-800">Accountability Layer</h4>
-                  <p class="text-sm text-green-700 mt-1">"Who acted, under what authority, and how is it recorded?" Preserves institutional memory. Every action has a clear initiator, is linked to contemporaneous evidence, is evaluated under rules in force at the time. <strong>Causal lineage, not just logs.</strong></p></div>
+                  <p class="text-sm text-green-700 mt-1">"Who acted, under what authority, and how is it recorded?" The Audit Explorer provides system-wide and portfolio-level traceability. Every action, every edit, every freeze/unfreeze, every governance decision is recorded with actor, timestamp, evidence, and reasoning. <strong>Every action in this system is recorded.</strong></p></div>
                 </div>
               </div>
             </div>
 
-            <!-- Pipeline Flow -->
             <div class="card p-6">
-              <h3 class="font-semibold text-lg mb-4">Governance Pipeline Flow</h3>
+              <h3 class="font-semibold text-lg mb-4">Full Decision Pipeline</h3>
               <div class="flex flex-wrap items-center justify-center gap-2 text-sm mb-4">
                 <span class="px-3 py-2 bg-blue-100 text-blue-800 rounded font-medium">Intent</span><span>&rarr;</span>
-                <span class="px-3 py-2 bg-blue-100 text-blue-800 rounded font-medium">Evidence Compute & Freeze</span><span>&rarr;</span>
-                <span class="px-3 py-2 bg-purple-100 text-purple-800 rounded font-medium">Supervisor Dispatch</span><span>&rarr;</span>
-                <span class="px-3 py-2 bg-purple-100 text-purple-800 rounded font-medium">Agent Consultation Loop</span><span>&rarr;</span>
-                <span class="px-3 py-2 bg-yellow-100 text-yellow-800 rounded font-medium">Rule Engine (Deterministic)</span><span>&rarr;</span>
+                <span class="px-3 py-2 bg-indigo-100 text-indigo-800 rounded font-medium">Evidence Freeze</span><span>&rarr;</span>
+                <span class="px-3 py-2 bg-teal-100 text-teal-800 rounded font-medium">10 Analysis Agents</span><span>&rarr;</span>
+                <span class="px-3 py-2 bg-teal-200 text-teal-900 rounded font-medium">Master Synthesis</span><span>&rarr;</span>
+                <span class="px-3 py-2 bg-purple-100 text-purple-800 rounded font-medium">3 Governance Agents</span><span>&rarr;</span>
+                <span class="px-3 py-2 bg-yellow-100 text-yellow-800 rounded font-medium">Rule Engine</span><span>&rarr;</span>
                 <span class="px-3 py-2 bg-green-100 text-green-800 rounded font-medium">Permission Filter</span><span>&rarr;</span>
                 <span class="px-3 py-2 bg-slate-100 text-slate-800 rounded font-medium">Decision Record</span>
               </div>
               <p class="text-xs text-slate-500 text-center">The orchestrator has bounded authority: cannot place trades, cannot override rules, cannot invent objectives.</p>
             </div>
 
-            <!-- Principles -->
             <div class="card p-6">
-              <h3 class="font-semibold text-lg mb-4">Cross-Cutting Design Principles</h3>
+              <h3 class="font-semibold text-lg mb-4">Portfolio Lifecycle</h3>
+              <div class="flex flex-wrap items-center justify-center gap-3 text-sm mb-4">
+                <div class="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg font-bold border-2 border-amber-300">DRAFT</div>
+                <div class="flex flex-col items-center"><span class="text-slate-400">&rarr;</span><span class="text-xs text-slate-400">Freeze</span></div>
+                <div class="px-4 py-2 bg-green-100 text-green-800 rounded-lg font-bold border-2 border-green-300">LIVE</div>
+                <div class="flex flex-col items-center"><span class="text-slate-400">&rarr;</span><span class="text-xs text-slate-400">Unfreeze</span></div>
+                <div class="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg font-bold border-2 border-amber-300">DRAFT v2</div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div class="p-3 bg-amber-50 rounded-lg"><p class="font-medium text-amber-800">DRAFT State</p><p class="text-xs text-amber-700 mt-1">Portfolio is fully editable. Add, edit, delete holdings. Import CSV. Build the portfolio before governance applies.</p></div>
+                <div class="p-3 bg-green-50 rounded-lg"><p class="font-medium text-green-800">LIVE State</p><p class="text-xs text-green-700 mt-1">Portfolio is immutable. Changes must go through the governed intent workflow. All modifications require evidence, governance gate, and approval.</p></div>
+              </div>
+            </div>
+
+            <div class="card p-6">
+              <h3 class="font-semibold text-lg mb-4">Design Principles</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Agents surface risk; they do NOT decide</p><p class="text-xs text-slate-500 mt-1">Decision authority is always explicit and human.</p></div>
-                <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Synthesis &#8800; Decision</p><p class="text-xs text-slate-500 mt-1">Aggregation layers clarify the landscape; they don't remove responsibility.</p></div>
+                <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Synthesis is not a decision</p><p class="text-xs text-slate-500 mt-1">Aggregation layers clarify the landscape; they don't remove responsibility.</p></div>
                 <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Governance is real-time permissioning</p><p class="text-xs text-slate-500 mt-1">Not retrospective compliance. Deterministic, versioned, executable.</p></div>
-                <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Decision telemetry > model telemetry</p><p class="text-xs text-slate-500 mt-1">The system of record captures human judgment and intent.</p></div>
+                <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Decision telemetry over model telemetry</p><p class="text-xs text-slate-500 mt-1">The system records human judgment and intent, not AI chain-of-thought.</p></div>
                 <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Learning is governed and explicit</p><p class="text-xs text-slate-500 mt-1">No silent drift. Judgment evolves like policy: slowly, versioned, with traceability.</p></div>
                 <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Off-system judgment is a feature</p><p class="text-xs text-slate-500 mt-1">Humans may incorporate experience and discretion no model can encode.</p></div>
-                <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">Agentic &#8800; Autonomous</p><p class="text-xs text-slate-500 mt-1">Agents coordinate reasoning under explicit mandates.</p></div>
-                <div class="p-3 bg-slate-50 rounded-lg"><p class="font-medium text-sm">The instant a decision is made, it becomes history</p><p class="text-xs text-slate-500 mt-1">A serious system must reason across both present and past states.</p></div>
               </div>
             </div>
           </div>
 
-          <!-- How to Use -->
+          <!-- ═══ How to Use ═══ -->
           <div x-show="tab==='howto'" class="space-y-4">
             <template x-for="step in howToSteps" :key="step.title">
               <div class="card p-5">
                 <h4 class="font-semibold flex items-center gap-2">
-                  <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold" x-text="step.num"></span>
+                  <span class="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold" x-text="step.num"></span>
                   <span x-text="step.title"></span>
                 </h4>
                 <p class="text-sm text-slate-600 mt-2" x-text="step.desc"></p>
@@ -1484,7 +1498,49 @@
             </template>
           </div>
 
-          <!-- Glossary -->
+          <!-- ═══ Analysis Agents ═══ -->
+          <div x-show="tab==='agents'" class="space-y-4">
+            <div class="card p-5 mb-2 bg-teal-50 border-l-4 border-teal-500">
+              <h3 class="font-semibold text-teal-800 mb-2">Multi-Lens Analysis Layer</h3>
+              <p class="text-sm text-teal-700">Before governance agents assess risk, 10 analysis agents independently evaluate the proposed action through different analytical lenses. A Master Synthesis Agent aggregates their findings into a unified committee position.</p>
+            </div>
+
+            <template x-for="agent in agentDocs" :key="agent.id">
+              <div class="card p-5">
+                <div class="flex items-center gap-3 mb-2">
+                  <span class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold" :style="'background:'+agent.color" x-text="agent.short"></span>
+                  <h4 class="font-semibold" x-text="agent.name"></h4>
+                  <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded" x-text="agent.tag"></span>
+                </div>
+                <p class="text-sm text-slate-600 mb-2" x-text="agent.desc"></p>
+                <div class="flex flex-wrap gap-1.5">
+                  <template x-for="f in agent.frameworks"><span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded" x-text="f"></span></template>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- ═══ FAQ (Accordion) ═══ -->
+          <div x-show="tab==='faq'" class="space-y-2">
+            <template x-for="(section, si) in faqSections" :key="section.title">
+              <div>
+                <h3 class="font-semibold text-sm text-slate-500 uppercase tracking-wider mt-4 mb-2" x-text="section.title"></h3>
+                <div class="space-y-1">
+                  <template x-for="(item, qi) in section.items" :key="qi">
+                    <details class="card group">
+                      <summary class="p-4 cursor-pointer font-medium text-sm flex items-center justify-between select-none hover:bg-slate-50">
+                        <span x-text="item.q"></span>
+                        <svg class="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      </summary>
+                      <div class="px-4 pb-4 text-sm text-slate-600 leading-relaxed border-t" x-text="item.a"></div>
+                    </details>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- ═══ Glossary ═══ -->
           <div x-show="tab==='glossary'">
             <div class="card">
               <template x-for="term in glossary" :key="term.term">
@@ -2361,36 +2417,97 @@ function helpScreen() {
   return {
     tab: 'ega',
     howToSteps: [
-      { num: 1, title: 'Check the Dashboard', desc: 'Start on the Dashboard to see system health, kill switch status, and recent decisions. This gives you an overview of the system state.' },
-      { num: 2, title: 'Submit a Governance Intent', desc: 'Navigate to "New Intent" to submit a rebalance, risk review, or trade proposal. Enter your symbols and holdings, then submit. The system will compute evidence, consult agents, evaluate rules, and return a decision.' },
-      { num: 3, title: 'Analyze the Decision', desc: 'View the decision result to see agent collaboration (who recommended what and why), rule evaluations (which passed/failed), and the permission outcome (approved, rejected, or escalation required).' },
-      { num: 4, title: 'Review the Decision Trace', desc: 'The trace tab shows the complete causal graph of the decision: what evidence was frozen, which agents were invoked, what they said, how rules were evaluated, and the final permission outcome.' },
-      { num: 5, title: 'Approve Escalated Decisions', desc: 'When soft rules are violated, the system requires human approval. Use the Permissions tab to review reasons and submit your approval, rejection, or override with rationale.' },
-      { num: 6, title: 'Explore Evidence', desc: 'The Evidence Explorer shows the latest market data, features, risk estimates, volatility, regime classification, and portfolio state. All evidence is append-only and immutable.' },
-      { num: 7, title: 'Emergency Kill Switch', desc: 'Navigate to System Control to activate the kill switch in emergencies. This halts all execution. Requires typing CONFIRM to prevent accidental activation.' },
+      { num: 1, title: 'Onboard a Client Portfolio', desc: 'Go to Investors, create or select a client, then open their Portfolio. The portfolio starts in DRAFT state. Add holdings individually using the "Add Holding" form, or bulk-import via CSV. Edit quantities, prices, or delete holdings freely while in DRAFT.' },
+      { num: 2, title: 'Freeze the Portfolio', desc: 'Once the portfolio is complete and verified, click "Freeze Portfolio" to transition from DRAFT to LIVE. A frozen portfolio is immutable: no direct edits. This creates a versioned snapshot for audit. To make further changes, you must unfreeze first.' },
+      { num: 3, title: 'Submit a Governance Intent', desc: 'Navigate to "New Intent" to submit a rebalance, risk review, or trade proposal. Select the client, enter symbols and holdings. The system will run 10 analysis agents, synthesize their findings, then evaluate through governance agents and rule engine.' },
+      { num: 4, title: 'Review the Analysis', desc: 'In the decision detail, the Analysis tab shows outputs from each analysis agent (Fundamental, Technical, Macro, etc.) plus the Master Synthesis with overall confidence, key drivers, inter-agent conflicts, and recommended actions.' },
+      { num: 5, title: 'Check Governance Outcomes', desc: 'The Governance tab shows allocation, risk, and review agents. The Rules tab shows which constraints passed or failed (hard rules block, soft rules escalate). The Permissions tab shows the final outcome.' },
+      { num: 6, title: 'Approve Escalated Decisions', desc: 'When soft rules are violated, the system requires human approval. Use the Permissions tab to review escalation reasons and submit your approval, rejection, or override with rationale.' },
+      { num: 7, title: 'Use the Audit Explorer', desc: 'The Audit Explorer (sidebar) shows every action across all portfolios and clients. Filter by status, type, date range. Each portfolio also has an Audit Trail tab showing its complete lifecycle history.' },
+      { num: 8, title: 'Act on Recommendations', desc: 'In the Portfolio Rebalance tab, each drift item has a "Create Intent" button that pre-fills the intent form with the system recommendation. The source is tagged for traceability.' },
+      { num: 9, title: 'Get Help Anytime', desc: 'Click the amber help button (bottom-right) on any page. The Samriddhi Help assistant answers questions about navigation, modules, and interpreting outputs. It does not make investment decisions.' },
+      { num: 10, title: 'Emergency Kill Switch', desc: 'Navigate to System to activate the kill switch in emergencies. This halts all execution. Requires typing CONFIRM to prevent accidental activation.' },
+    ],
+    agentDocs: [
+      { id: 'fundamental', name: 'Fundamental Analysis', short: 'FA', color: '#3b82f6', tag: 'Core', desc: 'Evaluates securities based on intrinsic value, financial health, and business quality using DuPont decomposition, Altman Z-Score, DCF valuation, and margin of safety analysis.', frameworks: ['P/E, P/B, EV/EBITDA', 'DuPont Decomposition', 'Altman Z-Score', 'ROIC vs WACC', 'Promoter Pledge Analysis'] },
+      { id: 'technical', name: 'Technical Analysis', short: 'TA', color: '#8b5cf6', tag: 'Core', desc: 'Assesses timing and trend strength across multiple timeframes using momentum indicators, volume profile, and pattern recognition.', frameworks: ['Multi-Timeframe Trends', 'RSI Divergence', 'MACD, OBV, VWAP', 'Fibonacci Levels', 'Volume Confirmation'] },
+      { id: 'sectoral', name: 'Sectoral Analysis', short: 'SA', color: '#06b6d4', tag: 'Core', desc: 'Evaluates industry dynamics, competitive positioning, and sector rotation relative to the economic cycle and Nifty sectoral indices.', frameworks: ['Sector Rotation', 'Nifty Sectoral Indices', 'FII/DII Flows by Sector', 'Government Policy Impact', 'Concentration Risk'] },
+      { id: 'macro', name: 'Macro Analysis', short: 'MA', color: '#14b8a6', tag: 'Core', desc: 'Classifies the macroeconomic regime (Goldilocks/Reflation/Stagflation/Deflation) and assesses RBI policy, fiscal direction, and global linkages.', frameworks: ['Growth-Inflation Matrix', 'RBI Monetary Stance', 'Fiscal Policy Direction', 'USD/INR, Crude, FII Flows', 'SEBI Regulatory Watch'] },
+      { id: 'sentiment', name: 'Sentiment Analysis', short: 'SE', color: '#f59e0b', tag: 'Core', desc: 'Detects sentiment extremes through news flow, institutional positioning (FII/DII/promoter), event risk calendar, and contrarian signals.', frameworks: ['Institutional Flow Analysis', 'Event Risk Calendar', 'Promoter Pledge Tracking', 'Contrarian Signals', 'Market Breadth'] },
+      { id: 'financial_risk', name: 'Financial Risk', short: 'FR', color: '#ef4444', tag: 'Core', desc: 'Assesses liquidity, concentration (HHI), financial health, portfolio stress scenarios, and mandate alignment. Uses DuPont and Altman frameworks.', frameworks: ['Liquidity Assessment', 'HHI Concentration', '20% Drawdown Stress Test', 'Correlated Holdings', 'Mandate Compliance'] },
+      { id: 'industry_business', name: 'Industry & Business Model', short: 'IB', color: '#ec4899', tag: 'Core', desc: 'Evaluates competitive position and business model quality using Porter\'s Five Forces, industry lifecycle, moat assessment, and sector rotation context.', frameworks: ['Porter\'s Five Forces', 'Industry Lifecycle', 'Moat Assessment', 'Pricing Power', 'Capital Allocation'] },
+      { id: 'behavioural', name: 'Behavioural & Historical', short: 'BH', color: '#6366f1', tag: 'Core', desc: 'Identifies cognitive biases in proposed actions and assesses historical precedent. Produces 3 challenge questions the advisor must answer before proceeding.', frameworks: ['7-Bias Audit', 'Historical Base Rates', 'Adviser Pattern Analysis', 'Client Profile Alignment', 'Challenge Questions'] },
+      { id: 'unlisted', name: 'Unlisted Equity Specialist', short: 'UE', color: '#84cc16', tag: 'Specialist', desc: 'Evaluates unlisted/pre-IPO investments with cautious default posture. Assesses valuation with illiquidity premium, cap table governance, and SEBI compliance.', frameworks: ['DCF with Illiquidity Premium', 'Revenue Multiples', 'Time-to-Liquidity', 'Cap Table Analysis', 'SEBI Eligibility'] },
+      { id: 'pms_aif', name: 'PMS/AIF Specialist', short: 'PA', color: '#f97316', tag: 'Specialist', desc: 'Evaluates PMS and AIF products. Default question: would a low-cost index fund deliver comparable net returns? Assesses fee drag, alpha quality, and overlap.', frameworks: ['Fee-Adjusted Returns', 'Alpha Quality Assessment', 'Fund Manager Track Record', 'Portfolio Overlap', 'Lock-in Analysis'] },
+    ],
+    faqSections: [
+      { title: 'Getting Started', items: [
+        { q: 'What is Samriddhi AI?', a: 'Samriddhi AI is an Evidence-Governance-Accountability (EGA) platform for wealth advisors. It routes portfolio decisions through a structured chain: evidence agents analyze the situation, governance gates enforce constraints, and an accountability layer records everything for audit.' },
+        { q: 'How do I onboard a new client?', a: 'Go to Investors, click "New Investor", fill in details. Then open their Portfolio (starts in DRAFT). Add holdings individually or import via CSV. Once complete, click "Freeze Portfolio" to make it LIVE and eligible for governance.' },
+        { q: 'What is the difference between DRAFT and LIVE?', a: 'DRAFT means the portfolio is editable: you can add, edit, or delete holdings freely. LIVE means the portfolio is immutable: any change must go through the governed intent workflow (propose, evidence gathered, governance gate checked, approval). Freeze moves DRAFT to LIVE; Unfreeze creates a new DRAFT version.' },
+        { q: 'How do I use the Help Chat?', a: 'Click the amber help button in the bottom-right corner of any page. It answers questions about platform navigation, module functions, and output interpretation. It does NOT create intents, run analyses, or give investment advice.' },
+      ]},
+      { title: 'Analysis & Agents', items: [
+        { q: 'How many analysis agents are there?', a: 'There are 10 analysis agents: 8 core (Fundamental, Technical, Sectoral, Macro, Sentiment, Financial Risk, Industry and Business Model, Behavioural and Historical) plus 2 specialists (Unlisted Equity, PMS/AIF). The Master Synthesis Agent aggregates their findings.' },
+        { q: 'What does confidence score mean?', a: 'Confidence (0.0 to 1.0) indicates how certain an agent is about its assessment. Low confidence (<0.4) means data gaps or ambiguity. High confidence (>0.8) means clear signals with strong data. The master synthesis weights agent opinions by their confidence.' },
+        { q: 'What is a reasoning trace?', a: 'Every agent produces a reasoning trace: a step-by-step narrative showing what it looked for, what it found, what it weighted and why, and what assumptions it made. This supports the accountability layer by making agent reasoning reconstructable.' },
+        { q: 'Why do some agents get skipped?', a: 'The Master Agent classifies each intent and selects relevant agents. For example, a simple risk review may only need Macro, Technical, Sentiment, and Financial Risk. A full rebalance activates all 8 core agents. Specialist agents (Unlisted Equity, PMS/AIF) activate only when the asset class requires them.' },
+        { q: 'What if agents disagree?', a: 'Disagreement is a feature, not a bug. The Master Synthesis Agent identifies conflicts, explains why each agent sees the situation differently, and reports the higher risk level. Inter-agent conflicts are flagged prominently in the Analysis tab.' },
+        { q: 'What are challenge questions?', a: 'The Behavioural and Historical Agent produces 3 questions the advisor should answer before approving an action. These challenge cognitive biases like recency bias, confirmation bias, and overconfidence. They appear in the synthesis output.' },
+      ]},
+      { title: 'Governance & Rules', items: [
+        { q: 'What is a hard rule vs a soft rule?', a: 'A hard rule (e.g., max single position 25%) blocks the action entirely if violated. A soft rule (e.g., investor volatility limit) triggers escalation for human review but does not block outright. Both are evaluated deterministically.' },
+        { q: 'What does "Escalation Required" mean?', a: 'The system has flagged a soft rule violation. The proposed action is paused and requires explicit human approval. Go to the Permissions tab, review the escalation reasons, and submit your approval, rejection, or override with documented rationale.' },
+        { q: 'Can I override a rejected decision?', a: 'Hard rule rejections cannot be overridden through the system. If a hard rule is incorrectly configured, contact the administrator to update the rule set. Soft rule escalations can be approved with documented rationale.' },
+        { q: 'How do I create an intent from a recommendation?', a: 'In the Portfolio Rebalance tab, each drift item with significant drift shows a "Create Intent" button. Clicking it pre-fills the intent form with the recommendation details and tags the source as "System Recommendation, Rebalance Engine". You can modify values before submitting.' },
+      ]},
+      { title: 'Audit & Compliance', items: [
+        { q: 'Where can I see all system activity?', a: 'The Audit Explorer (sidebar) shows every governance decision across all portfolios. Filter by client, status, intent type, or date range. Every action taken in the system is recorded here.' },
+        { q: 'How do I see a portfolio edit history?', a: 'Open the portfolio and click the "Audit Trail" tab. It shows every action: holdings added, edited, deleted, CSV imports, portfolio freeze/unfreeze events, with actor name and timestamp.' },
+        { q: 'Can I reconstruct why a decision was made?', a: 'Yes. Click any decision in the Audit Explorer. The Decision Trace tab shows the complete causal graph: what evidence was frozen, which agents were invoked, what they said, how rules were evaluated, and the final outcome. Every step is linked.' },
+        { q: 'Is the audit trail tamper-proof?', a: 'The evidence layer is append-only and immutable. Decision records are frozen at decision time with versioned rule sets and evidence snapshots. Edit logs record every portfolio change with actor and timestamp.' },
+      ]},
+      { title: 'Portfolio Management', items: [
+        { q: 'How do I add a holding?', a: 'Open the portfolio (must be in DRAFT state), click "Add Holding" in the Holdings table, fill in asset class, symbol, description, quantity, acquisition date, and price, then click Add. You can also bulk-import via CSV.' },
+        { q: 'How do I edit a holding?', a: 'In DRAFT state, click the pencil icon on any holding row. Edit quantity or acquisition price inline, then click the checkmark to save. Changes are logged in the Audit Trail.' },
+        { q: 'How do I delete a holding?', a: 'In DRAFT state, click the X icon on any holding row and confirm. Deletions are soft-deletes (the record is preserved for audit) and logged in the Audit Trail.' },
+        { q: 'What asset classes are supported?', a: 'The system supports 14 asset classes: Equity, Mutual Funds, Gold, Silver, Fixed Deposits, Bonds, PMS, AIF, Real Estate, Insurance, Crypto, PPF/EPF, NPS, and Other. Each has appropriate pricing and valuation logic.' },
+        { q: 'How are current prices determined?', a: 'Equities use live NSE prices (via yfinance), mutual funds use AMFI NAV data, gold/silver use commodity prices, crypto uses market prices. For FDs, bonds, PMS, AIF, real estate, and insurance, the system uses the manually entered current price or falls back to acquisition price.' },
+      ]},
+      { title: 'System & Technical', items: [
+        { q: 'What LLM powers the analysis agents?', a: 'The system uses Mistral AI via OpenAI-compatible API. Each agent has a framework-grounded prompt (skill.md) that embeds domain-specific analytical methodology, not just a task description.' },
+        { q: 'What is the kill switch?', a: 'The System page has an emergency kill switch that halts all order execution immediately. Activating it requires typing CONFIRM. This is a safety measure for market emergencies.' },
+        { q: 'Can agent prompts be modified?', a: 'Yes. Each agent\'s behavior is defined in a separate skill.md file. These are re-read on every invocation (not cached), so updates take effect immediately without restarting the server.' },
+        { q: 'What happens if an agent fails?', a: 'If an analysis agent fails, the Master Synthesis Agent proceeds with available outputs but flags the missing agent and reduces overall confidence. The system is designed to degrade gracefully.' },
+      ]},
     ],
     glossary: [
-      { term: 'Agent', def: 'A specialized AI reasoning module that analyzes a specific aspect of the portfolio (allocation, risk, review). Agents surface risk — they do NOT decide.' },
-      { term: 'AgentOutput', def: 'Structured JSON output from an agent containing risk level, confidence, drivers, proposed actions, and flags. No chain-of-thought stored.' },
-      { term: 'Causal DAG', def: 'Directed acyclic graph recording the causal chain of a decision: what led to what. Auditors traverse backwards from any outcome to understand "why."' },
-      { term: 'Confidence', def: 'A 0.0 to 1.0 score indicating how certain an agent is about its assessment.' },
+      { term: 'Agent', def: 'A specialized AI reasoning module that analyzes a specific aspect of a portfolio action. Analysis agents provide evidence; governance agents assess risk. Agents surface risk, they do NOT decide.' },
+      { term: 'AgentOutput', def: 'Structured output from an agent: risk level, confidence, drivers, proposed actions, flags, and reasoning trace.' },
+      { term: 'Audit Explorer', def: 'System-wide accountability surface showing all governance decisions, filterable by client, status, type, and date range. Replaces the old Decisions and Telemetry views.' },
+      { term: 'Audit Trail', def: 'Portfolio-level chronological log of all actions: holdings added/edited/deleted, freeze/unfreeze events, with actor and timestamp. Found in the Audit Trail tab of each portfolio.' },
+      { term: 'Causal DAG', def: 'Directed acyclic graph recording the causal chain of a decision: what led to what. Navigate backwards from any outcome to understand "why."' },
+      { term: 'Challenge Questions', def: 'Three questions produced by the Behavioural and Historical Agent that the advisor should answer before approving an action. Designed to surface cognitive biases.' },
+      { term: 'Confidence', def: 'A 0.0 to 1.0 score indicating how certain an agent is. Low confidence means data gaps or ambiguity. The master synthesis weights opinions by confidence.' },
       { term: 'Decision Boundary', def: 'The moment evidence and rules are atomically frozen for a decision. After this point, both become immutable historical references.' },
-      { term: 'Decision Trace', def: 'The complete causal graph of a governance decision, from intent receipt through agent consultation, rule evaluation, and permission outcome.' },
-      { term: 'EGA', def: 'Evidence-Governance-Accountability: the three-layer architecture separating beliefs, permissions, and records.' },
-      { term: 'Escalation', def: 'When a soft rule is violated, the decision requires human review. The system pauses and waits for approval.' },
-      { term: 'Evidence Artifact', def: 'An immutable, timestamped piece of evidence (market data, risk estimate, etc.) stored in the append-only artifact store.' },
+      { term: 'Decision Trace', def: 'The complete causal graph of a governance decision, from intent through agents, rules, and permission outcome. Visible in the Decision Trace tab.' },
+      { term: 'DRAFT', def: 'Portfolio state where holdings are fully editable. Add, edit, delete, import freely. Must be frozen to LIVE before governance applies.' },
+      { term: 'EGA', def: 'Evidence-Governance-Accountability: the three-layer architecture. Evidence produces beliefs, Governance enforces constraints, Accountability records everything.' },
+      { term: 'Escalation', def: 'When a soft rule is violated, the decision requires human review. The advisor must explicitly approve, reject, or override with documented rationale.' },
       { term: 'Evidence Snapshot', def: 'A frozen set of evidence artifact references captured at decision time. Enables reconstruction of what the system believed when a decision was made.' },
-      { term: 'Governance Intent', def: 'A request for the system to evaluate and act: rebalance, risk review, trade proposal, or scheduled evaluation.' },
-      { term: 'Kill Switch', def: 'Emergency control that halts all order execution immediately.' },
-      { term: 'Permission Filter', def: 'Transforms rule evaluation results into action permissions: approved, rejected, or escalation required.' },
-      { term: 'ProposedAction', def: 'An agent\'s recommendation for a specific symbol: buy, sell, hold, reduce, or increase to a target weight.' },
-      { term: 'Regime', def: 'The current market state classification: bull, bear, volatile, or stable.' },
-      { term: 'Risk Level', def: 'Agent assessment of risk: low, medium, high, or critical.' },
-      { term: 'Rule (Hard)', def: 'A governance rule whose violation blocks the action entirely. No override without explicit human action.' },
-      { term: 'Rule (Soft)', def: 'A governance rule whose violation triggers escalation for human review, but does not outright block.' },
-      { term: 'RuleSet', def: 'A versioned collection of governance rules in effect at a point in time. Versioned for audit trail.' },
-      { term: 'Skill.md', def: 'A versioned markdown file defining an agent\'s behavior, heuristics, and constraints. Updated through governed learning cycles.' },
-      { term: 'Supervisor', def: 'The orchestrator component that decides which agents to consult. Has bounded authority — cannot trade, override rules, or invent objectives.' },
+      { term: 'Freeze', def: 'The action of transitioning a portfolio from DRAFT to LIVE. Creates an immutable snapshot and makes the portfolio eligible for governance evaluation.' },
+      { term: 'Governance Intent', def: 'A request for the system to evaluate: rebalance, risk review, trade proposal, or scheduled evaluation. Triggers the full EGA pipeline.' },
+      { term: 'Kill Switch', def: 'Emergency control in the System page that halts all execution immediately. Requires typing CONFIRM.' },
+      { term: 'LIVE', def: 'Portfolio state where holdings are immutable. Changes require the governed intent workflow: propose, evidence, governance gate, approval.' },
+      { term: 'Master Synthesis Agent', def: 'The investment committee chair that aggregates all analysis agent outputs into a unified assessment with confidence-weighted consensus, conflict identification, and a synthesis verdict.' },
+      { term: 'Permission Filter', def: 'Converts rule evaluation results into action permissions: approved (all rules pass), rejected (hard rule violated), or escalation required (soft rule violated).' },
+      { term: 'Reasoning Trace', def: 'Step-by-step narrative from an agent showing what it analyzed, what it found, what it weighted and why, and what assumptions it made. Stored for accountability.' },
+      { term: 'Risk Level', def: 'Agent assessment of risk: LOW (favorable), MEDIUM (moderate concerns), HIGH (significant risk), CRITICAL (action should be blocked or escalated).' },
+      { term: 'Rule (Hard)', def: 'Governance constraint whose violation blocks the action entirely (e.g., max single position 25%). Cannot be overridden through the system.' },
+      { term: 'Rule (Soft)', def: 'Governance constraint whose violation triggers human escalation (e.g., investor volatility threshold). Advisor can approve with rationale.' },
+      { term: 'Skill.md', def: 'A versioned markdown file defining an agent\'s analytical framework, methodology, output contract, and constraints. Re-read on every invocation for governed updates.' },
+      { term: 'Supervisor', def: 'Orchestrator that decides which governance agents to consult based on intent type. Bounded authority: cannot trade, override rules, or invent objectives.' },
+      { term: 'Unfreeze', def: 'The action of transitioning a portfolio from LIVE back to DRAFT. Creates a new version while preserving the previous LIVE snapshot in audit history.' },
     ].sort((a, b) => a.term.localeCompare(b.term)),
   };
 }
