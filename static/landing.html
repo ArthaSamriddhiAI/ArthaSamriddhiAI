@@ -5,467 +5,386 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Samriddhi AI — Governed Intelligence for Capital Markets</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --cfm-navy: #0B2545;
-      --cfm-blue: #134074;
-      --cfm-teal: #13788A;
-      --cfm-gold: #C4962C;
-      --cfm-gold-light: #D4AA4F;
-      --cfm-warm: #F5F0E8;
-      --cfm-offwhite: #FAFAF7;
-      --cfm-text: #2D3748;
-      --cfm-text-light: #718096;
-      --cfm-border: #E2E0D8;
+      --navy: #1a3a5c;
+      --navy-deep: #0f2640;
+      --blue: #2ea3f2;
+      --gold: #C4962C;
+      --gold-light: #D4AA4F;
+      --gray-bg: #f3f3f3;
+      --white: #ffffff;
+      --text-dark: #333333;
+      --text-body: #555555;
+      --text-light: #888888;
+      --border: #e2e2e2;
     }
 
     body {
-      font-family: 'Inter', -apple-system, sans-serif;
-      color: var(--cfm-text);
-      background: var(--cfm-offwhite);
+      font-family: 'Open Sans', Arial, sans-serif;
+      color: var(--text-dark);
+      background: var(--white);
       overflow-x: hidden;
+      line-height: 1.7;
     }
 
-    .font-display { font-family: 'Playfair Display', Georgia, serif; }
-
-    /* ── Fade-in animation system ── */
+    /* ── Animations ── */
     .reveal {
       opacity: 0;
-      transform: translateY(32px);
-      transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+      transform: translateY(24px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
     }
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .reveal-delay-1 { transition-delay: 0.15s; }
-    .reveal-delay-2 { transition-delay: 0.3s; }
-    .reveal-delay-3 { transition-delay: 0.45s; }
-    .reveal-delay-4 { transition-delay: 0.6s; }
-    .reveal-delay-5 { transition-delay: 0.75s; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-d1 { transition-delay: 0.12s; }
+    .reveal-d2 { transition-delay: 0.24s; }
+    .reveal-d3 { transition-delay: 0.36s; }
+    .reveal-d4 { transition-delay: 0.48s; }
 
-    .reveal-fade {
-      opacity: 0;
-      transition: opacity 1.2s ease;
-    }
-    .reveal-fade.visible { opacity: 1; }
-
-    .reveal-scale {
-      opacity: 0;
-      transform: scale(0.92);
-      transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-    .reveal-scale.visible { opacity: 1; transform: scale(1); }
-
-    /* ── Hero section ── */
-    .hero {
-      min-height: 100vh;
-      background: linear-gradient(165deg, var(--cfm-navy) 0%, var(--cfm-blue) 40%, var(--cfm-teal) 100%);
-      position: relative;
-      display: flex;
-      align-items: center;
-      overflow: hidden;
-    }
-    .hero::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -30%;
-      width: 80%;
-      height: 200%;
-      background: radial-gradient(ellipse, rgba(196, 150, 44, 0.06) 0%, transparent 70%);
-      pointer-events: none;
-    }
-    .hero::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 120px;
-      background: linear-gradient(to top, var(--cfm-offwhite), transparent);
-      pointer-events: none;
-    }
-
-    /* Grid pattern overlay */
-    .hero-grid {
-      position: absolute;
-      inset: 0;
-      opacity: 0.04;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px);
-      background-size: 60px 60px;
-    }
-
-    /* Floating orbs */
-    .orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-      pointer-events: none;
-      animation: float 12s ease-in-out infinite;
-    }
-    .orb-1 { width: 400px; height: 400px; background: rgba(196,150,44,0.08); top: 10%; right: 5%; animation-delay: 0s; }
-    .orb-2 { width: 300px; height: 300px; background: rgba(19,120,138,0.1); bottom: 20%; left: 10%; animation-delay: -4s; }
-    .orb-3 { width: 200px; height: 200px; background: rgba(196,150,44,0.06); top: 60%; right: 30%; animation-delay: -8s; }
-    @keyframes float {
-      0%, 100% { transform: translate(0, 0); }
-      33% { transform: translate(15px, -20px); }
-      66% { transform: translate(-10px, 15px); }
-    }
-
-    /* Gold accent line */
-    .gold-line {
-      width: 64px;
+    /* ── Gold underline (IMT CFM signature) ── */
+    .gold-rule {
+      width: 80px;
       height: 3px;
-      background: linear-gradient(90deg, var(--cfm-gold), var(--cfm-gold-light));
-      border-radius: 2px;
+      background: var(--gold);
+      border-radius: 1px;
+      margin-top: 12px;
     }
+    .gold-rule-center { margin-left: auto; margin-right: auto; }
 
-    /* CTA Button */
-    .cta-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      padding: 18px 40px;
-      background: linear-gradient(135deg, var(--cfm-gold), var(--cfm-gold-light));
-      color: var(--cfm-navy);
-      font-weight: 700;
-      font-size: 1rem;
-      letter-spacing: 0.02em;
-      border-radius: 6px;
-      text-decoration: none;
+    /* ── Container ── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+    /* ── Nav ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 64px; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      transition: box-shadow 0.3s ease;
+    }
+    .nav.scrolled { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+    .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-brand-text { font-weight: 700; font-size: 1.05rem; color: var(--navy); }
+    .nav-brand-text span { color: var(--gold); }
+    .nav-links { display: flex; align-items: center; gap: 28px; }
+    .nav-links a { color: var(--text-body); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.3s; }
+    .nav-links a:hover { color: var(--navy); }
+    .nav-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 24px; background: var(--navy); color: white;
+      font-weight: 600; font-size: 0.85rem; border-radius: 4px;
+      text-decoration: none; transition: background 0.3s, transform 0.2s;
+    }
+    .nav-cta:hover { background: var(--navy-deep); transform: translateY(-1px); }
+
+    /* ── Hero (light, IMT-style) ── */
+    .hero {
+      margin-top: 64px;
+      background: var(--gray-bg);
+      padding: 80px 0 64px;
       position: relative;
-      overflow: hidden;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      box-shadow: 0 4px 20px rgba(196, 150, 44, 0.3);
     }
-    .cta-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 32px rgba(196, 150, 44, 0.45);
-    }
-    .cta-btn::after {
-      content: '';
-      position: absolute;
-      top: 0; left: -100%;
-      width: 100%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-      transition: left 0.5s ease;
-    }
-    .cta-btn:hover::after { left: 100%; }
-
-    .cta-btn-outline {
-      display: inline-flex;
+    .hero-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
       align-items: center;
-      gap: 8px;
-      padding: 16px 32px;
-      border: 1.5px solid rgba(255,255,255,0.25);
-      color: rgba(255,255,255,0.9);
-      font-weight: 500;
-      font-size: 0.95rem;
-      border-radius: 6px;
-      text-decoration: none;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(4px);
     }
-    .cta-btn-outline:hover {
-      border-color: var(--cfm-gold-light);
-      color: var(--cfm-gold-light);
-      background: rgba(196,150,44,0.05);
+    .hero h1 {
+      font-size: 2.6rem;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--gold); }
+    .hero-tag {
+      display: inline-block; padding: 5px 14px;
+      border: 1.5px solid var(--gold); border-radius: 3px;
+      color: var(--gold); font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .hero p { font-size: 1rem; color: var(--text-body); line-height: 1.8; margin-bottom: 20px; }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 28px; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 14px 32px; background: var(--gold); color: white;
+      font-weight: 700; font-size: 0.95rem; border-radius: 4px;
+      text-decoration: none; transition: background 0.3s, transform 0.2s;
+      box-shadow: 0 3px 12px rgba(196,150,44,0.25);
+    }
+    .btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(196,150,44,0.35); }
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 28px; border: 2px solid var(--navy); color: var(--navy);
+      font-weight: 600; font-size: 0.9rem; border-radius: 4px;
+      text-decoration: none; transition: all 0.3s;
+    }
+    .btn-outline:hover { background: var(--navy); color: white; }
+
+    /* Hero right visual */
+    .hero-visual {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 32px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    }
+    .hero-visual-flow {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .flow-step {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;
+    }
+    .flow-step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: white; flex-shrink: 0;
+    }
+    .flow-evidence { background: rgba(19,64,116,0.06); color: var(--navy); }
+    .flow-evidence .flow-step-num { background: #134074; }
+    .flow-governance { background: rgba(196,150,44,0.06); color: #8B6914; }
+    .flow-governance .flow-step-num { background: var(--gold); }
+    .flow-accountability { background: rgba(11,155,106,0.06); color: #0B7A54; }
+    .flow-accountability .flow-step-num { background: #0B9B6A; }
+    .flow-arrow { text-align: center; color: var(--text-light); font-size: 0.8rem; }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      padding: 40px 0; background: var(--white);
+      border-bottom: 1px solid var(--border);
+    }
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; text-align: center;
+    }
+    .stat-val { font-size: 2.4rem; font-weight: 800; color: var(--navy); line-height: 1; }
+    .stat-label { font-size: 0.8rem; color: var(--text-light); margin-top: 6px; font-weight: 500; }
+
+    /* ── Sections ── */
+    .section { padding: 80px 0; }
+    .section-alt { background: var(--gray-bg); }
+    .section-heading {
+      font-size: 1.6rem; font-weight: 700; color: var(--navy);
+      text-transform: uppercase; letter-spacing: 0.02em;
+      margin-bottom: 0;
+    }
+    .section-subtitle {
+      font-size: 1rem; color: var(--text-body); margin-top: 16px; line-height: 1.7;
     }
 
     /* ── Cards ── */
-    .principle-card {
-      background: white;
-      border: 1px solid var(--cfm-border);
-      border-radius: 12px;
-      padding: 32px;
-      transition: transform 0.4s ease, box-shadow 0.4s ease;
+    .card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 6px; padding: 28px;
+      transition: box-shadow 0.3s, transform 0.3s;
     }
-    .principle-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(11, 37, 69, 0.08);
-    }
+    .card:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.06); transform: translateY(-3px); }
+    .card h3 { font-size: 1rem; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+    .card p { font-size: 0.88rem; color: var(--text-body); line-height: 1.65; }
 
+    /* Layer cards */
     .layer-card {
-      background: white;
-      border: 1px solid var(--cfm-border);
-      border-radius: 16px;
-      padding: 40px;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.4s ease, box-shadow 0.4s ease;
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 6px; padding: 32px;
+      border-top: 4px solid transparent;
+      transition: box-shadow 0.3s, transform 0.3s;
     }
-    .layer-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 48px rgba(11, 37, 69, 0.1);
-    }
-    .layer-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-    }
-    .layer-evidence::before { background: linear-gradient(90deg, #134074, #13788A); }
-    .layer-governance::before { background: linear-gradient(90deg, var(--cfm-gold), var(--cfm-gold-light)); }
-    .layer-accountability::before { background: linear-gradient(90deg, #13788A, #0B9B6A); }
-
-    /* ── Section headers ── */
-    .section-label {
-      display: inline-block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--cfm-gold);
-      margin-bottom: 12px;
+    .layer-card:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.06); transform: translateY(-3px); }
+    .layer-evidence-card { border-top-color: #134074; }
+    .layer-governance-card { border-top-color: var(--gold); }
+    .layer-accountability-card { border-top-color: #0B9B6A; }
+    .layer-tag {
+      display: inline-block; padding: 3px 10px; border-radius: 3px;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
     }
 
-    /* ── Quote block ── */
+    /* Quote */
     .quote-block {
-      border-left: 3px solid var(--cfm-gold);
-      padding: 24px 32px;
-      background: var(--cfm-warm);
-      border-radius: 0 12px 12px 0;
-      font-style: italic;
+      border-left: 4px solid var(--gold); padding: 24px 28px;
+      background: rgba(196,150,44,0.04); border-radius: 0 6px 6px 0;
+      font-size: 1.05rem; font-style: italic; color: var(--text-dark); line-height: 1.8;
     }
 
-    /* ── Nav bar ── */
-    .nav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 100;
-      padding: 0 48px;
-      height: 72px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      transition: background 0.4s ease, box-shadow 0.4s ease;
-    }
-    .nav.scrolled {
-      background: rgba(11, 37, 69, 0.95);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+    /* CTA Section */
+    .cta-section {
+      padding: 80px 0;
+      background: var(--navy);
+      text-align: center;
     }
 
-    /* ── Footer ── */
+    /* Footer */
     .footer {
-      background: var(--cfm-navy);
-      color: rgba(255,255,255,0.6);
+      padding: 40px 0;
+      background: var(--navy-deep);
+      color: rgba(255,255,255,0.5);
+      font-size: 0.82rem;
     }
 
-    /* ── Stats counter ── */
-    .stat-number {
-      font-family: 'Playfair Display', serif;
-      font-size: 3rem;
-      font-weight: 700;
-      color: var(--cfm-navy);
-      line-height: 1;
-    }
-
-    /* ── Smooth scroll ── */
-    html { scroll-behavior: smooth; }
-
-    /* ── Container ── */
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-
-    /* ── Responsive ── */
+    /* Responsive */
     @media (max-width: 768px) {
-      .hero { min-height: 90vh; }
-      .nav { padding: 0 20px; }
-      .stat-number { font-size: 2.2rem; }
-      .layer-card { padding: 24px; }
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 2rem; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .nav { padding: 0 16px; }
+      .nav-links a:not(.nav-cta) { display: none; }
     }
+
+    html { scroll-behavior: smooth; }
   </style>
 </head>
 <body>
 
-<!-- ══════ Navigation ══════ -->
+<!-- ══ Nav ══ -->
 <nav class="nav" id="nav">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-      <circle cx="18" cy="18" r="17" stroke="rgba(196,150,44,0.6)" stroke-width="1.5" fill="none"/>
-      <circle cx="18" cy="18" r="11" stroke="rgba(196,150,44,0.4)" stroke-width="1" fill="none"/>
-      <path d="M18 7 L18 29 M7 18 L29 18 M10 10 L26 26 M26 10 L10 26" stroke="rgba(196,150,44,0.25)" stroke-width="0.5"/>
-      <circle cx="18" cy="18" r="4" fill="rgba(196,150,44,0.7)"/>
+  <a href="/" class="nav-brand">
+    <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
+      <circle cx="18" cy="18" r="17" stroke="var(--gold)" stroke-width="1.5" fill="none"/>
+      <circle cx="18" cy="18" r="11" stroke="var(--navy)" stroke-width="1" fill="none"/>
+      <circle cx="18" cy="18" r="4" fill="var(--gold)"/>
     </svg>
-    <div>
-      <div style="color:white;font-weight:700;font-size:1.1rem;letter-spacing:0.01em;">Samriddhi <span style="color:rgba(196,150,44,0.9);">AI</span></div>
-      <div style="color:rgba(255,255,255,0.4);font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;">Portfolio Operating System</div>
-    </div>
-  </div>
-  <div style="display:flex;align-items:center;gap:32px;">
-    <a href="#architecture" style="color:rgba(255,255,255,0.7);text-decoration:none;font-size:0.85rem;font-weight:500;transition:color 0.3s;" onmouseover="this.style.color='rgba(196,150,44,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">Architecture</a>
-    <a href="#principles" style="color:rgba(255,255,255,0.7);text-decoration:none;font-size:0.85rem;font-weight:500;transition:color 0.3s;" onmouseover="this.style.color='rgba(196,150,44,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">Principles</a>
-    <a href="#about" style="color:rgba(255,255,255,0.7);text-decoration:none;font-size:0.85rem;font-weight:500;transition:color 0.3s;" onmouseover="this.style.color='rgba(196,150,44,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">About</a>
-    <a href="/app" class="cta-btn" style="padding:10px 24px;font-size:0.85rem;">Enter Platform</a>
+    <span class="nav-brand-text">Samriddhi <span>AI</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="#architecture">Architecture</a>
+    <a href="#principles">Principles</a>
+    <a href="#about">About</a>
+    <a href="/app" class="nav-cta">Enter Platform &rarr;</a>
   </div>
 </nav>
 
-<!-- ══════ Hero ══════ -->
+<!-- ══ Hero ══ -->
 <section class="hero">
-  <div class="hero-grid"></div>
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="orb orb-3"></div>
-
-  <div class="container" style="position:relative;z-index:2;">
-    <div style="max-width:720px;">
-      <div class="reveal reveal-fade" style="margin-bottom:24px;">
-        <span style="display:inline-block;padding:6px 16px;border:1px solid rgba(196,150,44,0.3);border-radius:20px;color:rgba(196,150,44,0.85);font-size:0.75rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;">Evidence &middot; Governance &middot; Accountability</span>
-      </div>
-
-      <h1 class="font-display reveal reveal-delay-1" style="font-size:3.8rem;font-weight:700;color:white;line-height:1.12;margin-bottom:24px;">
-        Governed Intelligence<br>
-        for <span style="color:var(--cfm-gold-light);">Capital Markets</span>
-      </h1>
-
-      <p class="reveal reveal-delay-2" style="font-size:1.18rem;line-height:1.75;color:rgba(255,255,255,0.7);margin-bottom:16px;max-width:580px;">
-        Agentic AI that institutionalizes human judgment &mdash; making it structured, auditable, and improvable. Without silent drift.
-      </p>
-
-      <p class="reveal reveal-delay-3" style="font-size:0.95rem;line-height:1.7;color:rgba(255,255,255,0.45);margin-bottom:40px;max-width:540px;">
-        Where AI agents surface risk, deterministic rules enforce constraints, and human decision-makers retain full authority. Every decision traceable. Every judgment preserved.
-      </p>
-
-      <div class="reveal reveal-delay-4" style="display:flex;gap:16px;flex-wrap:wrap;">
-        <a href="/app" class="cta-btn">
-          Enter the Platform
-          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-        </a>
-        <a href="#architecture" class="cta-btn-outline">
-          Explore Architecture
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-        </a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════ Trust Bar ══════ -->
-<section style="padding:48px 0;background:white;border-bottom:1px solid var(--cfm-border);">
   <div class="container">
-    <div class="reveal" style="display:grid;grid-template-columns:repeat(4,1fr);gap:40px;text-align:center;">
+    <div class="hero-inner">
       <div>
-        <div class="stat-number">3</div>
-        <div style="font-size:0.85rem;color:var(--cfm-text-light);margin-top:4px;">Architectural Layers</div>
+        <div class="reveal">
+          <span class="hero-tag">Evidence &middot; Governance &middot; Accountability</span>
+        </div>
+        <h1 class="reveal reveal-d1">Governed Intelligence<br>for <span>Capital Markets</span></h1>
+        <div class="gold-rule reveal reveal-d1"></div>
+        <p class="reveal reveal-d2" style="margin-top:20px;">
+          Agentic AI that institutionalizes human judgment, making it structured, auditable, and improvable. Without silent drift.
+        </p>
+        <p class="reveal reveal-d3" style="font-size:0.9rem;color:var(--text-light);">
+          Where AI agents surface risk, deterministic rules enforce constraints, and human decision-makers retain full authority. Every decision traceable. Every judgment preserved.
+        </p>
+        <div class="hero-actions reveal reveal-d4">
+          <a href="/app" class="btn-primary">
+            Enter the Platform
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+          </a>
+          <a href="#architecture" class="btn-outline">Explore Architecture</a>
+        </div>
       </div>
-      <div>
-        <div class="stat-number">100%</div>
-        <div style="font-size:0.85rem;color:var(--cfm-text-light);margin-top:4px;">Decision Traceability</div>
-      </div>
-      <div>
-        <div class="stat-number">0</div>
-        <div style="font-size:0.85rem;color:var(--cfm-text-light);margin-top:4px;">Silent Drift Tolerance</div>
-      </div>
-      <div>
-        <div class="stat-number">&infin;</div>
-        <div style="font-size:0.85rem;color:var(--cfm-text-light);margin-top:4px;">Audit Reconstructions</div>
+      <div class="reveal reveal-d2 hero-visual">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">EGA Decision Flow</div>
+        <div class="hero-visual-flow">
+          <div class="flow-step flow-evidence"><span class="flow-step-num">E</span> Evidence agents surface risk and opportunity</div>
+          <div class="flow-arrow">&darr;</div>
+          <div class="flow-step flow-governance"><span class="flow-step-num">G</span> Governance gate enforces constraints in real time</div>
+          <div class="flow-arrow">&darr;</div>
+          <div class="flow-step flow-accountability"><span class="flow-step-num">A</span> Accountability preserves every decision artifact</div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ══════ Core Thesis ══════ -->
-<section style="padding:100px 0;" id="thesis">
+<!-- ══ Stats ══ -->
+<section class="stats-bar">
+  <div class="container">
+    <div class="stats-grid reveal">
+      <div><div class="stat-val">3</div><div class="stat-label">Architectural Layers</div></div>
+      <div><div class="stat-val">100%</div><div class="stat-label">Decision Traceability</div></div>
+      <div><div class="stat-val">0</div><div class="stat-label">Silent Drift Tolerance</div></div>
+      <div><div class="stat-val">&infin;</div><div class="stat-label">Audit Reconstructions</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Core Thesis ══ -->
+<section class="section" id="thesis">
   <div class="container" style="max-width:800px;">
+    <div class="reveal" style="text-align:center;">
+      <h2 class="section-heading">CORE THESIS</h2>
+      <div class="gold-rule gold-rule-center"></div>
+      <p class="section-subtitle" style="margin-top:20px;">Agentic AI in regulated finance is not about autonomy</p>
+    </div>
+    <div class="reveal reveal-d1 quote-block" style="margin-top:36px;">
+      How do you design AI systems that support probabilistic judgment, remain auditable, preserve human accountability, and improve over time, without drifting outside governance?
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:32px;">
+      <div class="card reveal reveal-d2">
+        <h3>AI as a Risk Committee</h3>
+        <p>Agents surface risk; humans decide. Like a well-structured committee where each voice is heard but authority is clear.</p>
+      </div>
+      <div class="card reveal reveal-d3">
+        <h3>Portfolio as Operating System</h3>
+        <p>Not a prediction problem. A governed decision system where every action is constrained, traced, and accountable.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ EGA Architecture ══ -->
+<section class="section section-alt" id="architecture">
+  <div class="container">
     <div class="reveal" style="text-align:center;margin-bottom:48px;">
-      <span class="section-label">Core Thesis</span>
-      <h2 class="font-display" style="font-size:2.4rem;font-weight:600;line-height:1.25;">
-        Agentic AI in regulated finance is not about autonomy
-      </h2>
-    </div>
-    <div class="reveal reveal-delay-1 quote-block" style="font-size:1.15rem;line-height:1.8;color:var(--cfm-text);">
-      How do you design AI systems that support probabilistic judgment, remain auditable, preserve human accountability, and improve over time &mdash; without drifting outside governance?
-    </div>
-    <div class="reveal reveal-delay-2" style="margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:24px;">
-      <div class="principle-card">
-        <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--cfm-blue),var(--cfm-teal));display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-          <svg width="20" height="20" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        </div>
-        <h3 style="font-weight:600;font-size:1.05rem;margin-bottom:8px;">AI as a Risk Committee</h3>
-        <p style="font-size:0.9rem;color:var(--cfm-text-light);line-height:1.65;">Agents surface risk; humans decide. Like a well-structured committee where each voice is heard but authority is clear.</p>
-      </div>
-      <div class="principle-card">
-        <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--cfm-gold),var(--cfm-gold-light));display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-          <svg width="20" height="20" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-        </div>
-        <h3 style="font-weight:600;font-size:1.05rem;margin-bottom:8px;">Portfolio as Operating System</h3>
-        <p style="font-size:0.9rem;color:var(--cfm-text-light);line-height:1.65;">Not a prediction problem. A governed decision system where every action is constrained, traced, and accountable.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════ EGA Architecture ══════ -->
-<section style="padding:100px 0;background:white;" id="architecture">
-  <div class="container">
-    <div class="reveal" style="text-align:center;margin-bottom:64px;">
-      <span class="section-label">The Architecture</span>
-      <h2 class="font-display" style="font-size:2.4rem;font-weight:600;line-height:1.25;">
-        Three layers. One invariant.
-      </h2>
-      <p style="font-size:1.05rem;color:var(--cfm-text-light);margin-top:16px;max-width:600px;margin-left:auto;margin-right:auto;">
-        Any system that allows agents to act under uncertainty must separate three questions without collapsing them.
-      </p>
+      <h2 class="section-heading">THE ARCHITECTURE</h2>
+      <div class="gold-rule gold-rule-center"></div>
+      <p class="section-subtitle">Three layers. One invariant. Any system that allows agents to act under uncertainty must separate three questions without collapsing them.</p>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr;gap:24px;max-width:900px;margin:0 auto;">
-      <!-- Evidence -->
-      <div class="layer-card layer-evidence reveal reveal-delay-1">
-        <div style="display:flex;align-items:flex-start;gap:24px;">
-          <div style="flex-shrink:0;width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#134074,#13788A);display:flex;align-items:center;justify-content:center;">
-            <svg width="28" height="28" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+    <div style="display:grid;grid-template-columns:1fr;gap:20px;max-width:880px;margin:0 auto;">
+      <div class="layer-card layer-evidence-card reveal reveal-d1">
+        <div style="display:flex;align-items:flex-start;gap:20px;">
+          <div style="flex-shrink:0;width:48px;height:48px;border-radius:8px;background:#134074;display:flex;align-items:center;justify-content:center;">
+            <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
           </div>
-          <div style="flex:1;">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-              <h3 style="font-size:1.3rem;font-weight:700;">Evidence</h3>
-              <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.08em;color:var(--cfm-teal);background:rgba(19,120,138,0.08);padding:3px 10px;border-radius:12px;">LAYER 1</span>
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+              <h3 style="font-size:1.15rem;font-weight:700;color:var(--navy);margin:0;">Evidence</h3>
+              <span class="layer-tag" style="color:#134074;background:rgba(19,64,116,0.08);">LAYER 1</span>
             </div>
-            <p style="font-size:1.05rem;color:var(--cfm-text);font-weight:500;margin-bottom:8px;">"What does the system believe about the world?"</p>
-            <p style="font-size:0.9rem;color:var(--cfm-text-light);line-height:1.7;">Market observations, risk estimates, regime inference, volatility models. All append-only, immutable, timestamped. ML belongs here as evidence generation, not authority. <strong style="color:var(--cfm-text);">Produces beliefs, not decisions.</strong></p>
+            <p style="font-size:0.95rem;color:var(--text-dark);font-weight:600;margin-bottom:6px;">"What does the system believe about the world?"</p>
+            <p style="font-size:0.88rem;color:var(--text-body);line-height:1.7;">Market observations, risk estimates, regime inference, volatility models. All append-only, immutable, timestamped. ML belongs here as evidence generation, not authority. <strong>Produces beliefs, not decisions.</strong></p>
           </div>
         </div>
       </div>
 
-      <!-- Governance -->
-      <div class="layer-card layer-governance reveal reveal-delay-2">
-        <div style="display:flex;align-items:flex-start;gap:24px;">
-          <div style="flex-shrink:0;width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--cfm-gold),var(--cfm-gold-light));display:flex;align-items:center;justify-content:center;">
-            <svg width="28" height="28" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      <div class="layer-card layer-governance-card reveal reveal-d2">
+        <div style="display:flex;align-items:flex-start;gap:20px;">
+          <div style="flex-shrink:0;width:48px;height:48px;border-radius:8px;background:var(--gold);display:flex;align-items:center;justify-content:center;">
+            <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
           </div>
-          <div style="flex:1;">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-              <h3 style="font-size:1.3rem;font-weight:700;">Governance</h3>
-              <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.08em;color:var(--cfm-gold);background:rgba(196,150,44,0.08);padding:3px 10px;border-radius:12px;">LAYER 2</span>
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+              <h3 style="font-size:1.15rem;font-weight:700;color:var(--navy);margin:0;">Governance</h3>
+              <span class="layer-tag" style="color:var(--gold);background:rgba(196,150,44,0.08);">LAYER 2</span>
             </div>
-            <p style="font-size:1.05rem;color:var(--cfm-text);font-weight:500;margin-bottom:8px;">"What actions are permitted right now?"</p>
-            <p style="font-size:0.9rem;color:var(--cfm-text-light);line-height:1.7;">The control plane. Mandates, constraints, policies, limits. Deterministic, executable, versioned. Agents coordinate reasoning under explicit mandates &mdash; they cannot trade, override rules, or invent objectives. <strong style="color:var(--cfm-text);">Real-time permissioning, not retrospective compliance.</strong></p>
+            <p style="font-size:0.95rem;color:var(--text-dark);font-weight:600;margin-bottom:6px;">"What actions are permitted right now?"</p>
+            <p style="font-size:0.88rem;color:var(--text-body);line-height:1.7;">The control plane. Mandates, constraints, policies, limits. Deterministic, executable, versioned. Agents coordinate reasoning under explicit mandates. They cannot trade, override rules, or invent objectives. <strong>Real-time permissioning, not retrospective compliance.</strong></p>
           </div>
         </div>
       </div>
 
-      <!-- Accountability -->
-      <div class="layer-card layer-accountability reveal reveal-delay-3">
-        <div style="display:flex;align-items:flex-start;gap:24px;">
-          <div style="flex-shrink:0;width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#13788A,#0B9B6A);display:flex;align-items:center;justify-content:center;">
-            <svg width="28" height="28" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+      <div class="layer-card layer-accountability-card reveal reveal-d3">
+        <div style="display:flex;align-items:flex-start;gap:20px;">
+          <div style="flex-shrink:0;width:48px;height:48px;border-radius:8px;background:#0B9B6A;display:flex;align-items:center;justify-content:center;">
+            <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
           </div>
-          <div style="flex:1;">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-              <h3 style="font-size:1.3rem;font-weight:700;">Accountability</h3>
-              <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.08em;color:#0B9B6A;background:rgba(11,155,106,0.08);padding:3px 10px;border-radius:12px;">LAYER 3</span>
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+              <h3 style="font-size:1.15rem;font-weight:700;color:var(--navy);margin:0;">Accountability</h3>
+              <span class="layer-tag" style="color:#0B9B6A;background:rgba(11,155,106,0.08);">LAYER 3</span>
             </div>
-            <p style="font-size:1.05rem;color:var(--cfm-text);font-weight:500;margin-bottom:8px;">"Who acted, under what authority, and how is it recorded?"</p>
-            <p style="font-size:0.9rem;color:var(--cfm-text-light);line-height:1.7;">Preserves institutional memory. Every action has a clear initiator, is linked to contemporaneous evidence, and leaves a durable inspectable trace. Not about blame. <strong style="color:var(--cfm-text);">About trust, auditability, and continuity.</strong></p>
+            <p style="font-size:0.95rem;color:var(--text-dark);font-weight:600;margin-bottom:6px;">"Who acted, under what authority, and how is it recorded?"</p>
+            <p style="font-size:0.88rem;color:var(--text-body);line-height:1.7;">Preserves institutional memory. Every action has a clear initiator, is linked to contemporaneous evidence, and leaves a durable inspectable trace. Not about blame. <strong>About trust, auditability, and continuity.</strong></p>
           </div>
         </div>
       </div>
@@ -473,138 +392,118 @@
   </div>
 </section>
 
-<!-- ══════ Decision Boundary ══════ -->
-<section style="padding:80px 0;background:linear-gradient(165deg, var(--cfm-navy), var(--cfm-blue));">
+<!-- ══ Decision Boundary ══ -->
+<section class="section" style="background:var(--white);">
   <div class="container" style="max-width:800px;text-align:center;">
-    <div class="reveal-fade">
-      <span class="section-label" style="color:var(--cfm-gold-light);">The Decision Boundary</span>
-      <h2 class="font-display" style="font-size:2rem;font-weight:600;color:white;line-height:1.3;margin-bottom:24px;">
-        The instant a decision is made,<br>it becomes history.
-      </h2>
-      <p style="font-size:1rem;color:rgba(255,255,255,0.6);line-height:1.7;max-width:560px;margin:0 auto 32px;">
-        At the decision moment, evidence and rules are frozen atomically. What the system believed, what rules were in force, why the decision was taken &mdash; all immutably preserved. This is decision traceability, not performance backtesting.
+    <div class="reveal">
+      <h2 class="section-heading">THE DECISION BOUNDARY</h2>
+      <div class="gold-rule gold-rule-center"></div>
+      <p style="font-size:1.1rem;font-weight:600;color:var(--navy);margin-top:24px;line-height:1.4;">
+        The instant a decision is made, it becomes history.
       </p>
-      <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
-        <span style="padding:8px 20px;border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:rgba(255,255,255,0.7);font-size:0.85rem;">Evidence Snapshot</span>
-        <span style="padding:8px 12px;color:rgba(196,150,44,0.7);">&rarr;</span>
-        <span style="padding:8px 20px;border:1px solid rgba(196,150,44,0.3);border-radius:8px;color:var(--cfm-gold-light);font-size:0.85rem;font-weight:600;">Decision Boundary</span>
-        <span style="padding:8px 12px;color:rgba(196,150,44,0.7);">&rarr;</span>
-        <span style="padding:8px 20px;border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:rgba(255,255,255,0.7);font-size:0.85rem;">Immutable Record</span>
+      <p class="section-subtitle" style="max-width:600px;margin:16px auto 28px;">
+        At the decision moment, evidence and rules are frozen atomically. What the system believed, what rules were in force, why the decision was taken: all immutably preserved.
+      </p>
+      <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;align-items:center;">
+        <span style="padding:10px 20px;border:1.5px solid var(--border);border-radius:4px;font-size:0.85rem;font-weight:600;color:var(--navy);">Evidence Snapshot</span>
+        <span style="color:var(--gold);font-weight:700;">&rarr;</span>
+        <span style="padding:10px 20px;border:2px solid var(--gold);border-radius:4px;font-size:0.85rem;font-weight:700;color:var(--gold);">Decision Boundary</span>
+        <span style="color:var(--gold);font-weight:700;">&rarr;</span>
+        <span style="padding:10px 20px;border:1.5px solid var(--border);border-radius:4px;font-size:0.85rem;font-weight:600;color:var(--navy);">Immutable Record</span>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ══════ Principles ══════ -->
-<section style="padding:100px 0;" id="principles">
+<!-- ══ Principles ══ -->
+<section class="section section-alt" id="principles">
   <div class="container">
-    <div class="reveal" style="text-align:center;margin-bottom:64px;">
-      <span class="section-label">Design Principles</span>
-      <h2 class="font-display" style="font-size:2.4rem;font-weight:600;line-height:1.25;">
-        Non-negotiable invariants
-      </h2>
+    <div class="reveal" style="text-align:center;margin-bottom:48px;">
+      <h2 class="section-heading">DESIGN PRINCIPLES</h2>
+      <div class="gold-rule gold-rule-center"></div>
+      <p class="section-subtitle">Non-negotiable invariants</p>
     </div>
-
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;">
-      <div class="principle-card reveal reveal-delay-1">
-        <h4 style="font-weight:600;margin-bottom:8px;font-size:0.95rem;">Agents surface risk; they do not decide</h4>
-        <p style="font-size:0.85rem;color:var(--cfm-text-light);line-height:1.65;">Decision authority is always explicit and human. AI provides analysis, not verdicts.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">
+      <div class="card reveal reveal-d1">
+        <h3>Agents surface risk; they do not decide</h3>
+        <p>Decision authority is always explicit and human. AI provides analysis, not verdicts.</p>
       </div>
-      <div class="principle-card reveal reveal-delay-2">
-        <h4 style="font-weight:600;margin-bottom:8px;font-size:0.95rem;">Synthesis &#8800; Decision</h4>
-        <p style="font-size:0.85rem;color:var(--cfm-text-light);line-height:1.65;">Aggregation layers clarify the landscape. They never remove responsibility.</p>
+      <div class="card reveal reveal-d2">
+        <h3>Synthesis is not a decision</h3>
+        <p>Aggregation layers clarify the landscape. They never remove responsibility.</p>
       </div>
-      <div class="principle-card reveal reveal-delay-3">
-        <h4 style="font-weight:600;margin-bottom:8px;font-size:0.95rem;">Governance is real-time permissioning</h4>
-        <p style="font-size:0.85rem;color:var(--cfm-text-light);line-height:1.65;">Not retrospective compliance. Deterministic, versioned, and executable before action.</p>
+      <div class="card reveal reveal-d3">
+        <h3>Governance is real-time permissioning</h3>
+        <p>Not retrospective compliance. Deterministic, versioned, and executable before action.</p>
       </div>
-      <div class="principle-card reveal reveal-delay-1">
-        <h4 style="font-weight:600;margin-bottom:8px;font-size:0.95rem;">Decision telemetry over model telemetry</h4>
-        <p style="font-size:0.85rem;color:var(--cfm-text-light);line-height:1.65;">The system of record captures human judgment and intent, not AI chain-of-thought.</p>
+      <div class="card reveal reveal-d1">
+        <h3>Decision telemetry over model telemetry</h3>
+        <p>The system of record captures human judgment and intent, not AI chain-of-thought.</p>
       </div>
-      <div class="principle-card reveal reveal-delay-2">
-        <h4 style="font-weight:600;margin-bottom:8px;font-size:0.95rem;">Learning is governed and explicit</h4>
-        <p style="font-size:0.85rem;color:var(--cfm-text-light);line-height:1.65;">No continuous retraining. No silent drift. Judgment evolves like policy &mdash; slowly, versioned, with traceability.</p>
+      <div class="card reveal reveal-d2">
+        <h3>Learning is governed and explicit</h3>
+        <p>No continuous retraining. No silent drift. Judgment evolves like policy: slowly, versioned, with traceability.</p>
       </div>
-      <div class="principle-card reveal reveal-delay-3">
-        <h4 style="font-weight:600;margin-bottom:8px;font-size:0.95rem;">Off-system judgment is a feature</h4>
-        <p style="font-size:0.85rem;color:var(--cfm-text-light);line-height:1.65;">Humans may incorporate experience and discretion that no model can encode. This is strength, not a loophole.</p>
+      <div class="card reveal reveal-d3">
+        <h3>Off-system judgment is a feature</h3>
+        <p>Humans may incorporate experience and discretion that no model can encode. This is strength, not a loophole.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ══════ CTA Section ══════ -->
-<section style="padding:100px 0;background:white;">
-  <div class="container" style="max-width:700px;text-align:center;">
-    <div class="reveal-scale">
-      <span class="section-label">Ready to Explore</span>
-      <h2 class="font-display" style="font-size:2.4rem;font-weight:600;line-height:1.25;margin-bottom:16px;">
-        Intelligence without governance<br>is not progress. It is a liability.
+<!-- ══ CTA ══ -->
+<section class="cta-section">
+  <div class="container" style="max-width:700px;">
+    <div class="reveal">
+      <h2 style="font-size:1.8rem;font-weight:700;color:white;line-height:1.3;margin-bottom:16px;">
+        Intelligence without governance is not progress.<br>It is a liability.
       </h2>
-      <p style="font-size:1rem;color:var(--cfm-text-light);line-height:1.7;margin-bottom:40px;">
+      <p style="font-size:1rem;color:rgba(255,255,255,0.6);line-height:1.7;margin-bottom:36px;">
         Models are replaceable. Governance is not.<br>Enter the platform to see the EGA architecture in action.
       </p>
-      <a href="/app" class="cta-btn" style="font-size:1.05rem;padding:20px 48px;">
+      <a href="/app" class="btn-primary" style="font-size:1.05rem;padding:16px 40px;">
         Enter the Platform
-        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
       </a>
     </div>
   </div>
 </section>
 
-<!-- ══════ About ══════ -->
-<section style="padding:80px 0;background:var(--cfm-warm);" id="about">
+<!-- ══ About ══ -->
+<section class="section" id="about">
   <div class="container" style="max-width:700px;">
     <div class="reveal">
-      <span class="section-label">About</span>
-      <h2 class="font-display" style="font-size:1.8rem;font-weight:600;margin-bottom:24px;">Samriddhi AI</h2>
-      <p style="font-size:0.95rem;color:var(--cfm-text-light);line-height:1.8;margin-bottom:16px;">
-        A body of applied architecture for agentic AI systems in regulated, high-consequence financial domains &mdash; credit risk underwriting, portfolio management, and trading desk risk.
+      <h2 class="section-heading">ABOUT SAMRIDDHI AI</h2>
+      <div class="gold-rule"></div>
+      <p style="font-size:0.95rem;color:var(--text-body);line-height:1.8;margin-top:20px;">
+        A body of applied architecture for agentic AI systems in regulated, high-consequence financial domains: credit risk underwriting, portfolio management, and trading desk risk.
       </p>
-      <div class="gold-line"></div>
     </div>
   </div>
 </section>
 
-<!-- ══════ Footer ══════ -->
-<footer class="footer" style="padding:48px 0;">
-  <div class="container" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+<!-- ══ Footer ══ -->
+<footer class="footer">
+  <div class="container" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
     <div>
-      <div style="font-weight:600;color:white;font-size:0.95rem;">Samriddhi <span style="color:var(--cfm-gold);">AI</span></div>
-      <div style="font-size:0.8rem;margin-top:4px;">Portfolio Operating System &mdash; Evidence, Governance, Accountability</div>
+      <span style="font-weight:700;color:white;font-size:0.9rem;">Samriddhi <span style="color:var(--gold);">AI</span></span>
+      <span style="margin-left:12px;">Portfolio Operating System: Evidence, Governance, Accountability</span>
     </div>
-    <div style="font-size:0.8rem;">
-      Applied AI for Finance, Risk & Compliance
-    </div>
+    <div>Applied AI for Finance, Risk &amp; Compliance</div>
   </div>
 </footer>
 
-<!-- ══════ Reveal Observer ══════ -->
+<!-- ══ Scripts ══ -->
 <script>
-  // Intersection Observer for scroll-triggered animations
   const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-      }
-    });
-  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-  document.querySelectorAll('.reveal, .reveal-fade, .reveal-scale').forEach(el => observer.observe(el));
-
-  // Nav scroll effect
   const nav = document.getElementById('nav');
-  window.addEventListener('scroll', () => {
-    nav.classList.toggle('scrolled', window.scrollY > 60);
-  });
-
-  // Trigger hero animations on load
-  window.addEventListener('load', () => {
-    document.querySelectorAll('.hero .reveal, .hero .reveal-fade').forEach(el => {
-      setTimeout(() => el.classList.add('visible'), 200);
-    });
-  });
+  window.addEventListener('scroll', () => { nav.classList.toggle('scrolled', window.scrollY > 20); });
 </script>
+
 </body>
 </html>
