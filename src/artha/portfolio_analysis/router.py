@@ -100,15 +100,16 @@ async def run_portfolio_review(
     except Exception as e:
         raise HTTPException(400, f"Invalid portfolio: {str(e)[:200]}")
 
-    # Check mandate exists
+    # Check mandate exists (non-blocking — review can proceed without mandate)
     mandate_svc = MandateService(session)
     mandates = await mandate_svc.get_mandates(investor_id)
     has_mandate = len(mandates) > 0
 
-    # Check preconditions
+    # Check preconditions (only block on critical failures)
     issues = check_preconditions(portfolio, has_mandate)
-    if issues:
-        raise HTTPException(400, f"Preconditions not met: {'; '.join(issues)}")
+    critical_issues = [i for i in issues if "no holdings" in i.lower() or "only cash" in i.lower()]
+    if critical_issues:
+        raise HTTPException(400, f"Cannot review: {'; '.join(critical_issues)}")
 
     # Build client profile
     client_profile = data.get("client_profile", {})

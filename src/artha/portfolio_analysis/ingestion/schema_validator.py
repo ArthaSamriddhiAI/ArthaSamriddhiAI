@@ -43,11 +43,24 @@ class HoldingItem(BaseModel):
     current_nav: float | None = None
     current_units: float | None = None
 
+    model_config = {"extra": "allow"}
+
     @field_validator("asset_class", mode="before")
     @classmethod
     def _coerce_asset_class(cls, v: Any) -> str:
         if isinstance(v, str):
-            return v.strip().lower()
+            v = v.strip().lower()
+            # Map common aliases to valid enum values
+            aliases = {
+                "equity": "listed_equity", "listed": "listed_equity",
+                "mf": "mutual_fund", "mutual_funds": "mutual_fund",
+                "aif": "aif_cat2", "pe": "unlisted_equity",
+                "fd": "cash", "bond": "cash", "bonds": "cash",
+                "gold": "cash", "silver": "cash", "real_estate": "cash",
+                "insurance": "cash", "crypto": "listed_equity",
+                "ppf": "cash", "nps": "cash", "other": "cash",
+            }
+            return aliases.get(v, v)
         return v
 
 
@@ -76,15 +89,49 @@ class CanonicalPortfolio(BaseModel):
 
     holdings: list[HoldingItem] = Field(default_factory=list)
     asset_class_breakdown: list[AssetClassBreakdown] = Field(default_factory=list)
-    data_quality_summary: DataQualitySummary = Field(default_factory=DataQualitySummary)
+    data_quality_summary: DataQualitySummary | dict = Field(default_factory=DataQualitySummary)
     total_value_inr: float = 0.0
+
+    # Accept extra fields from frontend (portfolio_id, client_id, ingestion_method, etc.)
+    model_config = {"extra": "allow"}
+
+    @field_validator("asset_class_breakdown", mode="before")
+    @classmethod
+    def _coerce_breakdown(cls, v: Any) -> list:
+        """Accept dict format {asset_class: weight_pct} and convert to list."""
+        if isinstance(v, dict):
+            return [
+                {"asset_class": k, "weight_pct": float(val), "total_value_inr": 0.0, "holdings_count": 0}
+                for k, val in v.items()
+            ]
+        if isinstance(v, list):
+            return v
+        return []
+
+    @field_validator("data_quality_summary", mode="before")
+    @classmethod
+    def _coerce_dqs(cls, v: Any) -> Any:
+        """Accept dict with different field names from frontend."""
+        if isinstance(v, dict):
+            # Map frontend fields to model fields
+            return DataQualitySummary(
+                holdings_with_gaps=v.get("holdings_with_gaps", 0),
+                total_data_gaps=v.get("total_data_gaps", 0),
+                gap_details=[{"type": g} for g in v.get("gap_types", [])],
+            )
+        return v
 
 
 def validate_portfolio(data: dict) -> CanonicalPortfolio:
     """Validate a raw dict and return a typed CanonicalPortfolio.
 
+    Accepts frontend-format data with field aliases.
     Raises ``pydantic.ValidationError`` if the data does not conform.
     """
+    # Normalize field aliases from frontend
+    if "total_aum_inr" in data and "total_value_inr" not in data:
+        data["total_value_inr"] = data["total_aum_inr"]
+
     return CanonicalPortfolio.model_validate(data)
 
 
