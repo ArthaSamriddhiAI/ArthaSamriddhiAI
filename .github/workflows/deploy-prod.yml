@@ -20,26 +20,20 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/ArthaSamriddhiAI
-
             echo "=== Pulling latest prod ==="
             git fetch origin prod
             git checkout prod
             git reset --hard origin/prod
-
             echo "=== Installing package ==="
             .venv/bin/pip install -e . --quiet
-
             echo "=== Restarting server ==="
-            kill $(pgrep -f "uvicorn artha.app:app") 2>/dev/null; sleep 3
-
-            nohup .venv/bin/uvicorn artha.app:app --host 127.0.0.1 --port 8000 --workers 1 > /tmp/artha.log 2>&1 &
-
-            echo "=== Waiting for server ==="
+            bash -c 'kill $(cat /tmp/artha.pid 2>/dev/null) 2>/dev/null; exit 0'
+            sleep 3
+            .venv/bin/uvicorn artha.app:app --host 127.0.0.1 --port 8000 --workers 1 > /tmp/artha.log 2>&1 &
+            echo $! > /tmp/artha.pid
             sleep 5
-
             echo "=== Health check ==="
             curl -sf http://localhost:8000/api/v1/health
-
             echo ""
             echo "=== Deploy complete ==="
             git log --oneline -1
