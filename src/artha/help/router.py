@@ -44,6 +44,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+    model: str = ""
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -70,6 +71,6 @@ async def help_chat(req: ChatRequest):
         ))
         # Strip em dashes from response (T-6 requirement)
         text = response.content.replace(" -- ", ", ").replace("--", ", ").replace(" - ", ", ")
-        return ChatResponse(response=text)
+        return ChatResponse(response=text, model=response.model or llm.name)
     except Exception as e:
         return ChatResponse(response=f"I'm having trouble connecting right now. Please try again. (Error: {str(e)[:50]})")

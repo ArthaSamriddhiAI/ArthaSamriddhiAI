@@ -2,10 +2,8 @@
 document.addEventListener('alpine:init', () => {
   Alpine.store('system', {
     health: null,
-    killSwitch: null,
     async refresh() {
       this.health = await api.health();
-      this.killSwitch = await api.getKillSwitch();
     }
   });
 
