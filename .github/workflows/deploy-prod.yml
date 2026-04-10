@@ -1,0 +1,50 @@
+name: Deploy to Production (EC2)
+
+on:
+  push:
+    branches:
+      - prod
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd /home/ubuntu/ArthaSamriddhiAI
+
+            echo "=== Pulling latest prod ==="
+            git fetch origin prod
+            git checkout prod
+            git reset --hard origin/prod
+
+            echo "=== Installing package ==="
+            .venv/bin/pip install -e . --quiet
+
+            echo "=== Restarting server ==="
+            pkill -f "uvicorn artha.app:app" || true
+            sleep 2
+            nohup .venv/bin/uvicorn artha.app:app \
+              --host 127.0.0.1 \
+              --port 8000 \
+              --workers 1 \
+              > /tmp/artha.log 2>&1 &
+
+            echo "=== Waiting for server ==="
+            sleep 5
+
+            echo "=== Health check ==="
+            curl -sf http://localhost:8000/api/v1/health || { echo "HEALTH CHECK FAILED"; exit 1; }
+
+            echo "=== Deploy complete ==="
+            git log --oneline -1
