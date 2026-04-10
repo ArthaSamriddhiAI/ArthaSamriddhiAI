@@ -228,6 +228,7 @@ class MasterAnalysisAgent:
                 LLMMessage(role="user", content=user_content),
             ],
             temperature=0.0,
+            provider_hint="claude",  # Synthesis is complex — route to Claude if available
         )
 
         try:

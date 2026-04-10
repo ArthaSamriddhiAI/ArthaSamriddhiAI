@@ -35,3 +35,13 @@ def get_provider(name: str | None = None) -> LLMProvider:
 
     _providers[provider_name] = provider
     return provider
+
+
+def get_smart_router() -> LLMProvider:
+    """Get the SmartLLMRouter — Mistral default, Claude for complex tasks.
+
+    Returns a drop-in LLMProvider that routes based on provider_hint in LLMRequest.
+    Use this instead of get_provider() when you want intelligent routing.
+    """
+    from artha.llm.smart_router import get_smart_router as _get
+    return _get()

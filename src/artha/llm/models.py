@@ -15,6 +15,7 @@ class LLMRequest(BaseModel):
     temperature: float = 0.0
     max_tokens: int = 4096
     model: str | None = None  # Provider-specific override
+    provider_hint: str | None = None  # "claude" to route to Anthropic, None = default (Mistral)
 
 
 class LLMResponse(BaseModel):

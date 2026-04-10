@@ -11,7 +11,7 @@ from artha.governance.orchestrator.graph import GovernancePipeline
 from artha.governance.orchestrator.state import OrchestratorState
 from artha.governance.schemas import GovernanceResult
 from artha.llm.base import LLMProvider
-from artha.llm.registry import get_provider
+from artha.llm.registry import get_provider, get_smart_router
 
 
 class GovernanceService:
@@ -22,7 +22,7 @@ class GovernanceService:
         rules_dir: Path | None = None,
     ) -> None:
         self._session = session
-        self._llm = llm or get_provider()
+        self._llm = llm or get_smart_router()  # Smart routing: Mistral default, Claude for synthesis
         self._rules_dir = rules_dir
 
     async def process_intent(self, intent: GovernanceIntent) -> GovernanceResult:

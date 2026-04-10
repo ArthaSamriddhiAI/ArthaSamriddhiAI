@@ -11,7 +11,7 @@ from fastapi.responses import Response, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from artha.common.db.session import get_session
-from artha.llm.registry import get_provider
+from artha.llm.registry import get_smart_router
 
 router = APIRouter(prefix="/portfolio-analysis", tags=["portfolio-analysis"])
 
@@ -90,7 +90,7 @@ async def run_portfolio_review(
     from artha.portfolio_analysis.orchestrator.pa_o import PortfolioAnalysisOrchestrator
     from artha.investor.mandates import MandateService
 
-    llm = get_provider()
+    llm = get_smart_router()
 
     # Validate portfolio
     portfolio_data = data.get("portfolio", {})
@@ -151,7 +151,7 @@ async def generate_suggestions(
     from artha.portfolio_analysis.ingestion.schema_validator import validate_portfolio
     from artha.portfolio_analysis.orchestrator.pa_o import PortfolioAnalysisOrchestrator
 
-    llm = get_provider()
+    llm = get_smart_router()
 
     portfolio_data = data.get("portfolio", {})
     portfolio_data["client_id"] = investor_id
