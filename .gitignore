@@ -15,3 +15,7 @@ venv/
 .mypy_cache/
 htmlcov/
 .coverage
+
+# Secrets / keys
+*.pem
+.secrets/
