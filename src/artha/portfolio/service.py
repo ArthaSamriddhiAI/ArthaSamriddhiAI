@@ -1,4 +1,16 @@
-"""Portfolio service — CRUD + valuation + lifecycle (DRAFT/LIVE)."""
+"""Portfolio service — CRUD + valuation + lifecycle (DRAFT/LIVE).
+
+DEPRECATED (§16 deployment plan): scheduled for removal in Pass 21.
+
+The legacy `PortfolioService` operates on `PortfolioHoldingRow` (a flat
+12-column row) and predates the canonical `Holding` schema (§15.3.3).
+New portfolio reads should use `M0.PortfolioState` (§8.4) which produces
+canonical `Holding` / `SliceResponse` / `LookThroughResponse` objects
+backed by the same persistence layer.
+
+Migration shim:
+  `artha.legacy_migration.legacy_holding_row_to_canonical`
+"""
 
 from __future__ import annotations
 
@@ -7,12 +19,13 @@ import io
 import json
 import logging
 import uuid
-from datetime import UTC, datetime
 from collections import defaultdict
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from artha.common.deprecation import mark_module_deprecated
 from artha.portfolio.models import (
     PortfolioEditLogRow,
     PortfolioHoldingRow,
@@ -30,6 +43,15 @@ from artha.portfolio.schemas import (
     PortfolioSummary,
     UnfreezeRequest,
     UpdateHoldingRequest,
+)
+
+mark_module_deprecated(
+    "artha.portfolio.service",
+    canonical_replacement=(
+        "artha.m0.portfolio_state.M0PortfolioState + artha.canonical.holding.Holding"
+    ),
+    removed_in_pass=21,
+    reason="legacy flat PortfolioHoldingRow shape; canonical path uses Holding (§15.3.3)",
 )
 
 logger = logging.getLogger(__name__)

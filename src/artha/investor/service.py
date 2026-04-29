@@ -1,4 +1,17 @@
-"""Investor risk profile business logic."""
+"""Investor risk profile business logic.
+
+DEPRECATED (§16 deployment plan): scheduled for removal in Pass 21.
+
+`InvestorService` is the pre-consolidation business-logic layer over the
+legacy 5-tier `RiskCategory` taxonomy. New code should construct
+`InvestorContextProfile` (§15.3.1) directly via the canonical onboarding
+paths (`artha.onboarding.FormOnboardingHandler` / `C0OnboardingHandler` /
+`ApiOnboardingHandler`) and read structural flags via
+`artha.investor.canonical_service.structural_flag_summary`.
+
+Migration shim:
+  `artha.legacy_migration.legacy_investor_to_canonical_profile`
+"""
 
 from __future__ import annotations
 
@@ -9,6 +22,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from artha.common.deprecation import mark_module_deprecated
 from artha.investor.models import (
     AssessmentHistoryRow,
     FamilyOfficeResponseRow,
@@ -38,6 +52,16 @@ from artha.investor.scoring import (
     compute_overall_score,
     merge_effective_constraints,
     score_option,
+)
+
+mark_module_deprecated(
+    "artha.investor.service",
+    canonical_replacement=(
+        "artha.onboarding.FormOnboardingHandler / C0OnboardingHandler / "
+        "ApiOnboardingHandler + artha.investor.canonical_service"
+    ),
+    removed_in_pass=21,
+    reason="legacy 5-tier RiskCategory + ad-hoc business logic",
 )
 
 

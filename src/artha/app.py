@@ -21,6 +21,7 @@ import artha.data.crypto_pipeline  # noqa: F401 — register crypto tables
 import artha.data.upload  # noqa: F401 — register upload tables
 import artha.investor.models  # noqa: F401 — register investor profile tables
 import artha.investor.mandates  # noqa: F401 — register mandate tables
+import artha.accountability.t1.orm  # noqa: F401 — register canonical T1 ledger table
 from artha.evidence.router import router as evidence_router
 from artha.governance.router import router as governance_router
 from artha.accountability.router import router as accountability_router
