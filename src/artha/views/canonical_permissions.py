@@ -55,8 +55,8 @@ def assert_can_read_client(
             )
         return
 
-    # CIO + COMPLIANCE: firm-wide read.
-    if viewer.role in (Role.CIO, Role.COMPLIANCE):
+    # CIO + COMPLIANCE + AUDIT: firm-wide read.
+    if viewer.role in (Role.CIO, Role.COMPLIANCE, Role.AUDIT):
         return
 
     raise PermissionDeniedError(f"unsupported viewer role {viewer.role!r}")
@@ -82,14 +82,14 @@ def assert_can_read_firm(viewer: ViewerContext, *, firm_id: str) -> None:
 def assert_can_write(viewer: ViewerContext, *, action: str) -> None:
     """Raise on write attempts the role can't perform.
 
-    Pass 18 enforces only the read-only contract for COMPLIANCE; CIO and
-    ADVISOR write authorities are differentiated downstream by the
-    individual write-handlers (e.g. ConstructionOrchestrator already
-    expects CIO authority).
+    Pass 18 enforces the read-only contract for COMPLIANCE; Doc 2 (API spec)
+    adds AUDIT with the same read-only constraint. CIO + ADVISOR write
+    authorities are differentiated downstream by the individual write-
+    handlers (e.g. ConstructionOrchestrator already expects CIO authority).
     """
-    if viewer.role is Role.COMPLIANCE:
+    if viewer.role in (Role.COMPLIANCE, Role.AUDIT):
         raise PermissionDeniedError(
-            f"compliance role is read-only; cannot perform {action!r}"
+            f"{viewer.role.value} role is read-only; cannot perform {action!r}"
         )
 
 

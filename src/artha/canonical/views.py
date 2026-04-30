@@ -50,11 +50,18 @@ from artha.common.types import (
 
 
 class Role(str, Enum):
-    """§14.1 — three canonical human roles."""
+    """§14.1 / Doc 2 §2.1 — four canonical human roles.
+
+    `AUDIT` was added in Doc 2 (API specification): an external-or-internal
+    audit reviewer with firm-wide read access (T1 telemetry, governance
+    history, override audit trail) and zero write authority. Behaves like
+    `COMPLIANCE` for read scope, denied for any mutation.
+    """
 
     ADVISOR = "advisor"
     CIO = "cio"
     COMPLIANCE = "compliance"
+    AUDIT = "audit"
 
 
 class ViewerContext(BaseModel):

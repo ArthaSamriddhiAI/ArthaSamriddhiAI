@@ -2,37 +2,38 @@
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
-
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from artha.common.db.base import Base
-from artha.common.db.engine import get_engine, dispose_engine
-import artha.data.models  # noqa: F401 — register data pipeline tables
+import artha.accountability.t1.orm  # noqa: F401 — register canonical T1 ledger table
+import artha.api_v2.idempotency  # noqa: F401 — register api_v2 idempotency-key table
 import artha.data.commodity_pipeline  # noqa: F401 — register commodity tables
+import artha.data.crypto_pipeline  # noqa: F401 — register crypto tables
 import artha.data.forex_pipeline  # noqa: F401 — register forex tables
 import artha.data.macro_pipeline  # noqa: F401 — register macro tables
-import artha.data.crypto_pipeline  # noqa: F401 — register crypto tables
+import artha.data.models  # noqa: F401 — register data pipeline tables
 import artha.data.upload  # noqa: F401 — register upload tables
-import artha.investor.models  # noqa: F401 — register investor profile tables
 import artha.investor.mandates  # noqa: F401 — register mandate tables
-import artha.accountability.t1.orm  # noqa: F401 — register canonical T1 ledger table
-from artha.evidence.router import router as evidence_router
-from artha.governance.router import router as governance_router
-from artha.accountability.router import router as accountability_router
-from artha.execution.router import router as execution_router
-from artha.investor.router import router as investor_router
-from artha.data.upload import router as data_upload_router
-from artha.data.router import router as data_explorer_router
-import artha.portfolio.models  # noqa: F401 — register portfolio tables
+import artha.investor.models  # noqa: F401 — register investor profile tables
 import artha.portfolio.goals  # noqa: F401 — register goals table
-from artha.portfolio.router import router as portfolio_router
+import artha.portfolio.models  # noqa: F401 — register portfolio tables
+from artha.accountability.router import router as accountability_router
+from artha.api_v2 import setup_api_v2
+from artha.common.db.base import Base
+from artha.common.db.engine import dispose_engine, get_engine
+from artha.data.router import router as data_explorer_router
+from artha.data.upload import router as data_upload_router
+from artha.evidence.router import router as evidence_router
+from artha.execution.router import router as execution_router
+from artha.governance.router import router as governance_router
 from artha.help.router import router as help_router
+from artha.investor.router import router as investor_router
+from artha.portfolio.router import router as portfolio_router
 from artha.portfolio_analysis.router import router as pam_router
 
 
@@ -66,6 +67,10 @@ def create_app() -> FastAPI:
     app.include_router(portfolio_router, prefix="/api/v1")
     app.include_router(help_router, prefix="/api/v1")
     app.include_router(pam_router, prefix="/api/v1")
+
+    # Doc 2 — `/api/v2/` foundation: auth, error envelope, rate limiting,
+    # observability middleware, idempotency store, root router.
+    setup_api_v2(app)
 
     @app.get("/api/v1/health")
     async def health():

@@ -26,6 +26,8 @@ dependencies = [
     "yfinance>=0.2.40",
     "niftystocks>=0.0.3",
     "pandas>=2.2.0",
+    "pyjwt[crypto]>=2.9.0",
+    "slowapi>=0.1.9",
 ]
 
 [project.optional-dependencies]
