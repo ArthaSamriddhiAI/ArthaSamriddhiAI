@@ -69,6 +69,11 @@ class TokenResponse(BaseModel):
     access_token: str
     expires_in: int
     token_type: str = "Bearer"
+    # Chunk 0.2 — backend tells the SPA where to land after auth completes
+    # (one of /app/{advisor,cio,compliance,audit}). Per chunk plan §scope_in:
+    # "Post-auth redirect logic that reads the user's role from JWT and
+    # redirects to the appropriate home tree."
+    redirect_url: str
 
 
 class DevUserPublic(BaseModel):
@@ -223,6 +228,7 @@ async def dev_login(
     return TokenResponse(
         access_token=issued.access_jwt,
         expires_in=settings.jwt_access_token_minutes * 60,
+        redirect_url=f"/app/{user.role.value}",
     )
 
 
@@ -319,6 +325,10 @@ async def refresh(
     return TokenResponse(
         access_token=issued.access_jwt,
         expires_in=settings.jwt_access_token_minutes * 60,
+        # Refresh doesn't navigate the SPA, but we keep the field populated
+        # for shape consistency with /dev-login (and so the frontend's
+        # boot-refresh path can use it after a hard reload).
+        redirect_url=f"/app/{issued.session.role}",
     )
 
 

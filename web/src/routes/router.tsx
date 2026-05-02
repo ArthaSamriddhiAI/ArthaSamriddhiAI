@@ -7,23 +7,65 @@ import {
 } from '@tanstack/react-router'
 
 import { useAuthStore } from '../auth/store'
+import type { Role } from '../auth/types'
 import { AppShell } from '../components/AppShell'
-import { DashboardPage } from '../pages/DashboardPage'
 import { DevLoginPage } from '../pages/DevLoginPage'
+import { RoleHomePage } from '../pages/RoleHomePage'
 
-// Code-based router. The TanStack Router CLI / file-based routing is an
-// option for later when the route count grows; cluster 0 has two routes
-// (`/` and `/dev-login`) so code-based is plenty.
+// Code-based router with the four role-tree subtrees added in chunk 0.2:
+//   /app/                       → redirect to /app/<user-role>
+//   /app/dev-login              → public login page
+//   /app/advisor                → advisor home (advisor only)
+//   /app/cio                    → CIO home (CIO only)
+//   /app/compliance             → compliance home (compliance only)
+//   /app/audit                  → audit home (audit only)
 //
-// Auth gate via `beforeLoad`: any route that isn't /dev-login redirects
-// to /dev-login when the auth store has no user. After login the user
-// is sent back to the originally-requested URL (carried in `?redirect=`).
+// Each role tree's beforeLoad does two checks (per chunk 0.2 §scope_in):
+//   1. Authentication — if no user, redirect to /dev-login carrying the
+//      requested URL so post-login navigation can resume there.
+//   2. Role match — if the user has a different role, redirect to THEIR
+//      tree (so an advisor typing /app/cio gets bounced to /app/advisor,
+//      not 403'd).
+//
+// Subsequent clusters add nested routes under each role tree (e.g.,
+// cluster 1 will add /app/advisor/investors, /app/advisor/cases). The
+// per-tree beforeLoad still applies.
+
+const ROLE_PATHS: Record<Role, string> = {
+  advisor: '/advisor',
+  cio: '/cio',
+  compliance: '/compliance',
+  audit: '/audit',
+}
+
+interface BeforeLoadCtx {
+  location: { href: string }
+}
+
+function requireRole(expected: Role) {
+  return ({ location }: BeforeLoadCtx) => {
+    const user = useAuthStore.getState().user
+    if (!user) {
+      throw redirect({
+        to: '/dev-login',
+        search: { redirect: location.href },
+      })
+    }
+    if (user.role !== expected) {
+      // Bounce to the user's actual role tree.
+      throw redirect({ to: ROLE_PATHS[user.role] })
+    }
+  }
+}
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
 })
 
-const dashboardRoute = createRoute({
+// `/` — chunk 0.1's old root behaviour (auth gate + dashboard) is replaced
+// by a pure redirect to the user's role tree. Unauthenticated visitors
+// get sent to /dev-login.
+const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   beforeLoad: ({ location }) => {
@@ -34,19 +76,15 @@ const dashboardRoute = createRoute({
         search: { redirect: location.href },
       })
     }
+    throw redirect({ to: ROLE_PATHS[user.role] })
   },
-  component: () => (
-    <AppShell>
-      <DashboardPage />
-    </AppShell>
-  ),
+  // Component never actually renders because beforeLoad always redirects.
+  component: () => null,
 })
 
 const devLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/dev-login',
-  // Allow `?redirect=...` to pass through; we don't validate it strictly
-  // because the beforeLoad on the dashboard already gates access.
   validateSearch: (
     search: Record<string, unknown>,
   ): { redirect?: string } => ({
@@ -56,13 +94,35 @@ const devLoginRoute = createRoute({
   component: DevLoginPage,
 })
 
-const routeTree = rootRoute.addChildren([dashboardRoute, devLoginRoute])
+function makeRoleRoute(role: Role) {
+  return createRoute({
+    getParentRoute: () => rootRoute,
+    path: ROLE_PATHS[role],
+    beforeLoad: requireRole(role),
+    component: () => (
+      <AppShell>
+        <RoleHomePage />
+      </AppShell>
+    ),
+  })
+}
+
+const advisorRoute = makeRoleRoute('advisor')
+const cioRoute = makeRoleRoute('cio')
+const complianceRoute = makeRoleRoute('compliance')
+const auditRoute = makeRoleRoute('audit')
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  devLoginRoute,
+  advisorRoute,
+  cioRoute,
+  complianceRoute,
+  auditRoute,
+])
 
 export const router = createRouter({
   routeTree,
-  // Vite config sets `base: '/app/'`; the FastAPI mount serves the bundle
-  // at /app/. Tell the router to treat /app as the root so internal
-  // route paths ('/', '/dev-login') resolve correctly.
   basepath: '/app',
 })
 

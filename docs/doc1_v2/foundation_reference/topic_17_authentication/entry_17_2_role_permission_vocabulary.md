@@ -3,7 +3,7 @@
 **Topic:** 17 Authentication and Identity
 **Entry:** 17.2
 **Title:** Role-Permission Vocabulary
-**Status:** Locked skeleton (cluster 0; chunk 0.1 shipped May 2026); permission list grows in subsequent clusters
+**Status:** Locked skeleton (cluster 0; chunks 0.1 + 0.2 shipped May 2026); permission list grows in subsequent clusters
 **Date:** April 2026
 **Author:** Shubham Sahamate, with consolidation support from Claude Opus 4.7 Adaptive
 
@@ -162,6 +162,8 @@ Permission inheritance (e.g., compliance role inherits all audit permissions plu
 April 2026 (cluster 0 drafting pass): Initial skeleton authored with four roles and five cluster 0 permissions. Subsequent clusters will extend.
 
 May 2026 (cluster 0 chunk 0.1 shipped): Implementation completed. `Permission` enum + `ROLE_PERMISSIONS` dict + `require_permission(*perms, mode='all'|'any')` FastAPI dep factory in `src/artha/api_v2/auth/permissions.py`. Wired to whoami (AUTH_SESSION_READ), firm-info (SYSTEM_FIRM_INFO_READ), events/stream (EVENTS_SUBSCRIBE_OWN_SCOPE OR EVENTS_SUBSCRIBE_FIRM_SCOPE, mode='any'). All 6 acceptance tests in §8 verified via `tests/test_unit/test_api_v2_permissions.py`. Logout endpoint not gated on AUTH_SESSION_LOGOUT (cookie-based, not Bearer); the permission stays reserved for the future admin-revoke endpoint described in FR 17.1 §2.5.
+
+May 2026 (cluster 0 chunk 0.2 shipped): The four roles in §2 now drive frontend route segregation per CP Chunk 0.2 — TanStack Router subtrees `/app/{advisor,cio,compliance,audit}` with `requireRole` beforeLoad guards, plus per-role sidebar configs that surface different placeholder navigation items. No new permissions added in chunk 0.2 (the role-tree routing operates on the role itself, not on per-action permissions); the 5 cluster 0 permissions in §6 remain the locked skeleton.
 
 ---
 

@@ -1,39 +1,30 @@
-import { Activity, BarChart3, Bell, Briefcase, Users } from 'lucide-react'
-
+import { useAuthStore } from '../auth/store'
+import { SIDEBAR_BY_ROLE, type SidebarItem } from '../config/sidebar'
 import { cn } from '../lib/cn'
 
-// Cluster 0 sidebar — generic placeholder per chunk plan §scope_in:
-// "sidebar (collapsed default, placeholder navigation items)".
+// Role-aware sidebar (chunk 0.2). Reads the user's role from the auth
+// store and renders the per-role config from `web/src/config/sidebar/`.
 //
-// Items are visible but disabled (greyed out, non-clickable). They
-// communicate to the advisor what's coming. As subsequent clusters
-// ship, items light up.
+// Items are visible but disabled (greyed out, non-clickable) for cluster 0.
+// They communicate to the user what's coming. As subsequent clusters
+// ship surfaces, the matching items light up.
 //
-// Chunk 0.2 introduces role-aware sidebar configs (advisor vs cio vs
-// compliance vs audit) that replace this generic list. Step 5 ships
-// the generic version; step 5+chunk 0.2 swaps it.
-
-interface SidebarItem {
-  label: string
-  icon: typeof Briefcase
-  enabled: boolean
-}
-
-const ITEMS: SidebarItem[] = [
-  { label: 'Cases', icon: Briefcase, enabled: false },
-  { label: 'Investors', icon: Users, enabled: false },
-  { label: 'Alerts', icon: Bell, enabled: false },
-  { label: 'Monitoring', icon: Activity, enabled: false },
-  { label: 'Reports', icon: BarChart3, enabled: false },
-]
+// If for any reason the user is missing (not yet authenticated, weird
+// race), the sidebar renders nothing rather than crashing — the auth
+// gate will redirect to /dev-login on next render.
 
 export function Sidebar() {
+  const role = useAuthStore((s) => s.user?.role)
+  if (!role) {
+    return <aside className="w-16 bg-primary shrink-0" aria-hidden="true" />
+  }
+  const items = SIDEBAR_BY_ROLE[role]
   return (
     <aside
       className="w-16 bg-primary flex flex-col items-center gap-2 py-4 shrink-0"
       aria-label="Primary navigation"
     >
-      {ITEMS.map((item) => (
+      {items.map((item) => (
         <SidebarButton key={item.label} item={item} />
       ))}
     </aside>

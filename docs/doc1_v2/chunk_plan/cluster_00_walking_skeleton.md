@@ -2,7 +2,7 @@
 
 **Document:** Samriddhi AI, Chunk Plan, Cluster 0
 **Cluster:** 0 (Walking Skeleton)
-**Status:** Chunk 0.1 shipped May 2026; chunk 0.2 ready for implementation
+**Status:** Cluster 0 shipped May 2026 (chunks 0.1 and 0.2)
 **Date:** April 2026
 **Authors:** Shubham Sahamate, with consolidation support from Claude Opus 4.7 Adaptive
 
@@ -192,13 +192,13 @@ May 2026 (chunk 0.1 shipped): Implementation completed in 8 logical steps. Final
 
 - **Chunk ID:** 0.2
 - **Title:** Role-Based Home Tree Routing
-- **Status:** Planned (drafting complete; ready for implementation)
+- **Status:** Shipped (May 2026)
 - **Lifecycle dates:**
   - Planning started: April 2026
   - Ideation locked: April 2026 (cluster 0 ideation log)
   - Drafting completed: April 2026 (this document)
-  - Implementation started: TBD
-  - Shipped: TBD
+  - Implementation started: May 2026 (immediately after chunk 0.1 shipped)
+  - Shipped: May 2026
 
 ### Purpose
 
@@ -286,6 +286,8 @@ None blocking implementation.
 
 April 2026 (cluster 0 drafting pass): Initial chunk plan authored.
 
+May 2026 (chunk 0.2 shipped): Implementation completed in 3 logical steps. Backend: `redirect_url` field added to `TokenResponse` (computed per-role from JWT claim) so dev-login + refresh tell the SPA where to land. New endpoint `POST /api/v2/system/role-home-visited` emits the `role_home_visited` T1 event from JWT-resolved identity. Frontend: 4 per-role sidebar configs (`web/src/config/sidebar/{advisor,cio,compliance,audit}.ts`), `Sidebar` reads role from auth store and picks the right config, router refactored with 4 role-tree subtrees + `requireRole` beforeLoad guard (redirects unauthenticated → `/dev-login`, wrong-role → user's actual tree), `RoleHomePage` reuses `DashboardWelcomeCard` (per chunk plan §scope_out: "the four role trees use the same React app shell component; only the sidebar contents differ per role"), `useRoleHomeVisited` hook fires the T1 POST on each role-tree mount with React-19-StrictMode-aware ref guard. 12 new chunk-0.2 backend tests; 159 backend tests total passing; ruff clean. All 11 chunk 0.2 acceptance criteria walked through (see Cluster 0 Closing Notes for the chunk-0.2 walkthrough table).
+
 ---
 
 ## Cluster 0 Closing Notes
@@ -323,7 +325,7 @@ Each numbered criterion from the chunk 0.1 Acceptance Criteria section, verified
 
 ---
 
-## Cluster 0 Retrospective (chunk 0.1 — partial; full retrospective after chunk 0.2 ships)
+## Cluster 0 Retrospective
 
 Retrospective notes captured at chunk-0.1-shipped time. The full cluster 0 retrospective happens when chunk 0.2 ships and feeds the next round of structure-doc revisions per the Foundation Reference and Chunk Plan Structure document §6.
 
@@ -344,6 +346,36 @@ Retrospective notes captured at chunk-0.1-shipped time. The full cluster 0 retro
 **7. Demo-stage simplifications validated.** All five Dev-Mode + DB Addendum substitutions (no Docker, no Keycloak, no Java, SQLite not Postgres, stub auth not OIDC) worked as designed. The chunk shipped without any per-firm IdP configuration, container orchestration, or secrets management — addressed in production-readiness phase as the addenda anticipate.
 
 **8. Foundation reference + chunk plan format both held up well.** No structural revisions surfaced beyond the topic-18 consolidation question. FR entry template (header / cross-refs / body / open questions / revision history) gave each entry a stable shape that was easy to consume during implementation. Chunk template's "Scope: out" section in particular was load-bearing: kept us from accidentally building features (SSE event payloads beyond connection lifecycle, role-tree-specific styling, etc.) that belong to later chunks.
+
+---
+
+## Chunk 0.2 Acceptance Walkthrough (May 2026)
+
+| # | Criterion (paraphrased) | Status | Verification |
+|---|---|---|---|
+| 1 | Advisor → `/app/advisor` after auth | ✅ | `test_dev_login_returns_role_specific_redirect_url[advisor1-/app/advisor]` + `DevLoginPage` reads `body.redirect_url` and navigates. |
+| 2 | CIO → `/app/cio` | ✅ | parametrized `test_dev_login_returns_role_specific_redirect_url[cio1-/app/cio]` |
+| 3 | Compliance → `/app/compliance` | ✅ | parametrized variant |
+| 4 | Audit → `/app/audit` | ✅ | parametrized variant |
+| 5 | Each role's home page displays name + role badge + firm + welcome | ✅ | `RoleHomePage` renders `DashboardWelcomeCard` (same shape as chunk 0.1 dashboard, scoped to whichever tree the user landed on). |
+| 6 | Each role's sidebar shows role-appropriate items | ✅ | 4 per-role configs at `web/src/config/sidebar/{advisor,cio,compliance,audit}.ts`; `Sidebar` reads role from auth store and picks the matching config. Items disabled per chunk plan §scope_out. |
+| 7 | Wrong-role direct navigation is bounced to user's correct tree | ✅ | TanStack Router `requireRole(expected)` beforeLoad: `if (user.role !== expected) throw redirect({ to: ROLE_PATHS[user.role] })`. Manual browser check (advisor → /app/cio → /app/advisor). |
+| 8 | Refreshing a role-tree URL stays on the tree (within session window) | ✅ | App-mount `tryBootRefresh` recovers JWT; `requireRole` then matches; user stays on same path. Same machinery as chunk 0.1 criterion 13. |
+| 9 | Logout from any role tree behaves identically to chunk 0.1 logout | ✅ | UserMenu logout flow unchanged from chunk 0.1; `requireRole` then redirects to `/dev-login` on next render because user is null. |
+| 10 | SSE connection survives navigation between role-tree routes | ✅ | `useSSEConnection` is mounted in `AppShell`. Route changes within `AppShell` (advisor→advisor sub-routes, etc.) don't unmount it. The `hasJwt`-only effect dep means token refresh doesn't re-establish either. |
+| 11 | Each role-tree home emits `role_home_visited` T1 event with `{role, user_id}` | ✅ | `useRoleHomeVisited` hook fires `POST /api/v2/system/role-home-visited` on mount; backend `role_home_visited` endpoint emits the T1 event from the JWT. Tested by `test_emits_role_home_visited_t1_with_correct_payload` (parametrized over all 4 roles) + `test_multiple_visits_emit_multiple_events`. |
+
+**11 of 11 chunk 0.2 criteria green.** Cluster-level acceptance from the chunk plan opening section: full 8-step user journey works for all 4 roles end-to-end via uvicorn + Vite dev. Cluster 0 is closed.
+
+---
+
+## Cluster 0 Retrospective Addenda (chunk 0.2)
+
+Chunk 0.2 was a small lift (3 logical steps, 12 new tests, ~600 lines added). One additional retrospective note beyond the chunk-0.1 list above:
+
+**9. Per-role config files as the lighting-up mechanism.** The 4 sidebar configs (`web/src/config/sidebar/{role}.ts`) are designed so every cluster that ships a real surface for a role flips one item from `enabled: false` to `true` and points `href` at its TanStack Router route. This avoids touching the `Sidebar` component itself for new surfaces. Pattern works as designed; recommend documenting it as the standard lighting-up pattern in a future iteration of the structure doc.
+
+**Cluster 0 closure**: chunks 0.1 and 0.2 shipped. The walking skeleton has proven the entire cluster 0 transport stack — auth, JWT/sessions/refresh + theft detection, SSE channel + multiplex contract, role-permission vocabulary, firm-info + branding, React app shell, role-tree routing, strangler-fig coexistence with the Alpine SPA. Cluster 1 (Investor Onboarding) is unblocked.
 
 ---
 

@@ -29,7 +29,8 @@ import artha.portfolio.models  # noqa: F401 — register portfolio tables
 from artha.accountability.router import router as accountability_router
 from artha.api_v2.auth.router import router as auth_v2_router
 from artha.api_v2.events.router import router as events_v2_router
-from artha.api_v2.system.firm_info import router as system_v2_router
+from artha.api_v2.system.firm_info import router as system_firm_info_router
+from artha.api_v2.system.role_home import router as system_role_home_router
 from artha.common.db.base import Base
 from artha.common.db.engine import dispose_engine, get_engine
 from artha.data.router import router as data_explorer_router
@@ -103,10 +104,11 @@ def create_app() -> FastAPI:
     app.include_router(help_router, prefix="/api/v1")
     app.include_router(pam_router, prefix="/api/v1")
 
-    # Cluster 0 (api_v2): all three routers carry their own /api/v2/... prefixes.
+    # Cluster 0 (api_v2): each router carries its own /api/v2/... prefix.
     app.include_router(auth_v2_router)
     app.include_router(events_v2_router)
-    app.include_router(system_v2_router)
+    app.include_router(system_firm_info_router)
+    app.include_router(system_role_home_router)
 
     @app.get("/api/v1/health")
     async def health():

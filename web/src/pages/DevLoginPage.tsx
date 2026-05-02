@@ -56,9 +56,16 @@ export function DevLoginPage() {
         const body = await response.json().catch(() => ({}))
         throw new Error(body.detail ?? `Login failed (${response.status}).`)
       }
-      const body = (await response.json()) as { access_token: string }
+      const body = (await response.json()) as {
+        access_token: string
+        redirect_url: string
+      }
       setAuth(body.access_token)
-      navigate({ to: '/' })
+      // Chunk 0.2 — backend computed the role-tree home for us
+      // (e.g., /app/advisor). Strip the /app basepath since the
+      // router treats /app as root.
+      const target = body.redirect_url.replace(/^\/app/, '') || '/'
+      navigate({ to: target })
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
