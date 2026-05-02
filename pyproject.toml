@@ -26,6 +26,10 @@ dependencies = [
     "yfinance>=0.2.40",
     "niftystocks>=0.0.3",
     "pandas>=2.2.0",
+    # Cluster 0 (walking skeleton) additions per FR Entry 17.1, FR Entry 18.0
+    "pyjwt[crypto]>=2.9.0",
+    "sse-starlette>=2.1.0",
+    "python-ulid>=2.0.0",
 ]
 
 [project.optional-dependencies]

@@ -1,0 +1,35 @@
+# Cluster 0 demo-stage test users + firm config.
+#
+# Per Cluster 0 Dev-Mode Addendum §3.1.
+#
+# Used by the stub auth endpoint (/api/v2/auth/dev-login) to look up users
+# by user_id and mint a JWT with the user's identity + the firm's identity.
+# In production-readiness phase, this YAML and the stub endpoint are removed
+# (or feature-flag-disabled); auth comes from the firm's real OIDC IdP.
+
+firm:
+  firm_id: "demo-firm-001"
+  firm_name: "Demo Wealth Advisory"
+  firm_display_name: "Demo Wealth Advisory Pvt Ltd"
+  primary_color: "#0D2944"
+  accent_color: "#1A8A8A"
+  logo_url: "/static/demo-logo.png"
+  regulatory_jurisdiction: "IN"
+
+users:
+  - user_id: "advisor1"
+    email: "advisor1@demo.test"
+    name: "Anjali Mehta"
+    role: "advisor"
+  - user_id: "cio1"
+    email: "cio1@demo.test"
+    name: "Rajiv Sharma"
+    role: "cio"
+  - user_id: "compliance1"
+    email: "compliance1@demo.test"
+    name: "Priya Iyer"
+    role: "compliance"
+  - user_id: "audit1"
+    email: "audit1@demo.test"
+    name: "Vikram Desai"
+    role: "audit"
