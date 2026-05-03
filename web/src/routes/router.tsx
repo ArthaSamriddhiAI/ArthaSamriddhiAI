@@ -10,26 +10,22 @@ import { useAuthStore } from '../auth/store'
 import type { Role } from '../auth/types'
 import { AppShell } from '../components/AppShell'
 import { DevLoginPage } from '../pages/DevLoginPage'
+import { InvestorDetailPage } from '../pages/investors/InvestorDetailPage'
+import { InvestorListPage } from '../pages/investors/InvestorListPage'
+import { NewInvestorPage } from '../pages/investors/NewInvestorPage'
 import { RoleHomePage } from '../pages/RoleHomePage'
 
-// Code-based router with the four role-tree subtrees added in chunk 0.2:
-//   /app/                       → redirect to /app/<user-role>
-//   /app/dev-login              → public login page
-//   /app/advisor                → advisor home (advisor only)
-//   /app/cio                    → CIO home (CIO only)
-//   /app/compliance             → compliance home (compliance only)
-//   /app/audit                  → audit home (audit only)
+// Code-based router. Cluster 0 introduced the four role-tree subtrees;
+// cluster 1 chunk 1.1 adds nested routes under /advisor for investors:
+//   /app/advisor/                       → advisor home (RoleHomePage)
+//   /app/advisor/investors              → investor list
+//   /app/advisor/investors/new          → new-investor form
+//   /app/advisor/investors/$investorId  → investor detail
 //
-// Each role tree's beforeLoad does two checks (per chunk 0.2 §scope_in):
-//   1. Authentication — if no user, redirect to /dev-login carrying the
-//      requested URL so post-login navigation can resume there.
-//   2. Role match — if the user has a different role, redirect to THEIR
-//      tree (so an advisor typing /app/cio gets bounced to /app/advisor,
-//      not 403'd).
-//
-// Subsequent clusters add nested routes under each role tree (e.g.,
-// cluster 1 will add /app/advisor/investors, /app/advisor/cases). The
-// per-tree beforeLoad still applies.
+// Each role-tree route now renders <AppShell><Outlet /></AppShell>
+// (refactor from cluster 0's <RoleHomePage /> direct render) so child
+// routes can fill the main region. Index routes preserve cluster 0's
+// home behaviour.
 
 const ROLE_PATHS: Record<Role, string> = {
   advisor: '/advisor',
@@ -52,7 +48,6 @@ function requireRole(expected: Role) {
       })
     }
     if (user.role !== expected) {
-      // Bounce to the user's actual role tree.
       throw redirect({ to: ROLE_PATHS[user.role] })
     }
   }
@@ -62,39 +57,68 @@ const rootRoute = createRootRoute({
   component: () => <Outlet />,
 })
 
-// `/` — chunk 0.1's old root behaviour (auth gate + dashboard) is replaced
-// by a pure redirect to the user's role tree. Unauthenticated visitors
-// get sent to /dev-login.
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   beforeLoad: ({ location }) => {
     const user = useAuthStore.getState().user
     if (!user) {
-      throw redirect({
-        to: '/dev-login',
-        search: { redirect: location.href },
-      })
+      throw redirect({ to: '/dev-login', search: { redirect: location.href } })
     }
     throw redirect({ to: ROLE_PATHS[user.role] })
   },
-  // Component never actually renders because beforeLoad always redirects.
   component: () => null,
 })
 
 const devLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/dev-login',
-  validateSearch: (
-    search: Record<string, unknown>,
-  ): { redirect?: string } => ({
-    redirect:
-      typeof search.redirect === 'string' ? search.redirect : undefined,
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
+    redirect: typeof search.redirect === 'string' ? search.redirect : undefined,
   }),
   component: DevLoginPage,
 })
 
-function makeRoleRoute(role: Role) {
+// ----- Advisor tree (with nested investor routes from chunk 1.1) -----
+
+const advisorRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: ROLE_PATHS.advisor,
+  beforeLoad: requireRole('advisor'),
+  component: () => (
+    <AppShell>
+      <Outlet />
+    </AppShell>
+  ),
+})
+
+const advisorIndexRoute = createRoute({
+  getParentRoute: () => advisorRoute,
+  path: '/',
+  component: RoleHomePage,
+})
+
+const advisorInvestorsListRoute = createRoute({
+  getParentRoute: () => advisorRoute,
+  path: '/investors',
+  component: InvestorListPage,
+})
+
+const advisorInvestorsNewRoute = createRoute({
+  getParentRoute: () => advisorRoute,
+  path: '/investors/new',
+  component: NewInvestorPage,
+})
+
+const advisorInvestorDetailRoute = createRoute({
+  getParentRoute: () => advisorRoute,
+  path: '/investors/$investorId',
+  component: InvestorDetailPage,
+})
+
+// ----- Other role trees (no nested routes in cluster 1) -----
+
+function makeSimpleRoleRoute(role: Role) {
   return createRoute({
     getParentRoute: () => rootRoute,
     path: ROLE_PATHS[role],
@@ -107,15 +131,19 @@ function makeRoleRoute(role: Role) {
   })
 }
 
-const advisorRoute = makeRoleRoute('advisor')
-const cioRoute = makeRoleRoute('cio')
-const complianceRoute = makeRoleRoute('compliance')
-const auditRoute = makeRoleRoute('audit')
+const cioRoute = makeSimpleRoleRoute('cio')
+const complianceRoute = makeSimpleRoleRoute('compliance')
+const auditRoute = makeSimpleRoleRoute('audit')
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
   devLoginRoute,
-  advisorRoute,
+  advisorRoute.addChildren([
+    advisorIndexRoute,
+    advisorInvestorsListRoute,
+    advisorInvestorsNewRoute,
+    advisorInvestorDetailRoute,
+  ]),
   cioRoute,
   complianceRoute,
   auditRoute,

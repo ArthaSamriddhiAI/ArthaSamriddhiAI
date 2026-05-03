@@ -38,18 +38,27 @@ from artha.api_v2.auth.user_context import Role, UserContext
 
 
 class Permission(str, Enum):
-    """The cluster 0 permission set per FR 17.2 §6.
+    """The active permission set. Cluster 0 introduced 5 entries; subsequent
+    clusters APPEND new entries per FR 17.2 §7's growth pattern.
 
-    Future clusters APPEND new entries to this enum. The string values follow
-    the ``<resource>:<verb>:<scope>`` convention so they survive serialisation
-    cleanly (e.g., into a JWT scope claim, an audit log, or an admin UI).
+    String values follow ``<resource>:<verb>:<scope>`` (FR 17.2 §3) so they
+    survive serialisation cleanly (JWT scope claim, audit log, admin UI).
     """
 
+    # ---- Cluster 0 (chunks 0.1, 0.2) ----
     AUTH_SESSION_READ = "auth:session:read"
     AUTH_SESSION_LOGOUT = "auth:session:logout"
     EVENTS_SUBSCRIBE_OWN_SCOPE = "events:subscribe:own_scope"
     EVENTS_SUBSCRIBE_FIRM_SCOPE = "events:subscribe:firm_scope"
     SYSTEM_FIRM_INFO_READ = "system:firm_info:read"
+
+    # ---- Cluster 1 chunk 1.1 (investor onboarding + I0 enrichment) ----
+    INVESTORS_READ_OWN_BOOK = "investors:read:own_book"
+    INVESTORS_READ_FIRM_SCOPE = "investors:read:firm_scope"
+    INVESTORS_WRITE_OWN_BOOK = "investors:write:own_book"
+    HOUSEHOLDS_READ_OWN_BOOK = "households:read:own_book"
+    HOUSEHOLDS_READ_FIRM_SCOPE = "households:read:firm_scope"
+    HOUSEHOLDS_WRITE_OWN_BOOK = "households:write:own_book"
 
 
 # Cluster 0 role-to-permission mapping per FR 17.2 §2 / §6.
@@ -57,28 +66,48 @@ class Permission(str, Enum):
 # per-deployment overrides (FR 17.2 §4 final paragraph) come in a future cluster.
 ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
     Role.ADVISOR: frozenset({
+        # Cluster 0
         Permission.AUTH_SESSION_READ,
         Permission.AUTH_SESSION_LOGOUT,
         Permission.EVENTS_SUBSCRIBE_OWN_SCOPE,
         Permission.SYSTEM_FIRM_INFO_READ,
+        # Cluster 1 chunk 1.1 — advisor manages their own book of investors
+        Permission.INVESTORS_READ_OWN_BOOK,
+        Permission.INVESTORS_WRITE_OWN_BOOK,
+        Permission.HOUSEHOLDS_READ_OWN_BOOK,
+        Permission.HOUSEHOLDS_WRITE_OWN_BOOK,
     }),
     Role.CIO: frozenset({
+        # Cluster 0
         Permission.AUTH_SESSION_READ,
         Permission.AUTH_SESSION_LOGOUT,
         Permission.EVENTS_SUBSCRIBE_FIRM_SCOPE,
         Permission.SYSTEM_FIRM_INFO_READ,
+        # Cluster 1 chunk 1.1 — CIO has firm-wide read for oversight, no write
+        # (investor onboarding is the advisor's surface; CIO governance comes
+        # in later clusters via mandate / model-portfolio surfaces).
+        Permission.INVESTORS_READ_FIRM_SCOPE,
+        Permission.HOUSEHOLDS_READ_FIRM_SCOPE,
     }),
     Role.COMPLIANCE: frozenset({
+        # Cluster 0
         Permission.AUTH_SESSION_READ,
         Permission.AUTH_SESSION_LOGOUT,
         Permission.EVENTS_SUBSCRIBE_FIRM_SCOPE,
         Permission.SYSTEM_FIRM_INFO_READ,
+        # Cluster 1 chunk 1.1 — compliance has firm-wide read for audit trail.
+        Permission.INVESTORS_READ_FIRM_SCOPE,
+        Permission.HOUSEHOLDS_READ_FIRM_SCOPE,
     }),
     Role.AUDIT: frozenset({
+        # Cluster 0
         Permission.AUTH_SESSION_READ,
         Permission.AUTH_SESSION_LOGOUT,
         Permission.EVENTS_SUBSCRIBE_FIRM_SCOPE,
         Permission.SYSTEM_FIRM_INFO_READ,
+        # Cluster 1 chunk 1.1 — audit reads everything firm-wide read-only.
+        Permission.INVESTORS_READ_FIRM_SCOPE,
+        Permission.HOUSEHOLDS_READ_FIRM_SCOPE,
     }),
 }
 

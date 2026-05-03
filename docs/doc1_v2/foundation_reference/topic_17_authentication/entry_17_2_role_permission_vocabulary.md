@@ -3,7 +3,7 @@
 **Topic:** 17 Authentication and Identity
 **Entry:** 17.2
 **Title:** Role-Permission Vocabulary
-**Status:** Locked skeleton (cluster 0; chunks 0.1 + 0.2 shipped May 2026); permission list grows in subsequent clusters
+**Status:** Locked skeleton (cluster 0 + cluster 1 chunk 1.1 shipped May 2026); permission list grows in subsequent clusters
 **Date:** April 2026
 **Author:** Shubham Sahamate, with consolidation support from Claude Opus 4.7 Adaptive
 
@@ -164,6 +164,8 @@ April 2026 (cluster 0 drafting pass): Initial skeleton authored with four roles 
 May 2026 (cluster 0 chunk 0.1 shipped): Implementation completed. `Permission` enum + `ROLE_PERMISSIONS` dict + `require_permission(*perms, mode='all'|'any')` FastAPI dep factory in `src/artha/api_v2/auth/permissions.py`. Wired to whoami (AUTH_SESSION_READ), firm-info (SYSTEM_FIRM_INFO_READ), events/stream (EVENTS_SUBSCRIBE_OWN_SCOPE OR EVENTS_SUBSCRIBE_FIRM_SCOPE, mode='any'). All 6 acceptance tests in §8 verified via `tests/test_unit/test_api_v2_permissions.py`. Logout endpoint not gated on AUTH_SESSION_LOGOUT (cookie-based, not Bearer); the permission stays reserved for the future admin-revoke endpoint described in FR 17.1 §2.5.
 
 May 2026 (cluster 0 chunk 0.2 shipped): The four roles in §2 now drive frontend route segregation per CP Chunk 0.2 — TanStack Router subtrees `/app/{advisor,cio,compliance,audit}` with `requireRole` beforeLoad guards, plus per-role sidebar configs that surface different placeholder navigation items. No new permissions added in chunk 0.2 (the role-tree routing operates on the role itself, not on per-action permissions); the 5 cluster 0 permissions in §6 remain the locked skeleton.
+
+May 2026 (cluster 1 chunk 1.1 shipped): Permission set extended from 5 → 11 entries per §7 growth pattern. Six new entries: `investors:read:own_book` (advisor) + `investors:read:firm_scope` (cio/compliance/audit) + `investors:write:own_book` (advisor only — cluster 1 has no CIO write surface for investors) + `households:read:own_book` (advisor) + `households:read:firm_scope` (cio/compliance/audit) + `households:write:own_book` (advisor — for inline household creation during onboarding). All 6 wired into the chunk 1.1 REST endpoints; cluster-0 permissions tests updated to use a `cluster_0_perms.issubset(set(Permission))` check (instead of `len(Permission) == 5`) so future cluster growth doesn't break the existing test contract.
 
 ---
 

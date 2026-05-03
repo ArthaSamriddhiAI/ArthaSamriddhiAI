@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router'
+
 import { useAuthStore } from '../auth/store'
 import { SIDEBAR_BY_ROLE, type SidebarItem } from '../config/sidebar'
 import { cn } from '../lib/cn'
@@ -5,13 +7,10 @@ import { cn } from '../lib/cn'
 // Role-aware sidebar (chunk 0.2). Reads the user's role from the auth
 // store and renders the per-role config from `web/src/config/sidebar/`.
 //
-// Items are visible but disabled (greyed out, non-clickable) for cluster 0.
-// They communicate to the user what's coming. As subsequent clusters
-// ship surfaces, the matching items light up.
-//
-// If for any reason the user is missing (not yet authenticated, weird
-// race), the sidebar renders nothing rather than crashing — the auth
-// gate will redirect to /dev-login on next render.
+// Items with `enabled: true` AND `href` set render as TanStack Router
+// links; items still in placeholder mode render as disabled buttons.
+// Cluster 1 chunk 1.1 lights up "Investors" for advisor with
+// href="/advisor/investors".
 
 export function Sidebar() {
   const role = useAuthStore((s) => s.user?.role)
@@ -31,21 +30,40 @@ export function Sidebar() {
   )
 }
 
+const buttonClassEnabled = cn(
+  'w-12 h-12 rounded-md flex items-center justify-center transition-colors',
+  'text-white/60 hover:bg-white/10 hover:text-white cursor-pointer',
+)
+
+const buttonClassDisabled = cn(
+  'w-12 h-12 rounded-md flex items-center justify-center transition-colors',
+  'text-white/60 cursor-not-allowed opacity-40',
+)
+
 function SidebarButton({ item }: { item: SidebarItem }) {
   const Icon = item.icon
+  if (item.enabled && item.href) {
+    return (
+      <Link
+        to={item.href}
+        title={item.label}
+        aria-label={item.label}
+        className={buttonClassEnabled}
+        activeOptions={{ exact: false }}
+        // active styling: a small left-side accent bar visible when route matches
+        activeProps={{ className: cn(buttonClassEnabled, 'bg-white/15 text-white') }}
+      >
+        <Icon size={20} aria-hidden="true" />
+      </Link>
+    )
+  }
   return (
     <button
       type="button"
-      disabled={!item.enabled}
-      title={item.enabled ? item.label : `${item.label} (coming soon)`}
+      disabled
+      title={`${item.label} (coming soon)`}
       aria-label={item.label}
-      className={cn(
-        'w-12 h-12 rounded-md flex items-center justify-center transition-colors',
-        'text-white/60',
-        item.enabled
-          ? 'hover:bg-white/10 hover:text-white cursor-pointer'
-          : 'cursor-not-allowed opacity-40',
-      )}
+      className={buttonClassDisabled}
     >
       <Icon size={20} aria-hidden="true" />
     </button>

@@ -107,9 +107,30 @@ def _user_with_role(role: Role) -> UserContext:
 
 
 class TestPermissionVocabulary:
-    def test_cluster_0_has_exactly_five_permissions(self):
-        # Per FR 17.2 §6.
-        assert len(Permission) == 5
+    def test_cluster_0_five_permissions_still_present(self):
+        # Per FR 17.2 §6 — these five are the cluster 0 skeleton; they must
+        # remain present even as future clusters extend the enum.
+        cluster_0_perms = {
+            Permission.AUTH_SESSION_READ,
+            Permission.AUTH_SESSION_LOGOUT,
+            Permission.EVENTS_SUBSCRIBE_OWN_SCOPE,
+            Permission.EVENTS_SUBSCRIBE_FIRM_SCOPE,
+            Permission.SYSTEM_FIRM_INFO_READ,
+        }
+        assert cluster_0_perms.issubset(set(Permission))
+
+    def test_cluster_1_chunk_1_1_permissions_present(self):
+        # Per cluster 1 chunk 1.1 — 6 new entries for investor + household
+        # surfaces. FR 17.2 §7 growth pattern.
+        cluster_1_chunk_1_1_perms = {
+            Permission.INVESTORS_READ_OWN_BOOK,
+            Permission.INVESTORS_READ_FIRM_SCOPE,
+            Permission.INVESTORS_WRITE_OWN_BOOK,
+            Permission.HOUSEHOLDS_READ_OWN_BOOK,
+            Permission.HOUSEHOLDS_READ_FIRM_SCOPE,
+            Permission.HOUSEHOLDS_WRITE_OWN_BOOK,
+        }
+        assert cluster_1_chunk_1_1_perms.issubset(set(Permission))
 
     def test_permission_string_values_follow_naming_convention(self):
         """``<resource>:<verb>:<scope>`` per FR 17.2 §3."""

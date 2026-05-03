@@ -4,9 +4,18 @@ import type { SidebarItem } from './types'
 
 // Per chunk plan §scope_in (chunk 0.2):
 // "Advisor sidebar: Cases, Investors, Alerts, Monitoring (all disabled placeholders)."
+//
+// Cluster 1 chunk 1.1 lights up the "Investors" item — pointing to
+// /app/advisor/investors and enabled. Future chunks light up the
+// remaining items.
 export const ADVISOR_SIDEBAR: SidebarItem[] = [
   { label: 'Cases', icon: Briefcase, enabled: false },
-  { label: 'Investors', icon: Users, enabled: false },
+  {
+    label: 'Investors',
+    icon: Users,
+    enabled: true,
+    href: '/advisor/investors',
+  },
   { label: 'Alerts', icon: Bell, enabled: false },
   { label: 'Monitoring', icon: Activity, enabled: false },
 ]
