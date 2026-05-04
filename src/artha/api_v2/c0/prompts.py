@@ -20,7 +20,11 @@ from pathlib import Path
 #: The one-and-only skill version string emitted in T1 telemetry. Bump
 #: when ``skill.md`` is modified so audit replay can correlate behaviour
 #: to prompt version.
-SKILL_VERSION = "v1.0"
+#:
+#: v1.0 — cluster 1 chunk 1.2 (initial)
+#: v1.1 — cluster 2 chunk 2.2 (added mandate_creation intent + slot fields
+#:        for the five constraint families + use_defaults affordance)
+SKILL_VERSION = "v1.1"
 
 _SKILL_FILE = Path(__file__).parent / "skill.md"
 

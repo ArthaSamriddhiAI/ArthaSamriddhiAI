@@ -8,13 +8,11 @@ import {
 import { cn } from '../../../lib/cn'
 
 // Per FR Entry 14.0 §4.2 — STATE_AWAITING_CONFIRMATION renders as a card
-// with all collected slots and Confirm / Edit buttons. Cluster 1 ships a
-// "Cancel" path instead of a true edit (per chunk plan §scope_out: "edit
-// during STATE_AWAITING_CONFIRMATION ... but not after"; the simplest
-// implementation is to cancel and start fresh — which the demo-stage
-// addendum §1.5 explicitly accepts).
+// with all collected slots and Confirm / Cancel buttons. Cluster 2 chunk
+// 2.2 adds the mandate_creation intent variant: same card shape, different
+// label set (the five constraint families instead of identity fields).
 
-const SLOT_LABELS: Array<[label: string, key: string]> = [
+const ONBOARDING_LABELS: Array<[label: string, key: string]> = [
   ['Name', 'name'],
   ['Email', 'email'],
   ['Phone', 'phone'],
@@ -33,29 +31,20 @@ export function ConfirmationCard({
   const confirmMutation = useConfirmAction(conversation.conversation_id)
   const cancelMutation = useCancelConversation(conversation.conversation_id)
 
-  const slots = conversation.collected_slots
-  const householdLabel =
-    typeof slots.household_id === 'string' && slots.household_id
-      ? `Existing (${slots.household_id})`
-      : typeof slots.household_name === 'string' && slots.household_name
-        ? `New (${slots.household_name})`
-        : '—'
+  const isMandate = conversation.intent === 'mandate_creation'
 
   return (
     <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-5 shadow-sm">
       <h3 className="text-sm font-semibold text-blue-900 mb-3">
-        Confirm and create the investor record
+        {isMandate
+          ? 'Confirm and create the mandate'
+          : 'Confirm and create the investor record'}
       </h3>
-      <dl className="grid grid-cols-2 gap-y-2 text-sm">
-        {SLOT_LABELS.map(([label, key]) => {
-          const v = slots[key]
-          if (v === undefined || v === null || v === '') return null
-          return (
-            <FragmentRow key={key} label={label} value={String(v)} />
-          )
-        })}
-        <FragmentRow label="Household" value={householdLabel} />
-      </dl>
+      {isMandate ? (
+        <MandateSummary conversation={conversation} />
+      ) : (
+        <OnboardingSummary conversation={conversation} />
+      )}
 
       {confirmMutation.error && (
         <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
@@ -90,6 +79,72 @@ export function ConfirmationCard({
         </button>
       </div>
     </div>
+  )
+}
+
+
+function OnboardingSummary({
+  conversation,
+}: {
+  conversation: ConversationRead
+}) {
+  const slots = conversation.collected_slots
+  const householdLabel =
+    typeof slots.household_id === 'string' && slots.household_id
+      ? `Existing (${slots.household_id})`
+      : typeof slots.household_name === 'string' && slots.household_name
+        ? `New (${slots.household_name})`
+        : '—'
+  return (
+    <dl className="grid grid-cols-2 gap-y-2 text-sm">
+      {ONBOARDING_LABELS.map(([label, key]) => {
+        const v = slots[key]
+        if (v === undefined || v === null || v === '') return null
+        return <FragmentRow key={key} label={label} value={String(v)} />
+      })}
+      <FragmentRow label="Household" value={householdLabel} />
+    </dl>
+  )
+}
+
+
+function MandateSummary({
+  conversation,
+}: {
+  conversation: ConversationRead
+}) {
+  const slots = conversation.collected_slots as Record<string, unknown>
+  const investorName = (slots.investor_name as string) || '—'
+
+  const band = (
+    minKey: string, maxKey: string,
+  ): string => {
+    const min = slots[minKey]
+    const max = slots[maxKey]
+    if (typeof min !== 'number' || typeof max !== 'number') return '—'
+    return `${min}% – ${max}%`
+  }
+  const pct = (key: string): string => {
+    const v = slots[key]
+    return typeof v === 'number' ? `${v}%` : '—'
+  }
+  const prohibited = (slots.prohibited_instruments as string[] | undefined) ?? []
+  const prohibitedDisplay = prohibited.length === 0 ? 'None' : prohibited.join(', ')
+
+  return (
+    <dl className="grid grid-cols-2 gap-y-2 text-sm">
+      <FragmentRow label="Investor" value={investorName} />
+      <FragmentRow label="Equity" value={band('equity_min_pct', 'equity_max_pct')} />
+      <FragmentRow label="Debt" value={band('debt_min_pct', 'debt_max_pct')} />
+      <FragmentRow
+        label="Alternatives"
+        value={band('alternatives_min_pct', 'alternatives_max_pct')}
+      />
+      <FragmentRow label="Single-position max" value={pct('single_position_max_pct')} />
+      <FragmentRow label="Liquidity floor" value={pct('liquidity_floor_pct')} />
+      <FragmentRow label="Sector cap" value={pct('sector_max_pct')} />
+      <FragmentRow label="Prohibited" value={prohibitedDisplay} />
+    </dl>
   )
 }
 

@@ -1,9 +1,9 @@
 # C0 Conversational Orchestrator — Skill File
 
 **Owner:** C0
-**Version:** v1.0 (cluster 1 chunk 1.2)
+**Version:** v1.1 (cluster 2 chunk 2.2 — added mandate_creation intent)
 **Status:** Live
-**Cross-references:** FR Entry 14.0 §2.3 (prompt templates), Principles §3.4 (skill.md mechanism)
+**Cross-references:** FR Entry 14.0 §2.3 (prompt templates), FR Entry 14.0 Cluster 2 Revision Note (mandate_creation intent), Principles §3.4 (skill.md mechanism)
 
 This file is the authoring surface for C0's LLM prompts. The application
 loads it at startup via :func:`artha.api_v2.c0.prompts.load_skill`. Edits
@@ -19,14 +19,17 @@ You are an intent classifier for a wealth advisory system named Samriddhi AI.
 
 Classify the following user message as exactly one of these intents:
 - investor_onboarding: user wants to add a new client to the system
+- mandate_creation: user wants to set up an investment policy mandate for an existing client
 - case_opening: user wants to open a case for an existing client
 - alert_response: user wants to respond to a system alert
 - briefing_request: user wants to prepare for a client meeting
 - general_question: user has a general question or none of the above
 
-Also extract any field values from the message that map to these onboarding fields:
-name, email, phone, pan, age, risk_appetite (aggressive/moderate/conservative),
-time_horizon (under_3_years/3_to_5_years/over_5_years).
+Also extract any field values from the message that map to these fields:
+- Onboarding: name, email, phone, pan, age, risk_appetite (aggressive/moderate/conservative),
+  time_horizon (under_3_years/3_to_5_years/over_5_years).
+- Mandate creation: investor_name (the client the mandate is for), investor_pan
+  (if mentioned).
 
 Reply with a single JSON object and no surrounding prose:
 {"intent": "<intent>", "extracted_fields": {<field>: <value>, ...}}
@@ -55,6 +58,19 @@ Field types and rules:
 - time_horizon: exactly one of under_3_years, 3_to_5_years, over_5_years
 - household_choice: one of "existing" (link to existing household_id) or "new"
 - household_name: free-text household label when creating a new household
+- investor_name, investor_pan: investor disambiguation references
+- equity_min_pct, equity_max_pct, debt_min_pct, debt_max_pct,
+  alternatives_min_pct, alternatives_max_pct: integers 0-100, asset
+  allocation band bounds. Cluster 2 mandate_creation intent.
+- single_position_max_pct, liquidity_floor_pct, sector_max_pct:
+  integers 0-100, percentage caps. Cluster 2 mandate_creation intent.
+- prohibited_instruments: list of strings (specific instruments,
+  categories, or themes the investor excludes). Cluster 2 mandate_creation
+  intent. Treat user inputs like "none" / "nothing" / "no exclusions" as
+  an empty list.
+- use_defaults: boolean. Set to true when the user says "use defaults",
+  "use I0 suggestions", "the suggested values are fine", or similar
+  affordances during the mandate_creation flow.
 
 Map free-text answers to enum values where reasonable (e.g., "he's pretty
 conservative" → risk_appetite=conservative; "long term" → time_horizon=over_5_years).

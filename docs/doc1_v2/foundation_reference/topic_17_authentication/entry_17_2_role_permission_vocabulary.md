@@ -3,7 +3,7 @@
 **Topic:** 17 Authentication and Identity
 **Entry:** 17.2
 **Title:** Role-Permission Vocabulary
-**Status:** Locked skeleton (cluster 0 + cluster 1 fully shipped + cluster 2 chunks 2.1+2.3+2.4 shipped May 2026); permission list grows in subsequent clusters
+**Status:** Locked skeleton (cluster 0 + cluster 1 + cluster 2 fully shipped May 2026); permission list grows in subsequent clusters
 **Date:** April 2026
 **Author:** Shubham Sahamate, with consolidation support from Claude Opus 4.7 Adaptive
 
@@ -174,6 +174,8 @@ May 2026 (cluster 1 chunk 1.2 shipped): Permission set extended from 13 → 16 e
 May 2026 (cluster 2 chunks 2.1 + 2.4 shipped): Permission set extended from 16 → 20 entries per §7 growth pattern. Four new entries for mandate management: `mandates:read:own_book` (advisor), `mandates:read:firm_scope` (CIO/compliance/audit), `mandates:write:own_book` (advisor — mandate creation in chunk 2.1 + amendment proposals in chunk 2.3), `mandates:approve:firm_scope` (CIO only — single-CIO approval of amendments per cluster 2 demo addendum §1.2). Wired to the chunk 2.1 REST endpoints (`POST/GET /api/v2/investors/{id}/mandate`, `GET /api/v2/investors/{id}/mandate/versions`, `GET /api/v2/mandates/{id}`, `POST /api/v2/mandates/from-pdf`) — read endpoints accept either own_book or firm_scope (mode="any"); write endpoints require own_book on the advisor. The `mandates:approve:firm_scope` permission is reserved for chunk 2.3's amendment-approval endpoints; cluster 2.1 doesn't gate any endpoint on it yet but the role mapping is locked.
 
 May 2026 (cluster 2 chunk 2.3 shipped): No new permissions added; the four cluster-2 permissions from the previous revision are now wired to the full amendment-workflow surface. `mandates:write:own_book` gates `POST /investors/{id}/mandate/amend` (propose draft), `PUT /mandate-versions/{id}` (edit draft), `POST /mandate-versions/{id}/submit` (submit for approval). `mandates:approve:firm_scope` gates the three CIO-only actions: `POST /mandate-versions/{id}/approve`, `.../reject`, `.../request-changes`. The pending-queue read endpoint `GET /cio/pending-amendments` and the diff endpoint `GET /mandate-versions/{id}/diff` accept either own_book or firm_scope (mode="any") — advisors see their own pending amendments, CIO/compliance/audit see firm-wide.
+
+May 2026 (cluster 2 chunk 2.2 shipped): No new permissions added. The C0 mandate_creation intent reuses cluster 1 chunk 1.2's `conversations:write:own_book` (advisor-only conversation participation) and chunk 2.1's `mandates:write:own_book` (M1 service called inside the conversation's `STATE_EXECUTING`). The `_execute_mandate_creation` helper hand-builds an `UserContext` with `Role.ADVISOR` from the conversation's `user_id` so the M1 permission gate fires identically to the form-path call. Cluster 2 closes with the permission set at 20 entries.
 
 ---
 

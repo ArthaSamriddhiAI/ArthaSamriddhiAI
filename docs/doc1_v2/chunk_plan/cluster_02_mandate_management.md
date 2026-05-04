@@ -2,7 +2,7 @@
 
 **Document:** Samriddhi AI, Chunk Plan, Cluster 2
 **Cluster:** 2 (Mandate Management)
-**Status:** Chunks 2.1 + 2.3 + 2.4 shipped May 2026; chunk 2.2 ready for implementation
+**Status:** Cluster 2 fully shipped May 2026 (chunks 2.1, 2.2, 2.3, 2.4)
 **Date:** April 2026
 **Authors:** Shubham Sahamate, with consolidation support from Claude Opus 4.7 Adaptive
 
@@ -226,11 +226,80 @@ April 2026 (cluster 2 drafting pass): Initial chunk plan authored.
 
 - **Chunk ID:** 2.2
 - **Title:** C0 Conversational Mandate Creation with mandate_creation Intent
-- **Status:** Planned (drafting complete)
+- **Status:** Shipped (May 2026)
 - **Lifecycle dates:**
   - Planning started: April 2026
   - Ideation locked: April 2026 (cluster 2 ideation log)
   - Drafting completed: April 2026
+  - Implementation started: May 2026
+  - Shipped: May 2026
+
+**Chunk-shipped retrospective notes** (full retrospective at cluster 2 close):
+
+1. **Two FSMs share one Conversation table.** The investor_onboarding
+   FSM (chunk 1.2) and the new mandate_creation FSM (chunk 2.2) both
+   serialise their `state` column to the same `v2_c0_conversations.state`
+   string column. Both enums use the `STATE_*` prefix; the application
+   dispatches by `convo.intent` to pick the right FSM at runtime.
+   Pattern works because:
+   - `STATE_AWAITING_CONFIRMATION`, `STATE_COMPLETED`, `STATE_ABANDONED`
+     happen to overlap exactly between the two FSMs (same string values,
+     same semantic).
+   - Other state values are distinct (e.g.
+     `STATE_COLLECTING_ASSET_ALLOCATION` only exists in the mandate FSM).
+   - The `post_message` dispatcher branches on `convo.intent` BEFORE
+     casting `convo.state` to either enum.
+   Future intents (case_opening, alert_response) can add their own FSMs
+   following the same recipe.
+
+2. **Structured investor disambiguation = no LLM fuzzy matching.** Per
+   FR Entry 14.0 Cluster 2 Revision §2.5, investor lookup is exact +
+   substring + PAN-prefix matching against the advisor's book — no LLM
+   call. The disambiguation list is rendered as a numbered text block
+   in the chat; the parser intercepts replies like "yes" / "1" / "the
+   first one" / exact-name-match BEFORE the slot extractor runs. This
+   means the slot-response queue in tests must NOT include a placeholder
+   for the disambiguation turn (gotcha caught in initial test run).
+
+3. **Skip-to-defaults affordance preserves customised values.**
+   `apply_skip_to_defaults` only fills slots that are *unset*; values
+   the advisor already customised earlier in the conversation are kept.
+   This makes "use defaults" a partial-fill shortcut rather than a
+   destructive reset.
+
+4. **Skill version bumped v1.0 → v1.1.** Adding `mandate_creation` to
+   the intent vocabulary + new slot fields counts as a prompt-template
+   change. The constant `prompts.SKILL_VERSION` rides in every T1
+   `c0_intent_detected` and `c0_slot_extracted` payload so audit replay
+   correlates conversation behaviour to skill-file revision.
+
+5. **`confirm_action` endpoint dispatches by intent now.** Previously
+   only invoked `_execute_action` (investor_service.create_investor);
+   the chunk 2.2 patch routes mandate_creation conversations to
+   `_execute_mandate_creation` (m1_service.create_mandate with
+   `via="conversational"`) so the existing
+   `POST /conversations/{id}/confirm` endpoint works for both intents
+   without UI changes.
+
+6. **Existing-mandate guard before constraint collection.** When the
+   advisor confirms a candidate investor that already has an active
+   mandate, the FSM jumps straight to STATE_COMPLETED with a "they
+   already have one — propose an amendment instead" notice. Avoids
+   collecting five constraint families just to fail at execution time.
+
+7. **`prohibited_instruments_collected` flag is the gate, not list
+   truthiness.** Empty list is a valid value ("none") for the prohibited
+   instruments slot, so the FSM gates on a separate boolean flag the
+   service stamps when the user explicitly responds. Without it, the
+   FSM would loop forever waiting for the list to be non-empty.
+
+8. **TestClient slot-response queue gotcha.** Tests that script the LLM
+   responses must skip placeholder entries for "yes"-style turns where
+   `_parse_candidate_selection` intercepts the user message before
+   `extract_slots` runs. The first slot-response in the queue is
+   consumed by the FIRST extract_slots call, which is the asset-
+   allocation turn (turn 3 in a typical flow), not turn 2 (the
+   disambiguation confirmation).
 
 ### Purpose
 
