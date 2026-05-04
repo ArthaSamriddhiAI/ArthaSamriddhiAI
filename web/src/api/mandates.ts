@@ -202,3 +202,240 @@ export function useCreateMandate(investorId: string) {
     },
   })
 }
+
+// ---------------------------------------------------------------------------
+// Amendment workflow (chunk 2.3)
+// ---------------------------------------------------------------------------
+
+
+export interface PendingAmendmentSummary {
+  version_id: string
+  mandate_id: string
+  investor_id: string
+  investor_name: string
+  investor_pan: string
+  advisor_id: string
+  version_number: number
+  proposed_at: string | null
+  proposed_by: string | null
+  change_summary: string[]
+}
+
+
+export interface NumericFieldChange {
+  field: string
+  label: string
+  old_value: number
+  new_value: number
+}
+
+
+export interface ProhibitedListChange {
+  added: string[]
+  removed: string[]
+}
+
+
+export interface StructuralImpact {
+  label: string
+  explanation: string
+}
+
+
+export interface PortfolioImplications {
+  status: 'cluster_4_placeholder' | 'populated'
+  message: string
+  rows: string[]
+}
+
+
+export interface ImpactAnalysis {
+  structural: StructuralImpact[]
+  portfolio_implications: PortfolioImplications
+  activation_summary: string
+}
+
+
+export interface AmendmentDiff {
+  active: MandateVersion
+  proposed: MandateVersion
+  numeric_changes: NumericFieldChange[]
+  prohibited_change: ProhibitedListChange
+  summary: string[]
+  impact: ImpactAnalysis
+}
+
+
+export function usePendingAmendments() {
+  return useQuery<PendingAmendmentSummary[]>({
+    queryKey: ['mandate', 'pending'],
+    queryFn: async () => {
+      const r = await apiFetch('/api/v2/cio/pending-amendments')
+      if (!r.ok) throw new Error(`pending amendments fetch failed: ${r.status}`)
+      const body = (await r.json()) as { pending: PendingAmendmentSummary[] }
+      return body.pending
+    },
+  })
+}
+
+
+export function useAmendmentDiff(versionId: string | undefined) {
+  return useQuery<AmendmentDiff>({
+    queryKey: ['mandate', 'diff', versionId],
+    enabled: Boolean(versionId),
+    queryFn: async () => {
+      const r = await apiFetch(`/api/v2/mandate-versions/${versionId}/diff`)
+      if (!r.ok) throw new Error(`diff fetch failed: ${r.status}`)
+      return (await r.json()) as AmendmentDiff
+    },
+  })
+}
+
+
+export function useProposeAmendment(investorId: string) {
+  const qc = useQueryClient()
+  return useMutation<MandateVersion, MandateError, void>({
+    mutationFn: async () => {
+      const r = await apiFetch(
+        `/api/v2/investors/${investorId}/mandate/amend`,
+        { method: 'POST' },
+      )
+      if (!r.ok) {
+        const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
+        const detail = (body.detail as string | undefined) ?? `Propose failed (${r.status})`
+        throw new MandateError(detail, r.status, body as never)
+      }
+      return (await r.json()) as MandateVersion
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['mandate'] })
+    },
+  })
+}
+
+
+export function useUpdateDraft(versionId: string) {
+  const qc = useQueryClient()
+  return useMutation<MandateVersion, MandateError, MandateCreatePayload>({
+    mutationFn: async (payload) => {
+      const r = await apiFetch(`/api/v2/mandate-versions/${versionId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!r.ok) {
+        const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
+        const detail = (body.detail as string | undefined) ?? `Update failed (${r.status})`
+        throw new MandateError(detail, r.status, body as never)
+      }
+      return (await r.json()) as MandateVersion
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['mandate'] })
+    },
+  })
+}
+
+
+export function useSubmitAmendment(versionId: string) {
+  const qc = useQueryClient()
+  return useMutation<MandateVersion, MandateError, void>({
+    mutationFn: async () => {
+      const r = await apiFetch(
+        `/api/v2/mandate-versions/${versionId}/submit`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        },
+      )
+      if (!r.ok) {
+        const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
+        const detail = (body.detail as string | undefined) ?? `Submit failed (${r.status})`
+        throw new MandateError(detail, r.status, body as never)
+      }
+      return (await r.json()) as MandateVersion
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['mandate'] })
+    },
+  })
+}
+
+
+export function useApproveAmendment(versionId: string) {
+  const qc = useQueryClient()
+  return useMutation<MandateVersion, MandateError, { comments?: string }>({
+    mutationFn: async (payload) => {
+      const r = await apiFetch(
+        `/api/v2/mandate-versions/${versionId}/approve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      )
+      if (!r.ok) {
+        const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
+        const detail = (body.detail as string | undefined) ?? `Approve failed (${r.status})`
+        throw new MandateError(detail, r.status, body as never)
+      }
+      return (await r.json()) as MandateVersion
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['mandate'] })
+    },
+  })
+}
+
+
+export function useRejectAmendment(versionId: string) {
+  const qc = useQueryClient()
+  return useMutation<MandateVersion, MandateError, { rejection_reason: string }>({
+    mutationFn: async (payload) => {
+      const r = await apiFetch(
+        `/api/v2/mandate-versions/${versionId}/reject`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      )
+      if (!r.ok) {
+        const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
+        const detail = (body.detail as string | undefined) ?? `Reject failed (${r.status})`
+        throw new MandateError(detail, r.status, body as never)
+      }
+      return (await r.json()) as MandateVersion
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['mandate'] })
+    },
+  })
+}
+
+
+export function useRequestChangesAmendment(versionId: string) {
+  const qc = useQueryClient()
+  return useMutation<MandateVersion, MandateError, { comments: string }>({
+    mutationFn: async (payload) => {
+      const r = await apiFetch(
+        `/api/v2/mandate-versions/${versionId}/request-changes`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      )
+      if (!r.ok) {
+        const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
+        const detail = (body.detail as string | undefined) ?? `Request-changes failed (${r.status})`
+        throw new MandateError(detail, r.status, body as never)
+      }
+      return (await r.json()) as MandateVersion
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['mandate'] })
+    },
+  })
+}

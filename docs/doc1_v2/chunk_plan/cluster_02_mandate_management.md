@@ -2,7 +2,7 @@
 
 **Document:** Samriddhi AI, Chunk Plan, Cluster 2
 **Cluster:** 2 (Mandate Management)
-**Status:** Chunks 2.1 + 2.4 shipped May 2026; chunks 2.2 + 2.3 ready for implementation
+**Status:** Chunks 2.1 + 2.3 + 2.4 shipped May 2026; chunk 2.2 ready for implementation
 **Date:** April 2026
 **Authors:** Shubham Sahamate, with consolidation support from Claude Opus 4.7 Adaptive
 
@@ -333,11 +333,62 @@ April 2026 (cluster 2 drafting pass): Initial chunk plan authored.
 
 - **Chunk ID:** 2.3
 - **Title:** Mandate Amendments with CIO Approval and Impact Analysis
-- **Status:** Planned (drafting complete)
+- **Status:** Shipped (May 2026)
 - **Lifecycle dates:**
   - Planning started: April 2026
   - Ideation locked: April 2026 (cluster 2 ideation log)
   - Drafting completed: April 2026
+  - Implementation started: May 2026
+  - Shipped: May 2026
+
+**Chunk-shipped retrospective notes** (full retrospective at cluster 2 close):
+
+1. **`version_number` must be `MAX(version_number) + 1`, not `active.version_number + 1`.**
+   Caught by E2E during reject → propose-again: rejected versions retain
+   their slot in the unique `(mandate_id, version_number)` constraint, so
+   "active + 1" trips on the next propose. Fix: `SELECT MAX(version_number) + 1`
+   across all rows. Regression test pinned in
+   ``test_propose_after_reject_uses_next_version_number``.
+
+2. **Atomic approve = three writes in one transaction.** Per FR 12.2 §5.1:
+   proposed.status → active, mandate.active_version_id → proposed,
+   previously_active.status → archived. All three live in one
+   ``async with db.begin():`` boundary; three T1 events fire
+   (`mandate_amendment_approved` + `mandate_version_activated` +
+   `mandate_version_archived`). Never observable in 0-active or 2-active
+   state.
+
+3. **`request_changes` keeps the same version_number.** Per FR 12.2 §5.3:
+   "the version_number does not change; the same draft is updated."
+   Implementation: status → draft, set `changes_requested_*`, NULL out
+   `proposed_at` / `proposed_by` so resubmit re-stamps cleanly.
+
+4. **Pending-queue scope mirrors read permissions.** Advisor sees their own
+   pending amendments; CIO/compliance/audit see firm-wide. The CIO is the
+   sole role that can resolve rows.
+
+5. **Strict one-at-a-time enforced at application layer.** Cluster 2 ships
+   `_find_pending_or_draft` checking for any draft OR pending row before
+   allowing a new propose; SQLite supports partial unique indexes from 3.8
+   but the application check is portable. Error response carries the
+   existing version_id so the advisor can pivot to editing it.
+
+6. **Diff is a pure function over Pydantic read shapes.** `compute_diff`,
+   `summarise_diff`, `build_impact_analysis` all take `MandateVersionRead`
+   instances — unit-testable without a DB session, reusable for future
+   audit replay surfaces.
+
+7. **Cluster 4 placeholder panel is the contract.** The portfolio
+   implications response carries `status="cluster_4_placeholder"` in
+   cluster 2 with a fixed message. Cluster 4: flip `status="populated"`
+   and fill `rows`. No code changes to chunk 2.3's surface — frontend
+   already conditionally renders both.
+
+8. **TanStack Router relative paths (third time).** CIO sidebar uses
+   absolute `/cio/pending-amendments` (sidebar parent context = role
+   tree); PendingAmendmentsPage row link uses relative
+   `/pending-amendments/$versionId` (rendered inside cio tree). Same
+   lesson as chunks 1.2 + 1.3 + 2.1.
 
 ### Purpose
 

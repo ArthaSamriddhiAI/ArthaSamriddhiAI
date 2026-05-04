@@ -14,7 +14,10 @@ import { DevLoginPage } from '../pages/DevLoginPage'
 import { InvestorDetailPage } from '../pages/investors/InvestorDetailPage'
 import { InvestorListPage } from '../pages/investors/InvestorListPage'
 import { NewInvestorPage } from '../pages/investors/NewInvestorPage'
+import { AmendMandatePage } from '../pages/mandates/AmendMandatePage'
+import { AmendmentReviewPage } from '../pages/mandates/AmendmentReviewPage'
 import { NewMandatePage } from '../pages/mandates/NewMandatePage'
+import { PendingAmendmentsPage } from '../pages/mandates/PendingAmendmentsPage'
 import { RoleHomePage } from '../pages/RoleHomePage'
 import { LLMRouterSettingsPage } from '../pages/settings/LLMRouterSettingsPage'
 
@@ -133,6 +136,13 @@ const advisorMandateNewRoute = createRoute({
   component: NewMandatePage,
 })
 
+// Cluster 2 chunk 2.3 — advisor's amendment editor.
+const advisorMandateAmendRoute = createRoute({
+  getParentRoute: () => advisorRoute,
+  path: '/investors/$investorId/mandate/amend',
+  component: AmendMandatePage,
+})
+
 // ----- CIO tree (with nested settings routes from chunk 1.3) -----
 
 const cioRoute = createRoute({
@@ -157,6 +167,19 @@ const cioSettingsLlmRouterRoute = createRoute({
   getParentRoute: () => cioRoute,
   path: '/settings/llm-router',
   component: LLMRouterSettingsPage,
+})
+
+// Cluster 2 chunk 2.3 — CIO pending-amendments queue + review surface.
+const cioPendingAmendmentsRoute = createRoute({
+  getParentRoute: () => cioRoute,
+  path: '/pending-amendments',
+  component: PendingAmendmentsPage,
+})
+
+const cioAmendmentReviewRoute = createRoute({
+  getParentRoute: () => cioRoute,
+  path: '/pending-amendments/$versionId',
+  component: AmendmentReviewPage,
 })
 
 // ----- Other role trees (no nested routes in cluster 1) -----
@@ -187,8 +210,14 @@ const routeTree = rootRoute.addChildren([
     advisorInvestorDetailRoute,
     advisorConversationalRoute,
     advisorMandateNewRoute,
+    advisorMandateAmendRoute,
   ]),
-  cioRoute.addChildren([cioIndexRoute, cioSettingsLlmRouterRoute]),
+  cioRoute.addChildren([
+    cioIndexRoute,
+    cioSettingsLlmRouterRoute,
+    cioPendingAmendmentsRoute,
+    cioAmendmentReviewRoute,
+  ]),
   complianceRoute,
   auditRoute,
 ])

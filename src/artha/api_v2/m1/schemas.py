@@ -168,6 +168,136 @@ class MandateCreateResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Amendment workflow shapes (chunk 2.3)
+# ---------------------------------------------------------------------------
+
+
+class AmendmentDraftUpdateRequest(MandateConstraintInput):
+    """``PUT /api/v2/mandate-versions/{version_id}`` body — same shape as
+    create; the version_id path param identifies which draft to update."""
+
+
+class AmendmentSubmitRequest(BaseModel):
+    """``POST /api/v2/mandate-versions/{version_id}/submit`` body — empty
+    on the wire today; reserved for a future "submission notes" field."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class AmendmentApproveRequest(BaseModel):
+    """``POST /api/v2/mandate-versions/{version_id}/approve`` body."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    comments: str | None = Field(default=None, max_length=2000)
+
+
+class AmendmentRejectRequest(BaseModel):
+    """``POST .../reject`` body — ``rejection_reason`` is required (FR 12.2
+    §4.4 + §5.2)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    rejection_reason: str = Field(min_length=1, max_length=2000)
+
+
+class AmendmentRequestChangesRequest(BaseModel):
+    """``POST .../request-changes`` body — comments required (FR 12.2 §4.4
+    + §5.3)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    comments: str = Field(min_length=1, max_length=2000)
+
+
+class PendingAmendmentSummary(BaseModel):
+    """One row in the CIO's pending-amendments queue (FR 12.2 §4.1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    version_id: str
+    mandate_id: str
+    investor_id: str
+    investor_name: str
+    investor_pan: str
+    advisor_id: str
+    version_number: int
+    proposed_at: datetime | None
+    proposed_by: str | None
+    change_summary: list[str]
+
+
+class PendingAmendmentsResponse(BaseModel):
+    pending: list[PendingAmendmentSummary]
+
+
+class NumericFieldChangeRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    field: str
+    label: str
+    old_value: int
+    new_value: int
+
+
+class ProhibitedListChangeRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    added: list[str]
+    removed: list[str]
+
+
+class StructuralImpactRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str
+    explanation: str
+
+
+class PortfolioImplicationsRead(BaseModel):
+    """Cluster 4 placeholder; cluster 2 always renders the reserved
+    message. Future clusters set ``status="populated"`` and fill in
+    ``rows``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["cluster_4_placeholder", "populated"]
+    message: str
+    rows: list[str] = Field(default_factory=list)
+
+
+class ImpactAnalysisRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    structural: list[StructuralImpactRead]
+    portfolio_implications: PortfolioImplicationsRead
+    activation_summary: str
+
+
+class AmendmentDiffResponse(BaseModel):
+    """``GET .../diff`` envelope — full data the CIO review surface needs.
+
+    Bundles the active + proposed versions, the structured diff, the
+    plain-language summary, and the impact analysis together so the
+    frontend renders the whole review surface from a single fetch.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    active: MandateVersionRead
+    proposed: MandateVersionRead
+    numeric_changes: list[NumericFieldChangeRead]
+    prohibited_change: ProhibitedListChangeRead
+    summary: list[str]
+    impact: ImpactAnalysisRead
+
+
+# ---------------------------------------------------------------------------
+# Defaults endpoint (form-path pre-population)
+# ---------------------------------------------------------------------------
+
+
 class MandateDefaultsRead(BaseModel):
     """Read shape for ``GET .../mandate/defaults``.
 

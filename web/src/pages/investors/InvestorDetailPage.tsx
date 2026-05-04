@@ -59,17 +59,16 @@ export function InvestorDetailPage() {
                 Investment Mandate
               </h2>
               {mandateQuery.data?.active_version ? (
-                <button
-                  type="button"
-                  disabled
-                  title="Amendment workflow ships in chunk 2.3"
+                <Link
+                  to="/investors/$investorId/mandate/amend"
+                  params={{ investorId }}
                   className={cn(
-                    'rounded-md border border-gray-300 px-3 py-1.5 text-xs',
-                    'text-gray-400 cursor-not-allowed opacity-60',
+                    'rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs',
+                    'font-medium text-gray-700 hover:bg-gray-50',
                   )}
                 >
-                  Amend Mandate (chunk 2.3)
-                </button>
+                  Amend Mandate
+                </Link>
               ) : (
                 <Link
                   to="/investors/$investorId/mandate/new"

@@ -14,16 +14,21 @@ import type { SidebarItem } from './types'
 //  Approvals, Monitoring (all disabled placeholders)."
 //
 // Cluster 1 chunk 1.3 adds a CIO-only "Settings" item pointing at the
-// LLM Provider settings page. Per chunk 1.3 §scope_in: "Sidebar
-// navigation item Settings is visible only to CIO role; clicking takes
-// them to settings index with LLM Router as one option." For cluster 1
-// the LLM router page is the only settings surface; future clusters add
-// firm/user settings under the same /cio/settings tree.
+// LLM Provider settings page.
+//
+// Cluster 2 chunk 2.3 lights up "Approvals" → /cio/pending-amendments
+// (the CIO's mandate-amendment queue + side-by-side diff review surface).
+// Future clusters extend Approvals to other governance queues.
 export const CIO_SIDEBAR: SidebarItem[] = [
   { label: 'Construction Pipeline', icon: Layers, enabled: false },
   { label: 'Committee Queue', icon: ClipboardList, enabled: false },
   { label: 'Model Portfolio', icon: PieChart, enabled: false },
-  { label: 'Approvals', icon: ClipboardCheck, enabled: false },
+  {
+    label: 'Approvals',
+    icon: ClipboardCheck,
+    enabled: true,
+    href: '/cio/pending-amendments',
+  },
   { label: 'Monitoring', icon: Activity, enabled: false },
   {
     label: 'Settings',
