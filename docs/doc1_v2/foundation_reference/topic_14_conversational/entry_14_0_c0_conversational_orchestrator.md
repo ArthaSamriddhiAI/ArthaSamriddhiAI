@@ -3,7 +3,7 @@
 **Topic:** 14 Conversational and Notification
 **Entry:** 14.0
 **Title:** C0 Conversational Orchestrator
-**Status:** Locked partial (cluster 1 ships investor onboarding intent only; other intents accumulate in subsequent clusters)
+**Status:** Locked partial — investor onboarding intent shipped May 2026 (cluster 1 chunk 1.2); other intents accumulate in subsequent clusters
 **Date:** April 2026
 **Author:** Shubham Sahamate, with consolidation support from Claude Opus 4.7 Adaptive
 
@@ -272,6 +272,43 @@ The exact tone and personality of C0's prompts is design discretion during imple
 ## 9. Revision History
 
 April 2026 (cluster 1 drafting pass): Initial entry authored. Investor onboarding intent fully specified; other intents reserved as deferred. State machine, prompt templates, persistence schema, failure handling, and telemetry locked.
+
+May 2026 (chunk 1.2 shipped): Implementation locked the architecture as
+specified. Clarifications resolved during the build:
+
+- §2.4 STATE_AWAITING_CONFIRMATION: free-text replies map to confirm /
+  cancel keywords ("yes" / "confirm" / "go ahead" / "create" → confirm;
+  "cancel" / "no" / "stop" / "abort" → cancel). Anything else
+  re-renders the summary card with a hint. The chat is therefore usable
+  keyboard-only without buttons.
+- §2.4 STATE_EXECUTING: a duplicate-PAN error from the investor service
+  loops the FSM back to STATE_AWAITING_CONFIRMATION with a sentinel
+  ``_duplicate_pan_pending=True`` slot; the next confirm re-runs the
+  create with ``duplicate_pan_acknowledged=True``. This matches the
+  warn-and-proceed semantics from chunk 1.1 §scope_in.
+- §3.1 ``c0_messages.metadata_json``: cluster 1 stamps two flags the
+  frontend reads — ``card="success"`` on the final completion message
+  (renders the InvestorProfileCard) and ``fallback_mode=true`` on
+  template-fallback messages (renders amber). Schema is open; future
+  clusters add their own metadata keys without migration.
+- §3.3 Abandonment: shipped as a callable helper
+  (:func:`abandon_stale_conversations`) rather than a daemon. Cluster 1
+  invocation is manual / scheduled outside the web process; the helper
+  is the contract a future cluster wires to APScheduler / cron without
+  changing the FSM.
+- §5.1 LLM unavailable: the fallback notice text in cluster 1 is
+  "Conversational understanding is temporarily unavailable; please
+  respond with a single value to each question." (See
+  ``c0_service.LLM_FALLBACK_NOTICE``.)
+- §6 Telemetry: added ``skill_version`` to ``c0_intent_detected`` and
+  ``c0_slot_extracted`` payloads so audit replay can correlate behaviour
+  to the prompt version (``v1.0`` for cluster 1; bumped on skill.md
+  edits).
+- §8 Past-conversations sidebar: shipped in cluster 1 per the working
+  answer. The sidebar excludes abandoned conversations from the active
+  list (matches §3.3 — "Abandoned conversations are preserved in the
+  database for audit but do not appear in the user's active conversation
+  list"); CIO/compliance/audit see firm-wide.
 
 ---
 

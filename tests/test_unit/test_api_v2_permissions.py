@@ -141,6 +141,38 @@ class TestPermissionVocabulary:
         }
         assert cluster_1_chunk_1_3_perms.issubset(set(Permission))
 
+    def test_cluster_1_chunk_1_2_permissions_present(self):
+        # Per cluster 1 chunk 1.2 — 3 new entries for C0 conversational
+        # surface. Advisor gets read+write on own_book; CIO/compliance/audit
+        # get firm-wide read for governance.
+        cluster_1_chunk_1_2_perms = {
+            Permission.CONVERSATIONS_READ_OWN_BOOK,
+            Permission.CONVERSATIONS_READ_FIRM_SCOPE,
+            Permission.CONVERSATIONS_WRITE_OWN_BOOK,
+        }
+        assert cluster_1_chunk_1_2_perms.issubset(set(Permission))
+
+    def test_only_advisor_has_conversations_write_own_book(self):
+        # The C0 conversation is the advisor's surface; CIO/compliance/audit
+        # see the audit trail (T1) and read-only thread but cannot post.
+        assert (
+            Permission.CONVERSATIONS_WRITE_OWN_BOOK in ROLE_PERMISSIONS[Role.ADVISOR]
+        )
+        for role in (Role.CIO, Role.COMPLIANCE, Role.AUDIT):
+            assert (
+                Permission.CONVERSATIONS_WRITE_OWN_BOOK
+                not in ROLE_PERMISSIONS[role]
+            ), f"{role.value} should not have CONVERSATIONS_WRITE_OWN_BOOK"
+
+    @pytest.mark.parametrize("role", [Role.CIO, Role.COMPLIANCE, Role.AUDIT])
+    def test_cio_compliance_audit_have_conversations_firm_scope(self, role):
+        assert (
+            Permission.CONVERSATIONS_READ_FIRM_SCOPE in ROLE_PERMISSIONS[role]
+        )
+        assert (
+            Permission.CONVERSATIONS_READ_OWN_BOOK not in ROLE_PERMISSIONS[role]
+        )
+
     @pytest.mark.parametrize("perm", [
         Permission.SYSTEM_LLM_CONFIG_READ,
         Permission.SYSTEM_LLM_CONFIG_WRITE,

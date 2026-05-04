@@ -67,6 +67,14 @@ class Permission(str, Enum):
     SYSTEM_LLM_CONFIG_READ = "system:llm_config:read"
     SYSTEM_LLM_CONFIG_WRITE = "system:llm_config:write"
 
+    # ---- Cluster 1 chunk 1.2 (C0 conversational onboarding) ----
+    # Each advisor owns their own conversations; CIO/compliance/audit see
+    # firm-wide for governance. The same own-book vs firm-scope split that
+    # investors use, applied to the conversation thread.
+    CONVERSATIONS_READ_OWN_BOOK = "conversations:read:own_book"
+    CONVERSATIONS_READ_FIRM_SCOPE = "conversations:read:firm_scope"
+    CONVERSATIONS_WRITE_OWN_BOOK = "conversations:write:own_book"
+
 
 # Cluster 0 role-to-permission mapping per FR 17.2 §2 / §6.
 # Frozen so accidental mutation at module level is prevented; configurable
@@ -83,6 +91,9 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.INVESTORS_WRITE_OWN_BOOK,
         Permission.HOUSEHOLDS_READ_OWN_BOOK,
         Permission.HOUSEHOLDS_WRITE_OWN_BOOK,
+        # Cluster 1 chunk 1.2 — advisor drives their own conversations
+        Permission.CONVERSATIONS_READ_OWN_BOOK,
+        Permission.CONVERSATIONS_WRITE_OWN_BOOK,
     }),
     Role.CIO: frozenset({
         # Cluster 0
@@ -100,6 +111,10 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         # nor the API.
         Permission.SYSTEM_LLM_CONFIG_READ,
         Permission.SYSTEM_LLM_CONFIG_WRITE,
+        # Cluster 1 chunk 1.2 — CIO reads firm-wide conversations for
+        # governance; advisor onboarding flow is the advisor's own surface,
+        # so CIO does not write here.
+        Permission.CONVERSATIONS_READ_FIRM_SCOPE,
     }),
     Role.COMPLIANCE: frozenset({
         # Cluster 0
@@ -110,6 +125,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         # Cluster 1 chunk 1.1 — compliance has firm-wide read for audit trail.
         Permission.INVESTORS_READ_FIRM_SCOPE,
         Permission.HOUSEHOLDS_READ_FIRM_SCOPE,
+        # Cluster 1 chunk 1.2 — compliance reads firm-wide conversations.
+        Permission.CONVERSATIONS_READ_FIRM_SCOPE,
     }),
     Role.AUDIT: frozenset({
         # Cluster 0
@@ -120,6 +137,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         # Cluster 1 chunk 1.1 — audit reads everything firm-wide read-only.
         Permission.INVESTORS_READ_FIRM_SCOPE,
         Permission.HOUSEHOLDS_READ_FIRM_SCOPE,
+        # Cluster 1 chunk 1.2 — audit reads firm-wide conversations.
+        Permission.CONVERSATIONS_READ_FIRM_SCOPE,
     }),
 }
 

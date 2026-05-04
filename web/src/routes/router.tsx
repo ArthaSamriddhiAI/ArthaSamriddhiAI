@@ -9,6 +9,7 @@ import {
 import { useAuthStore } from '../auth/store'
 import type { Role } from '../auth/types'
 import { AppShell } from '../components/AppShell'
+import { ConversationalPage } from '../pages/conversational/ConversationalPage'
 import { DevLoginPage } from '../pages/DevLoginPage'
 import { InvestorDetailPage } from '../pages/investors/InvestorDetailPage'
 import { InvestorListPage } from '../pages/investors/InvestorListPage'
@@ -117,6 +118,13 @@ const advisorInvestorDetailRoute = createRoute({
   component: InvestorDetailPage,
 })
 
+// Cluster 1 chunk 1.2 — advisor's C0 conversational onboarding surface.
+const advisorConversationalRoute = createRoute({
+  getParentRoute: () => advisorRoute,
+  path: '/conversational',
+  component: ConversationalPage,
+})
+
 // ----- CIO tree (with nested settings routes from chunk 1.3) -----
 
 const cioRoute = createRoute({
@@ -169,6 +177,7 @@ const routeTree = rootRoute.addChildren([
     advisorInvestorsListRoute,
     advisorInvestorsNewRoute,
     advisorInvestorDetailRoute,
+    advisorConversationalRoute,
   ]),
   cioRoute.addChildren([cioIndexRoute, cioSettingsLlmRouterRoute]),
   complianceRoute,

@@ -2,7 +2,7 @@
 
 **Document:** Samriddhi AI, Chunk Plan, Cluster 1
 **Cluster:** 1 (Investor Onboarding)
-**Status:** Chunks 1.1 + 1.3 shipped May 2026; chunk 1.2 ready for implementation
+**Status:** Cluster 1 fully shipped May 2026 (chunks 1.1, 1.2, 1.3)
 **Date:** April 2026
 **Authors:** Shubham Sahamate, with consolidation support from Claude Opus 4.7 Adaptive
 
@@ -217,11 +217,72 @@ April 2026 (cluster 1 drafting pass): Initial chunk plan authored.
 
 - **Chunk ID:** 1.2
 - **Title:** C0 Conversational Onboarding with Bounded LLM Scope
-- **Status:** Planned (drafting complete; ready for implementation)
+- **Status:** Shipped (May 2026)
 - **Lifecycle dates:**
   - Planning started: April 2026
   - Ideation locked: April 2026 (cluster 1 ideation log §5)
   - Drafting completed: April 2026
+  - Implementation started: May 2026
+  - Shipped: May 2026
+
+**Chunk-shipped retrospective notes** (full retrospective at cluster 1 close):
+
+1. **State machine wears the structure; LLM only reads slots.** The
+   bounded-LLM pattern (FR 14.0 §1) was straightforward to implement
+   because the FSM lives entirely in pure Python — no LLM call appears in
+   any transition. The LLM is invoked only at the edges (intent detection
+   on turn 1, slot extraction on subsequent turns), and every reply flows
+   through ``_safe_load_json`` + ``_coerce_field_types`` so a malformed
+   LLM response degrades gracefully to fallback mode without crashing.
+
+2. **JSON-mode mismatch between providers handled at the adapter, not
+   here.** Mistral has native ``response_format: json_object``; Claude
+   doesn't, so the Claude adapter prepends a JSON-only system prompt
+   instead. C0 just asks for ``response_format="json"`` via the router
+   and trusts the adapter — no provider-specific code in the C0 layer.
+
+3. **Conversation persistence + the same-transaction guarantee.** Each
+   turn — user message + intent/slot LLM call + system reply + T1 events
+   — runs inside one ``async with db.begin():`` block from the router. If
+   the LLM call raises an unexpected exception, the user message persists
+   (audit trail) but the slot bag and system reply roll back. T1 keeps
+   the failure record either way via ``c0_llm_failure``.
+
+4. **Action executor reuses the chunk 1.1 investor service verbatim.**
+   ``_execute_action`` builds an ``InvestorCreateRequest`` from the slot
+   bag and hands it to ``investor_service.create_investor`` with
+   ``via="conversational"``. Same Pydantic validation, same I0 enrichment,
+   same duplicate-PAN warn-and-proceed loop, same T1 emissions. The
+   conversational path produces records bit-identical to the form path
+   modulo ``created_via``.
+
+5. **Duplicate-PAN handling within the conversation.** When the investor
+   service raises ``DuplicatePanError`` mid-execution, the conversation
+   stashes ``_duplicate_pan_pending=True`` in its slot bag and drops back
+   to ``STATE_AWAITING_CONFIRMATION``. A follow-up ``yes`` re-runs the
+   create with ``duplicate_pan_acknowledged=True``. The chat surface
+   shows the original duplicate-PAN dialog text so the advisor sees the
+   same warning the form path would have shown.
+
+6. **Abandonment via background helper, not background job.** Cluster 1
+   ships ``abandon_stale_conversations`` as a callable helper exposed to
+   the application; the chunk plan §scope_in describes it as a "background
+   job" but the demo runs it on a manual trigger / schedule outside the
+   web process. A future cluster wires it to APScheduler or a cron worker
+   when operational continuity matters; the helper interface is stable.
+
+7. **Dev-users YAML quirk surfaced again.** Only one advisor exists in
+   ``dev/test_users.yaml`` (``advisor1``). Scoping tests that need a
+   second advisor inject a conversation row directly into the DB with a
+   different ``user_id`` instead of trying to dev-login as a non-existent
+   user. Worth flagging for future clusters that test multi-advisor
+   scenarios — either extend the YAML or use the direct-DB-seed pattern.
+
+8. **Re-render summary on free-text confirm.** The state machine accepts
+   typed "yes" / "confirm" as confirmation and "cancel" / "no" as cancel
+   while ``STATE_AWAITING_CONFIRMATION`` is active. Anything else
+   re-renders the summary card with a hint. This makes the chat usable
+   without the buttons (keyboard-only flow).
 
 ### Purpose
 
@@ -340,6 +401,20 @@ The threshold for "low extraction confidence" triggering a re-prompt is open. Wo
 ### Revision History
 
 April 2026 (cluster 1 drafting pass): Initial chunk plan authored.
+
+May 2026 (chunk shipped): Status flipped to "Shipped". Retrospective
+notes captured at top of chunk header. All 20 chunk-1.2 acceptance
+criteria verified end-to-end — full conversation drives FSM through 5
+turns to a created investor record (``created_via=conversational``) with
+I0 enrichment matching the form path; LLM-unavailable triggers template
+fallback; cancel + abandonment job both work; permission gates verified
+(advisor read+write own_book; CIO/compliance/audit firm-wide read only).
+Backend tests: 84 new passing (state_machine 36, prompts 6, llm_client
+17, endpoints 14, abandonment 5, permissions +6); 376 total. Frontend
+build clean (496 KB JS / 150 KB gzipped). Alembic chain runs cleanly
+end-to-end (cluster 0 → 1.1 → 1.3 → 1.2; revision IDs intentionally
+non-sequential because 1.3 shipped before 1.2 per the dependency-locked
+build order).
 
 ---
 
