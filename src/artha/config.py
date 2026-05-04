@@ -91,6 +91,22 @@ class Settings(BaseSettings):
     # Not yet enforced in cluster 0; carried as configuration for forward use.
     sse_max_events_per_minute: int = 600
 
+    # ---------------- Cluster 1 chunk 1.3: SmartLLMRouter ----------------
+    # Per FR Entry 16.0 §4.1.
+    #
+    # The deployment-level Fernet key used to wrap LLM provider API keys at
+    # rest. MUST be a urlsafe-base64-encoded 32-byte key (the format
+    # ``cryptography.fernet.Fernet.generate_key()`` produces). When empty in
+    # DEVELOPMENT a per-process random key is generated lazily; ciphertext
+    # written under that key is unreadable across restarts (acceptable for
+    # local demos). MUST be set explicitly for non-development environments.
+    samriddhi_encryption_key: str = ""
+
+    # Default rate limit for the SmartLLMRouter when no DB row exists yet.
+    # Cluster 1 hardcodes 60 calls/minute per FR 16.0 §5.1.
+    llm_router_default_rate_limit_per_minute: int = 60
+    llm_router_default_timeout_seconds: int = 30
+
     @property
     def refresh_cookie_secure(self) -> bool:
         """Effective `Secure` flag for the refresh cookie."""

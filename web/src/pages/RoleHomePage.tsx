@@ -1,4 +1,5 @@
 import { DashboardWelcomeCard } from './DashboardPage'
+import { LLMConfigBanner } from '../components/LLMConfigBanner'
 import { useRoleHomeVisited } from '../system/useRoleHomeVisited'
 
 // Generic role-tree home page. All four role trees (advisor / cio /
@@ -14,10 +15,15 @@ import { useRoleHomeVisited } from '../system/useRoleHomeVisited'
 //
 // Mount-time T1 emission via useRoleHomeVisited (chunk 0.2 acceptance
 // criterion 11).
+//
+// Cluster 1 chunk 1.3: the LLMConfigBanner renders only for the CIO role
+// — first-run + kill-switch awareness — and is a no-op for the other
+// three roles.
 export function RoleHomePage() {
   useRoleHomeVisited()
   return (
     <div className="p-8 max-w-3xl">
+      <LLMConfigBanner />
       <DashboardWelcomeCard />
     </div>
   )

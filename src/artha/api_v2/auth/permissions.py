@@ -60,6 +60,13 @@ class Permission(str, Enum):
     HOUSEHOLDS_READ_FIRM_SCOPE = "households:read:firm_scope"
     HOUSEHOLDS_WRITE_OWN_BOOK = "households:write:own_book"
 
+    # ---- Cluster 1 chunk 1.3 (SmartLLMRouter settings UI) ----
+    # CIO-only — provider configuration, API keys, kill switch (FR 16.0 §4.2,
+    # §6, §7). Compliance + Audit get firm-wide visibility into who configured
+    # what via the T1 ledger but cannot read/write the keys themselves.
+    SYSTEM_LLM_CONFIG_READ = "system:llm_config:read"
+    SYSTEM_LLM_CONFIG_WRITE = "system:llm_config:write"
+
 
 # Cluster 0 role-to-permission mapping per FR 17.2 §2 / §6.
 # Frozen so accidental mutation at module level is prevented; configurable
@@ -88,6 +95,11 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         # in later clusters via mandate / model-portfolio surfaces).
         Permission.INVESTORS_READ_FIRM_SCOPE,
         Permission.HOUSEHOLDS_READ_FIRM_SCOPE,
+        # Cluster 1 chunk 1.3 — CIO is the sole role that configures the
+        # SmartLLMRouter (FR 16.0 §4.2). Other roles see neither the page
+        # nor the API.
+        Permission.SYSTEM_LLM_CONFIG_READ,
+        Permission.SYSTEM_LLM_CONFIG_WRITE,
     }),
     Role.COMPLIANCE: frozenset({
         # Cluster 0

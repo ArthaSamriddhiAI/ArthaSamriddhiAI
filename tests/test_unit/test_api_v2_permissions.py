@@ -132,6 +132,28 @@ class TestPermissionVocabulary:
         }
         assert cluster_1_chunk_1_1_perms.issubset(set(Permission))
 
+    def test_cluster_1_chunk_1_3_permissions_present(self):
+        # Per cluster 1 chunk 1.3 — 2 new entries for SmartLLMRouter settings.
+        # CIO is the sole role that holds them (FR 17.2 §7 growth pattern).
+        cluster_1_chunk_1_3_perms = {
+            Permission.SYSTEM_LLM_CONFIG_READ,
+            Permission.SYSTEM_LLM_CONFIG_WRITE,
+        }
+        assert cluster_1_chunk_1_3_perms.issubset(set(Permission))
+
+    @pytest.mark.parametrize("perm", [
+        Permission.SYSTEM_LLM_CONFIG_READ,
+        Permission.SYSTEM_LLM_CONFIG_WRITE,
+    ])
+    def test_only_cio_holds_llm_config_permissions(self, perm):
+        # CIO holds it.
+        assert perm in ROLE_PERMISSIONS[Role.CIO]
+        # Advisor / Compliance / Audit do not.
+        for role in (Role.ADVISOR, Role.COMPLIANCE, Role.AUDIT):
+            assert perm not in ROLE_PERMISSIONS[role], (
+                f"{role.value} should not have {perm.value} in cluster 1 chunk 1.3"
+            )
+
     def test_permission_string_values_follow_naming_convention(self):
         """``<resource>:<verb>:<scope>`` per FR 17.2 §3."""
         for perm in Permission:

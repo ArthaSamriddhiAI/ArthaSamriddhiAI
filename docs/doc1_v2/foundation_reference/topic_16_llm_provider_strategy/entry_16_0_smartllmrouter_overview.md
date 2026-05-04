@@ -233,6 +233,36 @@ Whether to support a "preview mode" where calls are stubbed (return canned respo
 
 April 2026 (cluster 1 drafting pass): Initial entry authored. Platform-level toggle, two providers (Mistral, Claude), settings UI integration, rate limiting, retries, kill switch, telemetry all locked. Per-agent tiering and multi-provider failover reserved as deferred.
 
+May 2026 (chunk 1.3 shipped): Implementation locked the architecture as
+specified. A few entry-level clarifications resolved during the build:
+
+- §3.1 Mistral default model: ``mistral-small-latest`` retained as
+  documented; adapter uses native ``response_format: {"type":
+  "json_object"}`` for JSON mode.
+- §3.2 Claude default model: ``claude-sonnet-4-5-20250929`` retained;
+  JSON mode is prompt-driven (a system message instructing JSON-only
+  output, prepended by the adapter when ``response_format == "json"``).
+  The Anthropic Messages API has no native ``response_format`` parameter
+  in the version targeted by ``anthropic-version: 2023-06-01``.
+- §4.1 Storage: API keys stored as Fernet ciphertext in
+  ``LargeBinary`` columns (chunk plan §1.3 §implementation_notes
+  preference for Fernet over hand-rolled AES-256-GCM accepted; AEAD
+  envelope deferred until cluster needs associated-data binding to
+  firm_id/config_id).
+- §6 Telemetry: ``llm_provider_configuration_changed`` event payload
+  carries ``previous_provider``, ``new_provider``, ``changed_by``, plus
+  per-key flags (``mistral_key_updated`` / ``claude_key_updated``) so
+  the audit trail captures both provider selection AND key rotation
+  events without leaking key material.
+- §7 Kill switch: emits both ``llm_kill_switch_activated`` and
+  ``llm_kill_switch_deactivated`` events as separate names (vs a single
+  ``kill_switch_state_changed`` shape) — easier to query in T1 and
+  matches the principles document's prefer-explicit-event-names guidance.
+- §9 Acceptance criteria #5 (rate limiting): the in-process token bucket
+  is sufficient for cluster 1 (single deployment, sub-1-rps load). A
+  cross-process Redis bucket plugs into the same ``_TokenBucket``
+  interface when multi-replica deployments arrive.
+
 ---
 
 **End of FR Entry 16.0.**

@@ -14,6 +14,7 @@ import { InvestorDetailPage } from '../pages/investors/InvestorDetailPage'
 import { InvestorListPage } from '../pages/investors/InvestorListPage'
 import { NewInvestorPage } from '../pages/investors/NewInvestorPage'
 import { RoleHomePage } from '../pages/RoleHomePage'
+import { LLMRouterSettingsPage } from '../pages/settings/LLMRouterSettingsPage'
 
 // Code-based router. Cluster 0 introduced the four role-tree subtrees;
 // cluster 1 chunk 1.1 adds nested routes under /advisor for investors:
@@ -116,6 +117,32 @@ const advisorInvestorDetailRoute = createRoute({
   component: InvestorDetailPage,
 })
 
+// ----- CIO tree (with nested settings routes from chunk 1.3) -----
+
+const cioRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: ROLE_PATHS.cio,
+  beforeLoad: requireRole('cio'),
+  component: () => (
+    <AppShell>
+      <Outlet />
+    </AppShell>
+  ),
+})
+
+const cioIndexRoute = createRoute({
+  getParentRoute: () => cioRoute,
+  path: '/',
+  component: RoleHomePage,
+})
+
+// Cluster 1 chunk 1.3 — CIO-only Settings → LLM Router page (FR 16.0 §6).
+const cioSettingsLlmRouterRoute = createRoute({
+  getParentRoute: () => cioRoute,
+  path: '/settings/llm-router',
+  component: LLMRouterSettingsPage,
+})
+
 // ----- Other role trees (no nested routes in cluster 1) -----
 
 function makeSimpleRoleRoute(role: Role) {
@@ -131,7 +158,6 @@ function makeSimpleRoleRoute(role: Role) {
   })
 }
 
-const cioRoute = makeSimpleRoleRoute('cio')
 const complianceRoute = makeSimpleRoleRoute('compliance')
 const auditRoute = makeSimpleRoleRoute('audit')
 
@@ -144,7 +170,7 @@ const routeTree = rootRoute.addChildren([
     advisorInvestorsNewRoute,
     advisorInvestorDetailRoute,
   ]),
-  cioRoute,
+  cioRoute.addChildren([cioIndexRoute, cioSettingsLlmRouterRoute]),
   complianceRoute,
   auditRoute,
 ])

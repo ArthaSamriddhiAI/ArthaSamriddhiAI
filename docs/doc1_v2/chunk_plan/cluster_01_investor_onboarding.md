@@ -2,7 +2,7 @@
 
 **Document:** Samriddhi AI, Chunk Plan, Cluster 1
 **Cluster:** 1 (Investor Onboarding)
-**Status:** Chunk 1.1 shipped May 2026; chunks 1.3 + 1.2 ready for implementation
+**Status:** Chunks 1.1 + 1.3 shipped May 2026; chunk 1.2 ready for implementation
 **Date:** April 2026
 **Authors:** Shubham Sahamate, with consolidation support from Claude Opus 4.7 Adaptive
 
@@ -349,11 +349,69 @@ April 2026 (cluster 1 drafting pass): Initial chunk plan authored.
 
 - **Chunk ID:** 1.3
 - **Title:** SmartLLMRouter Settings UI with API Key Configuration
-- **Status:** Planned (drafting complete; ready for implementation)
+- **Status:** Shipped (May 2026)
 - **Lifecycle dates:**
   - Planning started: April 2026
   - Ideation locked: April 2026 (cluster 1 ideation log §6)
   - Drafting completed: April 2026
+  - Implementation started: May 2026
+  - Shipped: May 2026
+
+**Chunk-shipped retrospective notes** (full retrospective at cluster 1 close):
+
+1. **Fernet over hand-rolled AES-256-GCM.** The chunk-plan implementation
+   notes leave the choice open ("Fernet is simpler and adequate for cluster
+   1"). Cluster 1 went with Fernet — the cryptography library ships it
+   pre-built; HMAC + IV management is solved; round-trip test fits in
+   ~30 lines. Production-readiness migration to AEAD with associated data
+   (firm_id, config_id) is straightforward via a versioned ciphertext
+   envelope when needed.
+
+2. **Singleton config row.** The FR §4.1 schema is "effectively a singleton
+   row per deployment, but versioned for audit." Cluster 1 ships the
+   singleton: ``config_id="singleton"`` is a hardcoded constant. The
+   column-level PK is a string, so a future cluster can move to
+   per-write ULIDs without a schema migration. T1 already captures the
+   change history; the column-level versioning is duplication today.
+
+3. **Encryption-key persistence in DEV.** With ``SAMRIDDHI_ENCRYPTION_KEY``
+   unset, the encryption helper generates a per-process random key —
+   ciphertext written under it is unreadable after backend restart. This
+   is documented behaviour (FR §4.1) but trips up demo flows that survive
+   restarts. Demo prep step: generate a Fernet key once with
+   ``python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"``
+   and pin it in ``.env`` so the same demo data persists across restarts.
+
+4. **TanStack Router relative paths (again).** Carrying the chunk 1.1
+   retrospective note forward: nested-route children's ``Link to=`` props
+   are scoped to the current parent. ``LLMConfigBanner`` lives under the
+   CIO tree (it returns ``null`` for other roles), so its link to the
+   settings page must be ``to="/settings/llm-router"`` (relative), not
+   ``to="/cio/settings/llm-router"`` (absolute). TS type-checks this at
+   build time. The Sidebar config exception: ``href`` is a typed-string
+   variable, so TS doesn't narrow it; absolute paths work there.
+
+5. **TestClient lifespan + fresh-per-request DB sessions.** Two test
+   patterns from this chunk worth carrying forward:
+   - Always use ``with TestClient(app) as client:`` so the FastAPI
+     lifespan handler runs and ``Base.metadata.create_all`` populates the
+     SQLite schema. Bare ``TestClient(app)`` skips lifespan and SELECTs
+     hit "no such table".
+   - Multi-write test fixtures need an ``async_sessionmaker`` factory in
+     the dependency override (``async with factory() as session: yield``)
+     so each request gets a fresh session — exactly mirroring production's
+     ``get_session``. A shared session across requests trips
+     "transaction is already begun" once the second write hits
+     ``async with db.begin():``.
+
+6. **Permission scope.** ``system:llm_config:read`` and
+   ``system:llm_config:write`` are CIO-only. Compliance + Audit have
+   firm-wide read on investors/households (chunk 1.1) but NOT on the LLM
+   config — by design. The audit trail flows through T1 (where they
+   already see ``llm_provider_configuration_changed``,
+   ``llm_kill_switch_*``, ``llm_call_*`` events firm-wide), which is the
+   accountability surface that matters; reading the masked config + API
+   keys is operational, not auditable.
 
 ### Purpose
 
@@ -467,6 +525,17 @@ Whether the rate limit should be exposed in the settings UI for tuning is open. 
 ### Revision History
 
 April 2026 (cluster 1 drafting pass): Initial chunk plan authored.
+
+May 2026 (chunk shipped): Status flipped to "Shipped". Retrospective
+notes captured at top of chunk header. All 18 chunk-1.3 acceptance
+criteria verified end-to-end: provider config CRUD + masked reads,
+test-connection flow, kill switch activate/deactivate with T1 audit,
+first-run banner on CIO home tree, sidebar Settings item lit up,
+permission gating (CIO only) verified for advisor / compliance / audit.
+Backend tests: 69 new passing (encryption: 13, providers: 19,
+router_runtime: 12, endpoints: 24, permissions: 1 new). Frontend build
+clean (483 KB JS / 148 KB gzipped). Alembic migration chain runs cleanly
+end-to-end (cluster 0 → 1.1 → 1.3).
 
 ---
 

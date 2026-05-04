@@ -3,7 +3,7 @@
 **Topic:** 17 Authentication and Identity
 **Entry:** 17.2
 **Title:** Role-Permission Vocabulary
-**Status:** Locked skeleton (cluster 0 + cluster 1 chunk 1.1 shipped May 2026); permission list grows in subsequent clusters
+**Status:** Locked skeleton (cluster 0 + cluster 1 chunks 1.1 + 1.3 shipped May 2026); permission list grows in subsequent clusters
 **Date:** April 2026
 **Author:** Shubham Sahamate, with consolidation support from Claude Opus 4.7 Adaptive
 
@@ -125,7 +125,7 @@ These five permissions are sufficient for cluster 0's chunks (0.1 placeholder da
 
 As clusters ship, they add permissions to this entry. The pattern:
 
-Cluster 1 (investor onboarding) adds: `investors:read:own_book`, `investors:write:own_book` for advisor; `investors:read:firm_scope` for CIO/compliance/audit.
+Cluster 1 (investor onboarding) adds: `investors:read:own_book`, `investors:write:own_book` for advisor; `investors:read:firm_scope` for CIO/compliance/audit. Plus chunk 1.3's `system:llm_config:read` and `system:llm_config:write` for CIO only (the LLM provider configuration surface).
 
 Cluster 2 (mandate management) adds: `mandates:read:own_book`, `mandates:write:own_book`; `mandates:approve` for CIO.
 
@@ -166,6 +166,8 @@ May 2026 (cluster 0 chunk 0.1 shipped): Implementation completed. `Permission` e
 May 2026 (cluster 0 chunk 0.2 shipped): The four roles in §2 now drive frontend route segregation per CP Chunk 0.2 — TanStack Router subtrees `/app/{advisor,cio,compliance,audit}` with `requireRole` beforeLoad guards, plus per-role sidebar configs that surface different placeholder navigation items. No new permissions added in chunk 0.2 (the role-tree routing operates on the role itself, not on per-action permissions); the 5 cluster 0 permissions in §6 remain the locked skeleton.
 
 May 2026 (cluster 1 chunk 1.1 shipped): Permission set extended from 5 → 11 entries per §7 growth pattern. Six new entries: `investors:read:own_book` (advisor) + `investors:read:firm_scope` (cio/compliance/audit) + `investors:write:own_book` (advisor only — cluster 1 has no CIO write surface for investors) + `households:read:own_book` (advisor) + `households:read:firm_scope` (cio/compliance/audit) + `households:write:own_book` (advisor — for inline household creation during onboarding). All 6 wired into the chunk 1.1 REST endpoints; cluster-0 permissions tests updated to use a `cluster_0_perms.issubset(set(Permission))` check (instead of `len(Permission) == 5`) so future cluster growth doesn't break the existing test contract.
+
+May 2026 (cluster 1 chunk 1.3 shipped): Permission set extended from 11 → 13 entries per §7 growth pattern. Two new entries: `system:llm_config:read` and `system:llm_config:write`, both granted ONLY to the CIO role. Compliance + Audit do NOT have the LLM-config permissions: their accountability surface is the T1 ledger (where `llm_provider_configuration_changed`, `llm_kill_switch_*`, and `llm_call_*` events are firm-wide visible), not the configuration UI itself. Wired to the chunk 1.3 REST endpoints (`GET/PUT /api/v2/llm/config`, `POST /api/v2/llm/test-connection`, `POST /api/v2/llm/kill-switch/{activate,deactivate}`, `GET /api/v2/llm/status`) plus the CIO sidebar's "Settings" item. Frontend route guard (`requireRole('cio')`) is the first defence; the backend permission gate is the canonical authority.
 
 ---
 
