@@ -1,19 +1,28 @@
 import { Link, useParams } from '@tanstack/react-router'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Plus } from 'lucide-react'
 
 import { useInvestor } from '../../api/investors'
+import { useActiveMandate } from '../../api/mandates'
 import { cn } from '../../lib/cn'
+import { MandateSummaryCard } from '../mandates/components/MandateSummaryCard'
 
 import { InvestorProfileCard } from './components/InvestorProfileCard'
 
-// Per chunk plan §scope_in:
-// "Investor profile detail page at /app/advisor/investors/{investor_id}:
-//  Full profile display. Edit button (deferred functionality; cluster 1
-//  ships read-only profile detail)."
+// Per chunk plan §scope_in (cluster 1):
+//   "Investor profile detail page at /app/advisor/investors/{investor_id}:
+//    Full profile display. Edit button (deferred functionality; cluster 1
+//    ships read-only profile detail)."
+//
+// Cluster 2 chunk 2.1 §scope_in adds:
+//   "The investor profile detail page (cluster 1) gains a 'Mandate'
+//    section showing the active mandate's constraints in a read-only
+//    summary view. 'Amend Mandate' button visible. 'Create Mandate'
+//    button visible when no mandate exists yet."
 
 export function InvestorDetailPage() {
   const { investorId } = useParams({ from: '/investors/$investorId' })
   const { data, isLoading, error } = useInvestor(investorId)
+  const mandateQuery = useActiveMandate(investorId)
 
   return (
     <div className="p-8 max-w-5xl">
@@ -42,6 +51,54 @@ export function InvestorDetailPage() {
             </p>
           </div>
           <InvestorProfileCard investor={data} />
+
+          {/* Mandate section — chunk 2.1 §scope_in */}
+          <section className="mt-8">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold text-gray-900">
+                Investment Mandate
+              </h2>
+              {mandateQuery.data?.active_version ? (
+                <button
+                  type="button"
+                  disabled
+                  title="Amendment workflow ships in chunk 2.3"
+                  className={cn(
+                    'rounded-md border border-gray-300 px-3 py-1.5 text-xs',
+                    'text-gray-400 cursor-not-allowed opacity-60',
+                  )}
+                >
+                  Amend Mandate (chunk 2.3)
+                </button>
+              ) : (
+                <Link
+                  to="/investors/$investorId/mandate/new"
+                  params={{ investorId }}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs',
+                    'font-medium text-white shadow-sm',
+                  )}
+                  style={{ backgroundColor: 'var(--color-primary)' }}
+                >
+                  <Plus size={12} />
+                  Create Mandate
+                </Link>
+              )}
+            </div>
+            {mandateQuery.isLoading && (
+              <p className="text-sm text-gray-500">Loading mandate…</p>
+            )}
+            {!mandateQuery.isLoading && !mandateQuery.data && (
+              <div className="rounded-md border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
+                No mandate yet. Click "Create Mandate" to set the investor's
+                investment policy constraints.
+              </div>
+            )}
+            {mandateQuery.data?.active_version && (
+              <MandateSummaryCard version={mandateQuery.data.active_version} />
+            )}
+          </section>
+
           <div className="mt-6">
             <button
               type="button"

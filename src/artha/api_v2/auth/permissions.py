@@ -75,6 +75,15 @@ class Permission(str, Enum):
     CONVERSATIONS_READ_FIRM_SCOPE = "conversations:read:firm_scope"
     CONVERSATIONS_WRITE_OWN_BOOK = "conversations:write:own_book"
 
+    # ---- Cluster 2 chunks 2.1, 2.3 (mandate management) ----
+    # Advisor creates + amends mandates on their own book. CIO/compliance/audit
+    # read firm-wide for governance. The CIO additionally holds
+    # ``mandates:approve:firm_scope`` for amendment approval (FR 12.2 §4.4).
+    MANDATES_READ_OWN_BOOK = "mandates:read:own_book"
+    MANDATES_READ_FIRM_SCOPE = "mandates:read:firm_scope"
+    MANDATES_WRITE_OWN_BOOK = "mandates:write:own_book"
+    MANDATES_APPROVE_FIRM_SCOPE = "mandates:approve:firm_scope"
+
 
 # Cluster 0 role-to-permission mapping per FR 17.2 §2 / §6.
 # Frozen so accidental mutation at module level is prevented; configurable
@@ -94,6 +103,9 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         # Cluster 1 chunk 1.2 — advisor drives their own conversations
         Permission.CONVERSATIONS_READ_OWN_BOOK,
         Permission.CONVERSATIONS_WRITE_OWN_BOOK,
+        # Cluster 2 — advisor creates + amends mandates on their own book
+        Permission.MANDATES_READ_OWN_BOOK,
+        Permission.MANDATES_WRITE_OWN_BOOK,
     }),
     Role.CIO: frozenset({
         # Cluster 0
@@ -115,6 +127,11 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         # governance; advisor onboarding flow is the advisor's own surface,
         # so CIO does not write here.
         Permission.CONVERSATIONS_READ_FIRM_SCOPE,
+        # Cluster 2 chunk 2.3 — CIO is the sole approver of mandate
+        # amendments (single-CIO approval per cluster 2 demo addendum §1.2).
+        # Read firm-wide for the pending queue + diff review.
+        Permission.MANDATES_READ_FIRM_SCOPE,
+        Permission.MANDATES_APPROVE_FIRM_SCOPE,
     }),
     Role.COMPLIANCE: frozenset({
         # Cluster 0
@@ -127,6 +144,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.HOUSEHOLDS_READ_FIRM_SCOPE,
         # Cluster 1 chunk 1.2 — compliance reads firm-wide conversations.
         Permission.CONVERSATIONS_READ_FIRM_SCOPE,
+        # Cluster 2 — compliance reads firm-wide mandates for audit trail.
+        Permission.MANDATES_READ_FIRM_SCOPE,
     }),
     Role.AUDIT: frozenset({
         # Cluster 0
@@ -139,6 +158,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.HOUSEHOLDS_READ_FIRM_SCOPE,
         # Cluster 1 chunk 1.2 — audit reads firm-wide conversations.
         Permission.CONVERSATIONS_READ_FIRM_SCOPE,
+        # Cluster 2 — audit reads everything firm-wide read-only.
+        Permission.MANDATES_READ_FIRM_SCOPE,
     }),
 }
 

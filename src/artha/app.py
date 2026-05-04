@@ -20,6 +20,7 @@ import artha.api_v2.observability.models  # noqa: F401 — register t1_events ta
 import artha.api_v2.c0.models  # noqa: F401 — register v2_c0_conversations + v2_c0_messages (chunk 1.2)
 import artha.api_v2.investors.models  # noqa: F401 — register v2_investors + v2_households
 import artha.api_v2.llm.models  # noqa: F401 — register v2_llm_provider_config (chunk 1.3)
+import artha.api_v2.m1.models  # noqa: F401 — register v2_mandates + v2_mandate_versions (cluster 2)
 import artha.data.commodity_pipeline  # noqa: F401 — register commodity tables
 import artha.data.crypto_pipeline  # noqa: F401 — register crypto tables
 import artha.data.forex_pipeline  # noqa: F401 — register forex tables
@@ -36,6 +37,7 @@ from artha.api_v2.events.router import router as events_v2_router
 from artha.api_v2.c0.router import router as c0_v2_router
 from artha.api_v2.investors.router import router as investors_v2_router
 from artha.api_v2.llm.router import router as llm_v2_router
+from artha.api_v2.m1.router import router as m1_v2_router
 from artha.api_v2.system.firm_info import router as system_firm_info_router
 from artha.api_v2.system.role_home import router as system_role_home_router
 from artha.common.db.base import Base
@@ -122,6 +124,8 @@ def create_app() -> FastAPI:
     app.include_router(llm_v2_router)
     # Cluster 1 chunk 1.2: C0 conversational onboarding.
     app.include_router(c0_v2_router)
+    # Cluster 2 chunks 2.1 + 2.4: M1 mandate management + PDF stub.
+    app.include_router(m1_v2_router)
 
     @app.get("/api/v1/health")
     async def health():

@@ -173,6 +173,52 @@ class TestPermissionVocabulary:
             Permission.CONVERSATIONS_READ_OWN_BOOK not in ROLE_PERMISSIONS[role]
         )
 
+    def test_cluster_2_permissions_present(self):
+        # Per cluster 2 — 4 new entries for mandate management.
+        # Advisor: read+write own_book. CIO: firm_scope read + approve.
+        # Compliance/Audit: firm_scope read only.
+        cluster_2_perms = {
+            Permission.MANDATES_READ_OWN_BOOK,
+            Permission.MANDATES_READ_FIRM_SCOPE,
+            Permission.MANDATES_WRITE_OWN_BOOK,
+            Permission.MANDATES_APPROVE_FIRM_SCOPE,
+        }
+        assert cluster_2_perms.issubset(set(Permission))
+
+    def test_only_advisor_has_mandates_write_own_book(self):
+        # Mandate creation + amendment proposal is the advisor's surface.
+        # CIO/compliance/audit cannot write mandates directly — CIO holds
+        # the separate `mandates:approve:firm_scope` permission for the
+        # amendment-approval action only (chunk 2.3).
+        assert (
+            Permission.MANDATES_WRITE_OWN_BOOK in ROLE_PERMISSIONS[Role.ADVISOR]
+        )
+        for role in (Role.CIO, Role.COMPLIANCE, Role.AUDIT):
+            assert (
+                Permission.MANDATES_WRITE_OWN_BOOK
+                not in ROLE_PERMISSIONS[role]
+            ), f"{role.value} should not have MANDATES_WRITE_OWN_BOOK"
+
+    def test_only_cio_has_mandates_approve_firm_scope(self):
+        # Single-CIO approval per cluster 2 demo addendum §1.2.
+        assert (
+            Permission.MANDATES_APPROVE_FIRM_SCOPE in ROLE_PERMISSIONS[Role.CIO]
+        )
+        for role in (Role.ADVISOR, Role.COMPLIANCE, Role.AUDIT):
+            assert (
+                Permission.MANDATES_APPROVE_FIRM_SCOPE
+                not in ROLE_PERMISSIONS[role]
+            ), f"{role.value} should not have MANDATES_APPROVE_FIRM_SCOPE"
+
+    @pytest.mark.parametrize("role", [Role.CIO, Role.COMPLIANCE, Role.AUDIT])
+    def test_cio_compliance_audit_have_mandates_firm_scope_read(self, role):
+        assert (
+            Permission.MANDATES_READ_FIRM_SCOPE in ROLE_PERMISSIONS[role]
+        )
+        assert (
+            Permission.MANDATES_READ_OWN_BOOK not in ROLE_PERMISSIONS[role]
+        )
+
     @pytest.mark.parametrize("perm", [
         Permission.SYSTEM_LLM_CONFIG_READ,
         Permission.SYSTEM_LLM_CONFIG_WRITE,

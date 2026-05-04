@@ -3,24 +3,28 @@
 **Topic:** 10 Data Layer (D0)
 **Entry:** 10.7
 **Title:** Canonical Entity Schemas
-**Status:** Locked partial (cluster 1 chunk 1.1 shipped May 2026 — Investor entity at v1 + Household; other entities accumulate in subsequent clusters)
-**Date:** April 2026
+**Status:** Locked partial (cluster 1 contributed Investor; cluster 2 adds Mandate and MandateVersion; other entities accumulate in subsequent clusters)
+**Date:** April 2026 (revised for cluster 2)
 **Author:** Shubham Sahamate, with consolidation support from Claude Opus 4.7 Adaptive
 
 ---
 
 ## Cross-references In
 
-- FR Entry 11.0 (I0 Investor Context Engine; consumes the Investor schema)
+- FR Entry 11.0 (I0 Investor Context Engine; consumes the Investor schema and influences Mandate defaults)
 - FR Entry 11.1 (I0 Active Layer; writes life_stage and liquidity_tier to the Investor record)
-- FR Entry 14.0 (C0 Conversational Orchestrator; produces Investor records via conversational onboarding)
-- CP Chunk 1.1, 1.2 (the form and conversational onboarding chunks)
-- All future clusters that consume the Investor entity (cluster 2 mandate management, cluster 5 case pipeline, cluster 10 portfolio analytics, etc.)
+- FR Entry 12.0 (M1 Overview; consumes the Mandate and MandateVersion schemas)
+- FR Entry 12.1 (Mandate Schema and Constraints; the detailed mandate specification)
+- FR Entry 12.2 (Amendment Workflow; lifecycle for MandateVersion records)
+- FR Entry 14.0 (C0 Conversational Orchestrator; produces Investor and Mandate records via conversational paths)
+- CP Chunk 1.1, 1.2 (form and conversational onboarding chunks)
+- CP Chunk 2.1, 2.2, 2.3 (form-based mandate creation, conversational mandate creation, amendment workflow)
+- All future clusters that consume the Investor or Mandate entities
 
 ## Cross-references Out
 
-- Principles §3.4 (skill.md per agent mechanism; not directly schema-related but contextually relevant)
-- Principles §4.1 (D0 as system-wide data layer; this entry is part of D0)
+- Principles §3.4 (skill.md per agent mechanism)
+- Principles §4.1 (D0 as system-wide data layer)
 
 ---
 
@@ -28,7 +32,7 @@
 
 This foundation reference entry holds the canonical entity schemas for the Samriddhi AI system. Each canonical entity is a primary domain object that flows through the system and must have a stable, well-defined schema because changes to canonical entities ripple through every component that consumes them.
 
-The entry grows incrementally as clusters introduce new entities. Cluster 1 contributes the Investor entity; subsequent clusters add Holding, Mandate, Case, Model Portfolio, and others as they become relevant. At system maturity, this entry contains the full canonical entity model.
+The entry grows incrementally as clusters introduce new entities. Cluster 1 contributed the Investor entity. Cluster 2 adds the Mandate and MandateVersion entities. Subsequent clusters will add Holding, Case, Model Portfolio, and others.
 
 The schemas in this entry are the contract between data layer and consuming components. The data layer (D0) produces records conforming to these schemas. Consuming components (agents, governance, UI surfaces) read records conforming to these schemas. Schema changes are governed: a schema revision triggers a review of every component that reads the entity, and the foundation reference entry's revision history records the change.
 
@@ -66,7 +70,7 @@ investors:
   
   # I0 enrichment (system-computed; written by I0 active layer)
   life_stage (enum, nullable until enrichment runs: accumulation, transition, distribution, legacy)
-  life_stage_confidence (enum: high, medium, low; reflects whether the heuristic produced a clean classification)
+  life_stage_confidence (enum: high, medium, low)
   liquidity_tier (enum, nullable until enrichment runs: essential, secondary, deep)
   liquidity_tier_range (string; the percentage range associated with the tier, for display)
   enriched_at (timestamp, nullable)
@@ -74,38 +78,34 @@ investors:
   
   # Provenance and audit
   created_at (timestamp with timezone, system-generated)
-  created_by (string, references users; the advisor or system actor who created the record)
-  created_via (enum: form, conversational, api; records which onboarding path produced the investor)
-  duplicate_pan_acknowledged (boolean; true if the advisor knowingly created a duplicate PAN record)
-  last_modified_at (timestamp; updates on any field change)
-  last_modified_by (string; user_id of the most recent modifier)
-  schema_version (integer; increments when this entry's schema changes)
+  created_by (string, references users)
+  created_via (enum: form, conversational, api)
+  duplicate_pan_acknowledged (boolean)
+  last_modified_at (timestamp)
+  last_modified_by (string)
+  schema_version (integer; current = 1)
 ```
-
-The schema is locked at this version (schema_version = 1) for cluster 1. Changes during demo stage that don't affect downstream components are allowed; changes that do affect downstream components require a foundation reference revision pass.
 
 ### 2.2 Investor Schema Field Notes
 
-**investor_id:** ULID is preferred over UUID4 because ULIDs are time-ordered, which makes database indexes more efficient and human-readable timestamps trivial. ULID is 26 characters in canonical text representation (e.g., `01J9N6F7GZ3M8K2NQRBTYWVXA1`).
+**investor_id:** ULID is preferred over UUID4 because ULIDs are time-ordered, which makes database indexes more efficient and human-readable timestamps trivial. ULID is 26 characters in canonical text representation.
 
-**name:** Single field for full name rather than separated first/last. Indian naming conventions (single names, multi-component names, regional naming patterns) don't fit cleanly into first/last; storing the whole name as one field avoids forcing a Western-style split.
+**name:** Single field for full name rather than separated first/last. Indian naming conventions don't fit cleanly into first/last; storing the whole name as one field avoids forcing a Western-style split.
 
-**pan:** PAN is the strongest unique identifier available in India. Cluster 1 ideation locked warn-and-proceed for duplicate handling; the schema captures the acknowledgement flag (`duplicate_pan_acknowledged`) when an advisor knowingly creates a duplicate. Future production-readiness work may harden this to strict prevention.
+**pan:** PAN is the strongest unique identifier available in India. Cluster 1 ideation locked warn-and-proceed for duplicate handling. Future production-readiness work may harden this to strict prevention.
 
-**household_id:** References the `households` table (which is its own minimal schema for cluster 1: just `household_id`, `name`, `created_at`). Family relationships within a household are deferred to a later cluster.
+**household_id:** References the `households` table. Family relationships within a household are deferred to a later cluster.
 
-**risk_appetite, time_horizon:** The simplified attitudinal profile fields. These drive I0 enrichment and are referenced by mandate compliance checks (cluster 8) and portfolio analytics (cluster 10).
+**risk_appetite, time_horizon:** The simplified attitudinal profile fields. These drive I0 enrichment and Mandate constraint defaults. Changes to either trigger I0 re-enrichment per FR Entry 11.1; cluster 2 introduces the cascade where re-enrichment changes propagate to suggest mandate amendments per FR Entry 12.2.
 
-**life_stage, liquidity_tier:** I0 enrichment outputs. Initially nullable because enrichment runs after the investor record is created (in the same transaction in cluster 1, but the schema permits async enrichment in future clusters).
+**life_stage, liquidity_tier:** I0 enrichment outputs. Initially nullable because enrichment runs after the investor record is created. Cluster 2's mandate creation reads liquidity_tier as the default for the mandate's liquidity floor.
 
-**created_via:** Distinguishes form-onboarded, conversational-onboarded, and API-onboarded investors. Useful for usage analytics and for understanding which onboarding paths produce higher-quality data.
+**created_via:** Distinguishes form-onboarded, conversational-onboarded, and API-onboarded investors.
 
 ### 2.3 Investor Indexes
 
-Required database indexes:
-
 - Primary key on `investor_id`.
-- Unique index on `pan` (allowing duplicates only when `duplicate_pan_acknowledged = true`; enforced as a partial unique index in Postgres or through application-level validation in SQLite).
+- Unique index on `pan` (with duplicate_pan_acknowledged carve-out).
 - Index on `email` for email lookup.
 - Index on `household_id` for household-level queries.
 - Index on `advisor_id` for advisor's-book queries.
@@ -113,112 +113,230 @@ Required database indexes:
 
 ### 2.4 Investor Validation Rules
 
-Validation runs both client-side (form layer for fast feedback) and server-side (canonical authority).
-
 | Field | Validation Rule |
 |---|---|
-| name | Required; 2 to 100 chars; must contain at least one space (full name expectation) |
+| name | Required; 2 to 100 chars; must contain at least one space |
 | email | Required; valid email format per RFC 5322 |
-| phone | Required; E.164 format; default to +91 country code if 10-digit Indian number provided |
-| pan | Required; matches `^[A-Z]{5}[0-9]{4}[A-Z]$`; auto-uppercased before validation |
+| phone | Required; E.164 format; default to +91 country code |
+| pan | Required; matches `^[A-Z]{5}[0-9]{4}[A-Z]$`; auto-uppercased |
 | age | Required; integer 18 to 100 |
-| household_id | Required (either references existing household or is a fresh ULID for new household) |
-| advisor_id | Required (defaults to logged-in advisor in cluster 1) |
+| household_id | Required |
+| advisor_id | Required (defaults to logged-in advisor) |
 | risk_appetite | Required; enum |
 | time_horizon | Required; enum |
 
-Server-side validation produces an RFC 7807 problem detail per Doc 2 Pass 1 Decision 6 when validation fails. The `errors` array within the problem detail names each failing field and the specific validation that failed.
+Server-side validation produces an RFC 7807 problem detail per Doc 2 Pass 1 Decision 6 when validation fails.
 
-## 3. Other Canonical Entities (Placeholders)
+## 3. The Mandate and MandateVersion Entities
 
-The following canonical entities will be defined in subsequent clusters. Their placement in this entry is reserved.
+The Mandate entity represents the investment policy mandate attached to an investor. Each investor has exactly one Mandate (one-to-one relationship); the Mandate's identity persists for the investor's lifetime in the system. The Mandate's content (the actual constraints) lives in MandateVersion records, which are versioned over time as amendments are made.
 
-**Holding:** an investor's position in a specific instrument. Cluster 4 (model portfolio) or cluster 5 (first agent) introduces this depending on whether holdings are needed to demonstrate the model portfolio first or the first case execution first.
+This separation of identity from content is the canonical versioning pattern: the Mandate identifier never changes, but the active version of constraints changes when amendments are approved.
 
-**Mandate (and MandateVersion):** an investor's investment policy with versioned amendments. Cluster 2 introduces this.
+### 3.1 Mandate Schema
 
-**Case:** the central object representing an investment recommendation flow from triggering event to advisor decision. Cluster 5 introduces this.
+```
+mandates:
+  mandate_id (string, ULID, primary key)
+  investor_id (string, references investors, indexed, unique within mandates)
+  active_version_id (string, references mandate_versions; current active version)
+  created_at (timestamp with timezone)
+  created_by (string, references users)
+  schema_version (integer; current = 1)
+```
 
-**Model Portfolio (and Model Portfolio Versions, L1/L2/L3/L4 manifest):** the firm's investment templates and approved instrument universe. Cluster 4 introduces this.
+The unique constraint on investor_id ensures one Mandate per investor.
+
+### 3.2 MandateVersion Schema
+
+```
+mandate_versions:
+  version_id (string, ULID, primary key)
+  mandate_id (string, references mandates, indexed)
+  version_number (integer; auto-increments per mandate, starting at 1)
+  status (enum: draft, pending_approval, active, archived, rejected)
+  
+  # Constraint family 1: Asset allocation bands
+  equity_min_pct (integer, 0-100)
+  equity_max_pct (integer, 0-100; must be >= equity_min_pct)
+  debt_min_pct (integer, 0-100)
+  debt_max_pct (integer, 0-100; must be >= debt_min_pct)
+  alternatives_min_pct (integer, 0-100)
+  alternatives_max_pct (integer, 0-100; must be >= alternatives_min_pct)
+  
+  # Constraint family 2: Single-position concentration
+  single_position_max_pct (integer, 0-100)
+  
+  # Constraint family 3: Liquidity floor
+  liquidity_floor_pct (integer, 0-100)
+  
+  # Constraint family 4: Sector exposure cap
+  sector_max_pct (integer, 0-100)
+  
+  # Constraint family 5: Prohibited instruments
+  prohibited_instruments (JSON array of strings; max 50 items, each 1-200 characters)
+  
+  # Provenance
+  created_at (timestamp with timezone)
+  created_by (string, references users)
+  created_via (enum: form, conversational, api, pdf)
+  parent_version_id (string, references mandate_versions; nullable for the initial version)
+  
+  # Approval workflow
+  proposed_at (timestamp; nullable)
+  proposed_by (string; nullable)
+  approved_at (timestamp; nullable)
+  approved_by (string, references users; nullable)
+  rejected_at (timestamp; nullable)
+  rejected_by (string, references users; nullable)
+  rejection_reason (string; nullable; required when rejected)
+  approval_comments (string; nullable; optional)
+  changes_requested_at (timestamp; nullable)
+  changes_requested_by (string, references users; nullable)
+  changes_requested_comments (string; nullable; required when changes are requested)
+  
+  # Activation
+  activated_at (timestamp; when status moved to active)
+  archived_at (timestamp; when status moved from active to archived; nullable)
+```
+
+### 3.3 MandateVersion Status Lifecycle
+
+The status enum captures the full amendment lifecycle:
+
+- **draft:** Initial state for an amendment-in-progress. Advisor is editing. Not visible in CIO's queue.
+- **pending_approval:** Advisor has submitted for CIO review. Visible in CIO's pending amendments queue.
+- **active:** Currently in force. Exactly one active MandateVersion per Mandate at any time.
+- **archived:** Was previously active; a newer version has superseded it. Retained for audit.
+- **rejected:** CIO rejected the amendment. Not in force; preserved for audit.
+
+The initial MandateVersion (version_number = 1) created during mandate creation goes directly from creation to `active` status without passing through draft or pending_approval. This implements the "first mandate auto-active without CIO approval" decision.
+
+Subsequent MandateVersions follow the full lifecycle: draft, then pending_approval, then either active (with simultaneous archival of the previous active) or rejected (returning to the previous active version unchanged) or back to draft (when CIO requests changes).
+
+### 3.4 Mandate Field Notes
+
+**mandate_id:** ULID, system-generated. Unique per mandate, persistent across versions.
+
+**version_number:** Human-readable version sequence (1, 2, 3, ...). Auto-increments per mandate. Useful for display and audit ("This is version 4 of the mandate").
+
+**parent_version_id:** Tracks the version that this amendment was based on. Initial versions have null parent_version_id. Amendments have parent_version_id pointing to the version that was active when the amendment was proposed.
+
+**created_via:** Distinguishes form-created, conversational-created, API-created, and PDF-created mandates. PDF stub is implemented in chunk 2.4 as a 501 endpoint; this field exists to support future PDF parsing.
+
+**Status timestamps:** The proposed_at, approved_at, rejected_at, changes_requested_at fields capture the full audit trail of an amendment's journey. T1 telemetry mirrors these state transitions.
+
+### 3.5 Mandate Indexes
+
+For mandates:
+- Primary key on `mandate_id`.
+- Unique index on `investor_id`.
+- Index on `active_version_id`.
+
+For mandate_versions:
+- Primary key on `version_id`.
+- Index on `mandate_id`.
+- Composite index on `(mandate_id, version_number)`.
+- Composite index on `(status, proposed_at)` for the CIO's pending amendments queue.
+- Index on `parent_version_id` for amendment lineage queries.
+
+### 3.6 Mandate Validation Rules
+
+| Field | Validation Rule |
+|---|---|
+| equity_min_pct, equity_max_pct, debt_min_pct, debt_max_pct, alternatives_min_pct, alternatives_max_pct | Each integer 0-100; max >= min for each pair |
+| Cross-constraint: sum of mins | sum(equity_min, debt_min, alternatives_min) <= 100 |
+| Cross-constraint: sum of maxes | sum(equity_max, debt_max, alternatives_max) >= 100 |
+| single_position_max_pct | Integer 0-100; soft warning if outside 3-10 range |
+| liquidity_floor_pct | Integer 0-100; soft warning if significantly different from I0 suggested default |
+| sector_max_pct | Integer 0-100; soft warning if outside 15-40 range |
+| prohibited_instruments | Array of strings; each 1-200 characters; max 50 items |
+
+Server-side validation produces an RFC 7807 problem detail on hard validation failure. Soft warnings are returned in a separate `warnings` array within the response so the advisor can see them without being blocked.
+
+## 4. Other Canonical Entities (Placeholders)
+
+The following canonical entities will be defined in subsequent clusters:
+
+**Holding:** an investor's position in a specific instrument. Cluster 4 (model portfolio) or cluster 5 (first agent) introduces this.
+
+**Case:** the central object representing an investment recommendation flow. Cluster 5 introduces this.
+
+**Model Portfolio (and L1/L2/L3/L4 entities):** the firm's investment templates and approved instrument universe. Cluster 4 introduces this.
 
 **Macro Signal, Industry Signal, Circular, Fund Offer Document, T1 Event, N0 Alert:** various data and event entities. Subsequent clusters introduce them per their relevance.
 
-When each of these entities is defined, a corresponding section is added to this entry following the pattern of the Investor section above (schema, field notes, indexes, validation rules).
+## 5. Schema Versioning
 
-## 4. Schema Versioning
+Each canonical entity has a `schema_version` integer. The current cluster 2 schemas are:
 
-Each canonical entity has a `schema_version` integer. The current cluster 1 Investor schema is version 1.
+- Investor: schema_version = 1.
+- Mandate: schema_version = 1.
+- MandateVersion: schema_version = 1.
 
-When the schema changes:
+Schema changes follow the disciplined revision process: revision history recorded, schema_version incremented, Alembic migration authored, components reviewed for impact, T1 telemetry captures schema versions for audit replay.
 
-1. The foundation reference entry's revision history records the change.
-2. The schema_version increments by 1.
-3. An Alembic migration is authored to alter the database schema.
-4. Components that consume the entity are reviewed for impact; any that need updating are flagged in the revision note.
-5. T1 telemetry events that include the entity (or its derived data) capture the schema version used at the time, so audit replay can reconstruct correctly even after schema evolution.
+## 6. Storage and Persistence
 
-Schema evolution is expected and acceptable. The discipline is making it explicit: schema changes happen through documented revisions, not through silent drift.
+Investor and Mandate records are persisted in their respective tables in the deployment's database (SQLite for demo stage, Postgres for production). The SQLAlchemy declarative models for Investor, Mandate, and MandateVersion mirror the schemas in §2.1, §3.1, §3.2.
 
-## 5. Storage and Persistence
+## 7. Read Patterns
 
-Investor records are persisted in the `investors` table in the deployment's database (SQLite for demo stage per the demo-stage database addendum, Postgres for production). The SQLAlchemy declarative model for Investor mirrors the schema in §2.1.
+The Investor entity is read by the advisor's investor list, I0, C0 onboarding, M1 (cluster 2 onwards), case orchestration (cluster 5 onwards), portfolio analytics (cluster 10 onwards), audit replay (cluster 15 onwards).
 
-Demo-stage storage uses SQLite via `aiosqlite`. The same SQLAlchemy model works on Postgres without changes when the production-readiness migration occurs.
+The Mandate and MandateVersion entities are read by:
 
-## 6. Read Patterns
+- The investor profile page (active mandate display).
+- The CIO's pending amendments queue (mandate_versions where status = 'pending_approval').
+- The amendment review surface (current active version vs proposed version, side-by-side).
+- C0 conversational mandate creation (when checking if an investor already has a mandate).
+- The governance gate (cluster 8) for mandate compliance checking.
+- The portfolio analytics (cluster 10) for drift monitoring against mandate-defined bands.
+- Audit replay (cluster 15) for historical mandate version reconstruction.
 
-The Investor entity is read by:
+## 8. Write Patterns
 
-- The advisor's investor list (the home tree placeholder in cluster 0 lights up in cluster 1 with real investors).
-- I0 (FR Entry 11.0) for enrichment input.
-- C0 (FR Entry 14.0) for conversational onboarding output (writes the record).
-- M1 (cluster 2 onwards) for mandate attachment.
-- Case orchestration (cluster 5 onwards) when opening a case for an investor.
-- Portfolio analytics (cluster 10 onwards) when computing investor-level metrics.
-- Audit replay (cluster 15 onwards) for case reconstruction.
+Writes to the Investor entity happen at form-based onboarding, conversational onboarding, API onboarding, and future profile edits.
 
-The high read frequency and broad cross-cluster consumption is why the schema is documented prominently here: changes ripple widely.
+Writes to the Mandate entity happen only at initial mandate creation.
 
-## 7. Write Patterns
+Writes to MandateVersion happen at:
 
-Writes to the Investor entity happen at:
+- Initial mandate creation: version_number=1, status=active.
+- Amendment proposal: new version_number, status=draft, parent_version_id pointing to current active.
+- Amendment submission: status moves draft to pending_approval.
+- Amendment approval: status moves pending_approval to active; previously-active version moves active to archived.
+- Amendment rejection: status moves pending_approval to rejected.
+- Amendment changes-requested: status moves pending_approval back to draft.
 
-- Form-based onboarding (chunk 1.1): full record creation including I0 enrichment.
-- Conversational onboarding (chunk 1.2): full record creation through C0 + I0 enrichment.
-- API onboarding (cluster 1 stub): full record creation through HTTP endpoint + I0 enrichment.
-- Future: KYC verification updates (kyc_status, kyc_verified_at, kyc_provider).
-- Future: re-enrichment runs (life_stage, liquidity_tier, enriched_at, enrichment_version) when I0 heuristics evolve.
-- Future: advisor-initiated profile edits (any of the advisor-entered fields, with audit trail).
+## 9. Acceptance Criteria
 
-Updates always update `last_modified_at` and `last_modified_by`. Updates that affect enrichment-relevant fields (age, time_horizon, risk_appetite) trigger re-enrichment.
+The schema is considered locked when:
 
-## 8. Acceptance Criteria
+1. SQLAlchemy declarative models are implemented for Investor, Mandate, MandateVersion.
+2. Alembic migrations create the tables with all required indexes.
+3. Validation rules are enforced at the server-side validation layer.
+4. The unique constraint on `investors.pan` is enforced.
+5. The unique constraint on `mandates.investor_id` is enforced.
+6. Cross-constraint validation on mandate_versions is enforced.
+7. Records can be created through form, C0 conversational, and stub API/PDF paths.
+8. The schema_version field is set correctly on all created records.
+9. T1 telemetry captures `investor_created`, `mandate_created`, `mandate_version_created`, `mandate_amendment_proposed`, `mandate_amendment_approved`, `mandate_amendment_rejected`, `mandate_amendment_changes_requested`, `mandate_version_archived`.
 
-The Investor schema is considered locked when:
+## 10. Open Questions
 
-1. The SQLAlchemy declarative model for Investor is implemented matching §2.1.
-2. The Alembic migration creates the `investors` table with all required indexes per §2.3.
-3. All required validation rules from §2.4 are enforced at the server-side validation layer.
-4. The `households` table exists with the minimal schema (household_id, name, created_at) and supports the household_id foreign key from investors.
-5. Records can be created through form submission (chunk 1.1), C0 conversation (chunk 1.2), and API endpoint (cluster 1 stub) with the same schema.
-6. I0 enrichment can write to life_stage, liquidity_tier, and related fields without violating any schema constraints.
-7. The schema_version field is set to 1 on all created records.
-8. T1 telemetry captures `investor_created` events with the investor_id and the enriched values when enrichment completes.
+The schema_version increment policy when only enrichment-related fields change is open. Working answer per cluster 1: enrichment-only changes don't bump schema_version; the `enrichment_version` field tracks enrichment lineage separately.
 
-## 9. Open Questions
+Whether MandateVersion should also include a `notes` field for advisor commentary on the amendment's rationale is open. Working answer: not in cluster 2; the comment fields on approval/rejection cover audit needs.
 
-The schema_version increment policy when only enrichment-related fields change (e.g., I0 heuristic evolves) is open. Working answer: enrichment-only changes don't bump schema_version because the schema itself is unchanged; the `enrichment_version` field on the investor record tracks enrichment lineage separately. This matches the principle that schema_version is for structural changes, not for semantic re-enrichment.
+Whether the prohibited_instruments field should be normalised into a separate table for query-ability is open. Working answer: keep as JSON in cluster 2; refactor to normalised table if cluster 8 (governance gate) requires it.
 
-The Indian regulatory category classification (resident, NRI, OCI, foreign portfolio investor, etc.) is not in cluster 1 schema. Whether to add it incrementally or as part of a dedicated regulatory cluster is open. Working answer: deferred until the first cluster that actually consumes regulatory category (likely cluster 8 governance gate when SEBI rules need to apply differently per category).
+## 11. Revision History
 
-Family relationship modelling within a household (spouse, parent-child, etc.) is deferred. Whether the eventual addition is a separate `relationships` table or denormalised into investor records is open. Working answer: separate `relationships` table when the time comes; denormalising into investor records would require schema changes whenever relationships evolve.
+April 2026 (cluster 1 drafting pass): Initial entry authored. Investor entity schema locked at version 1. Other canonical entity placeholders reserved.
 
-## 10. Revision History
-
-April 2026 (cluster 1 drafting pass): Initial entry authored. Investor entity schema locked at version 1. Other canonical entity placeholders reserved for subsequent clusters.
-
-May 2026 (cluster 1 chunk 1.1 shipped): SQLAlchemy `Investor` + `Household` ORM in `src/artha/api_v2/investors/models.py`; Alembic migration `ae7473a43ba2` creates the tables. Physical table names are `v2_investors` and `v2_households` (not `investors`/`households`) due to v1 strangler-fig coexistence — see chunk plan retrospective note 1. Logical entity remains "Investor"; the prefix is namespacing only and drops in a rename migration when v1 is sunset. All 9 §2.4 validation rules enforced server-side via Pydantic `InvestorCreateRequest` (PAN regex auto-uppercased, phone E.164 with +91 default, name with required space, age 18-100, EmailStr). Schema version 1 written on every record. Records reachable via three onboarding paths in chunk 1.1: form (the demo-friendly default), API (functional, no UI per Demo-Stage Addendum §1.4), and the conversational path stub (full implementation in chunk 1.2).
+April 2026 (cluster 2 drafting pass): Mandate and MandateVersion entities added at schema_version 1. Cross-references updated. Section 3 added covering both new entities. Section 4 placeholders updated to reflect Mandate moving from placeholder to specified.
 
 ---
 
-**End of FR Entry 10.7. Investor entity locked; other entities accumulate in subsequent clusters.**
+**End of FR Entry 10.7. Investor and Mandate entities locked; other entities accumulate in subsequent clusters.**

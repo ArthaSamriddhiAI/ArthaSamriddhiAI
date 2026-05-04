@@ -3,7 +3,7 @@
 **Topic:** 17 Authentication and Identity
 **Entry:** 17.2
 **Title:** Role-Permission Vocabulary
-**Status:** Locked skeleton (cluster 0 + cluster 1 fully shipped May 2026); permission list grows in subsequent clusters
+**Status:** Locked skeleton (cluster 0 + cluster 1 fully shipped + cluster 2 chunks 2.1+2.4 shipped May 2026); permission list grows in subsequent clusters
 **Date:** April 2026
 **Author:** Shubham Sahamate, with consolidation support from Claude Opus 4.7 Adaptive
 
@@ -127,7 +127,7 @@ As clusters ship, they add permissions to this entry. The pattern:
 
 Cluster 1 (investor onboarding) adds: `investors:read:own_book`, `investors:write:own_book` for advisor; `investors:read:firm_scope` for CIO/compliance/audit. Plus chunk 1.3's `system:llm_config:read` and `system:llm_config:write` for CIO only (the LLM provider configuration surface). Plus chunk 1.2's `conversations:read:own_book` and `conversations:write:own_book` for advisor (C0 chat surface), `conversations:read:firm_scope` for CIO/compliance/audit (governance read).
 
-Cluster 2 (mandate management) adds: `mandates:read:own_book`, `mandates:write:own_book`; `mandates:approve` for CIO.
+Cluster 2 (mandate management) adds: `mandates:read:own_book`, `mandates:write:own_book` for advisor; `mandates:read:firm_scope` for CIO/compliance/audit; `mandates:approve:firm_scope` for CIO only (single-CIO amendment approval per cluster 2 demo addendum §1.2).
 
 And so on through subsequent clusters.
 
@@ -170,6 +170,8 @@ May 2026 (cluster 1 chunk 1.1 shipped): Permission set extended from 5 → 11 en
 May 2026 (cluster 1 chunk 1.3 shipped): Permission set extended from 11 → 13 entries per §7 growth pattern. Two new entries: `system:llm_config:read` and `system:llm_config:write`, both granted ONLY to the CIO role. Compliance + Audit do NOT have the LLM-config permissions: their accountability surface is the T1 ledger (where `llm_provider_configuration_changed`, `llm_kill_switch_*`, and `llm_call_*` events are firm-wide visible), not the configuration UI itself. Wired to the chunk 1.3 REST endpoints (`GET/PUT /api/v2/llm/config`, `POST /api/v2/llm/test-connection`, `POST /api/v2/llm/kill-switch/{activate,deactivate}`, `GET /api/v2/llm/status`) plus the CIO sidebar's "Settings" item. Frontend route guard (`requireRole('cio')`) is the first defence; the backend permission gate is the canonical authority.
 
 May 2026 (cluster 1 chunk 1.2 shipped): Permission set extended from 13 → 16 entries per §7 growth pattern. Three new entries: `conversations:read:own_book` (advisor), `conversations:read:firm_scope` (CIO/compliance/audit), `conversations:write:own_book` (advisor only — CIO/compliance/audit have read-only governance access to the C0 audit trail but cannot drive a conversation). Wired to the chunk 1.2 REST endpoints (`POST/GET /api/v2/conversations`, `GET/POST /api/v2/conversations/{id}/...`) plus the advisor sidebar's "Conversational" item. Read endpoints accept either own_book or firm_scope (mode="any"); the service layer applies the actual scope filter per role using the same own_book-vs-firm_scope split that investors and households already follow.
+
+May 2026 (cluster 2 chunks 2.1 + 2.4 shipped): Permission set extended from 16 → 20 entries per §7 growth pattern. Four new entries for mandate management: `mandates:read:own_book` (advisor), `mandates:read:firm_scope` (CIO/compliance/audit), `mandates:write:own_book` (advisor — mandate creation in chunk 2.1 + amendment proposals in chunk 2.3), `mandates:approve:firm_scope` (CIO only — single-CIO approval of amendments per cluster 2 demo addendum §1.2). Wired to the chunk 2.1 REST endpoints (`POST/GET /api/v2/investors/{id}/mandate`, `GET /api/v2/investors/{id}/mandate/versions`, `GET /api/v2/mandates/{id}`, `POST /api/v2/mandates/from-pdf`) — read endpoints accept either own_book or firm_scope (mode="any"); write endpoints require own_book on the advisor. The `mandates:approve:firm_scope` permission is reserved for chunk 2.3's amendment-approval endpoints; cluster 2.1 doesn't gate any endpoint on it yet but the role mapping is locked.
 
 ---
 

@@ -14,6 +14,7 @@ import { DevLoginPage } from '../pages/DevLoginPage'
 import { InvestorDetailPage } from '../pages/investors/InvestorDetailPage'
 import { InvestorListPage } from '../pages/investors/InvestorListPage'
 import { NewInvestorPage } from '../pages/investors/NewInvestorPage'
+import { NewMandatePage } from '../pages/mandates/NewMandatePage'
 import { RoleHomePage } from '../pages/RoleHomePage'
 import { LLMRouterSettingsPage } from '../pages/settings/LLMRouterSettingsPage'
 
@@ -125,6 +126,13 @@ const advisorConversationalRoute = createRoute({
   component: ConversationalPage,
 })
 
+// Cluster 2 chunk 2.1 — advisor's mandate creation form.
+const advisorMandateNewRoute = createRoute({
+  getParentRoute: () => advisorRoute,
+  path: '/investors/$investorId/mandate/new',
+  component: NewMandatePage,
+})
+
 // ----- CIO tree (with nested settings routes from chunk 1.3) -----
 
 const cioRoute = createRoute({
@@ -178,6 +186,7 @@ const routeTree = rootRoute.addChildren([
     advisorInvestorsNewRoute,
     advisorInvestorDetailRoute,
     advisorConversationalRoute,
+    advisorMandateNewRoute,
   ]),
   cioRoute.addChildren([cioIndexRoute, cioSettingsLlmRouterRoute]),
   complianceRoute,
