@@ -1,7 +1,8 @@
-"""Cluster 3 chunk 3.2 — SEBI mutual-fund category mapping tests.
+"""Cluster 3 chunk 3.2 + addendum — SEBI mutual-fund category mapping tests.
 
-Pins the 46-category coverage assertion, the four-band asset-class
-vocabulary, and the case/whitespace-insensitive lookup behaviour.
+Pins the canonical-category coverage assertion, the four-band asset-class
+vocabulary, the case/whitespace-insensitive lookup behaviour, and the
+display-form alias resolution introduced by the cluster 3 addendum.
 """
 
 from __future__ import annotations
@@ -12,9 +13,10 @@ from artha.api_v2.d0.instruments import sebi_mapping
 
 
 class TestCoverage:
-    def test_exactly_46_categories(self):
-        # Cluster 3 ideation §6.2 working answer: 46 categories.
-        assert len(sebi_mapping.SEBI_CATEGORY_MAP) == 46
+    def test_exactly_50_categories(self):
+        # Chunk 3.2 base shipped 46. Cluster 3 addendum added debt_index,
+        # etf_commodity, etf_global, sectoral_foreign_equity → 50 total.
+        assert len(sebi_mapping.SEBI_CATEGORY_MAP) == 50
 
     def test_asset_classes_match_vocabulary(self):
         # Every mapped asset class is one of the four cluster-3 bands.
@@ -36,7 +38,7 @@ class TestCoverage:
     def test_all_categories_returns_alphabetised(self):
         cats = sebi_mapping.all_categories()
         assert list(cats) == sorted(cats)
-        assert len(cats) == 46
+        assert len(cats) == 50
 
 
 class TestEquityCategories:

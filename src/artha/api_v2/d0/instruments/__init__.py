@@ -10,7 +10,7 @@ for demo-stage seeding.
 Submodules:
 
 - :mod:`artha.api_v2.d0.instruments.models` — :class:`Instrument` ORM
-- :mod:`artha.api_v2.d0.instruments.sebi_mapping` — SEBI 46 MF categories
+- :mod:`artha.api_v2.d0.instruments.sebi_mapping` — SEBI MF categories
   → ``(asset_class, vehicle_type)`` lookup
 - :mod:`artha.api_v2.d0.instruments.schemas` — Pydantic read shapes
 - :mod:`artha.api_v2.d0.instruments.service` — query helpers

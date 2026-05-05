@@ -41,6 +41,16 @@ class Settings(BaseSettings):
     # Kill switch
     execution_enabled: bool = True
 
+    # ---------------- Cluster 3 addendum: GitHub-hosted JSON fixture --
+    # Per the cluster 3 addendum (Repo Fixture). The JSONFixtureAdapter
+    # default loads from this path; setting auto-load to True (the demo
+    # default) registers + runs the adapter once on application startup
+    # so canonical entity tables are populated out-of-the-box.
+    samriddhi_json_fixture_path: str = (
+        "./data/fixtures/SamriddhiAI_data_merged.json"
+    )
+    samriddhi_fixture_auto_load: bool = False
+
     # ---------------- Cluster 0: Authentication & Sessions ----------------
     # Per FR Entry 17.0 §3.1, FR Entry 17.1 §2, and the Cluster 0 Dev-Mode Addendum.
     #

@@ -78,6 +78,7 @@ from artha.api_v2.d0.adapter_base import (
     AdapterRunResult,
     D0Adapter,
 )
+from artha.api_v2.d0.adapters import multi_source
 from artha.api_v2.d0.event_names import INSTRUMENT_CLASSIFICATION_UNCERTAIN
 from artha.api_v2.d0.industry import service as industry_service
 from artha.api_v2.d0.instruments import sebi_mapping
@@ -153,6 +154,8 @@ class JSONFixtureAdapter(D0Adapter):
             )
 
         # Persist a single staging record for the whole fixture run.
+        # The RAW fixture is staged (not the flattened sectioned shape) so
+        # audit replay can reproduce the input deterministically.
         staging = await record_staging(
             db,
             source_identifier=self.source_identifier,
@@ -162,13 +165,27 @@ class JSONFixtureAdapter(D0Adapter):
             source_metadata={
                 "fixture_name": self._fixture_name,
                 "mode": mode,
+                "shape": (
+                    "multi_source"
+                    if multi_source.is_multi_source_fixture(fixture)
+                    else "sectioned"
+                ),
             },
             firm_id=self._firm_id,
         )
 
+        # Cluster 3 addendum: when the fixture is the merged Kush-shape
+        # multi-source JSON, transform it into the canonical sectioned
+        # shape before iterating per section. The original raw fixture
+        # remains staged above for audit replay.
+        if multi_source.is_multi_source_fixture(fixture):
+            sectioned = multi_source.flatten_multi_source(fixture)
+        else:
+            sectioned = fixture
+
         # ----- Section: instruments -----
         i_created, i_updated = await self._process_instruments(
-            fixture.get("instruments", []) or [],
+            sectioned.get("instruments", []) or [],
             db=db,
             run_id=run_id,
             staging_id=staging.staging_record_id,
@@ -182,7 +199,7 @@ class JSONFixtureAdapter(D0Adapter):
 
         # ----- Section: macro_snapshots -----
         m_created, m_updated = await self._process_macro_snapshots(
-            fixture.get("macro_snapshots", []) or [],
+            sectioned.get("macro_snapshots", []) or [],
             db=db,
             run_id=run_id,
             staging_id=staging.staging_record_id,
@@ -196,7 +213,7 @@ class JSONFixtureAdapter(D0Adapter):
 
         # ----- Section: industry_reports -----
         r_created, r_updated = await self._process_industry_reports(
-            fixture.get("industry_reports", []) or [],
+            sectioned.get("industry_reports", []) or [],
             db=db,
             run_id=run_id,
             staging_id=staging.staging_record_id,
@@ -230,13 +247,18 @@ class JSONFixtureAdapter(D0Adapter):
                 "fixture_name": self._fixture_name,
                 "mode": mode,
                 "instruments_seen": len(
-                    fixture.get("instruments", []) or []
+                    sectioned.get("instruments", []) or []
                 ),
                 "macro_snapshots_seen": len(
-                    fixture.get("macro_snapshots", []) or []
+                    sectioned.get("macro_snapshots", []) or []
                 ),
                 "industry_reports_seen": len(
-                    fixture.get("industry_reports", []) or []
+                    sectioned.get("industry_reports", []) or []
+                ),
+                "fixture_shape": (
+                    "multi_source"
+                    if multi_source.is_multi_source_fixture(fixture)
+                    else "sectioned"
                 ),
             },
         )

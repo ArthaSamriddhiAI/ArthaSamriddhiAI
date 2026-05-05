@@ -15,16 +15,17 @@ from starlette.types import Scope
 
 # Cluster 0 (api_v2): register ORM tables + auth/events/system routers.
 import artha.api_v2.auth.models  # noqa: F401 — register sessions table
-import artha.api_v2.observability.models  # noqa: F401 — register t1_events table
+
 # Cluster 1 (api_v2): investor + household tables (v2_ prefix to avoid v1 collision).
 import artha.api_v2.c0.models  # noqa: F401 — register v2_c0_conversations + v2_c0_messages (chunk 1.2)
-import artha.api_v2.d0.models  # noqa: F401 — register v2_staging_records + v2_snapshots (cluster 3)
 import artha.api_v2.d0.industry.models  # noqa: F401 — register v2_industry_reports (chunk 3.3)
 import artha.api_v2.d0.instruments.models  # noqa: F401 — register v2_instruments (chunk 3.2)
 import artha.api_v2.d0.macro.models  # noqa: F401 — register v2_macro_snapshots (chunk 3.3)
+import artha.api_v2.d0.models  # noqa: F401 — register v2_staging_records + v2_snapshots (cluster 3)
 import artha.api_v2.investors.models  # noqa: F401 — register v2_investors + v2_households
 import artha.api_v2.llm.models  # noqa: F401 — register v2_llm_provider_config (chunk 1.3)
 import artha.api_v2.m1.models  # noqa: F401 — register v2_mandates + v2_mandate_versions (cluster 2)
+import artha.api_v2.observability.models  # noqa: F401 — register t1_events table
 import artha.data.commodity_pipeline  # noqa: F401 — register commodity tables
 import artha.data.crypto_pipeline  # noqa: F401 — register crypto tables
 import artha.data.forex_pipeline  # noqa: F401 — register forex tables
@@ -37,13 +38,13 @@ import artha.portfolio.goals  # noqa: F401 — register goals table
 import artha.portfolio.models  # noqa: F401 — register portfolio tables
 from artha.accountability.router import router as accountability_router
 from artha.api_v2.auth.router import router as auth_v2_router
-from artha.api_v2.events.router import router as events_v2_router
 from artha.api_v2.c0.router import router as c0_v2_router
-from artha.api_v2.d0.router import router as d0_v2_router
 from artha.api_v2.d0.industry.router import router as d0_industry_router
 from artha.api_v2.d0.instruments.router import router as d0_instruments_router
 from artha.api_v2.d0.macro.router import router as d0_macro_router
+from artha.api_v2.d0.router import router as d0_v2_router
 from artha.api_v2.d0.snapshot.router import router as d0_snapshot_router
+from artha.api_v2.events.router import router as events_v2_router
 from artha.api_v2.investors.router import router as investors_v2_router
 from artha.api_v2.llm.router import router as llm_v2_router
 from artha.api_v2.m1.router import router as m1_v2_router
@@ -91,12 +92,84 @@ class SPAStaticFiles(StaticFiles):
             raise
 
 
+async def _register_and_maybe_autoload_fixture_adapter() -> None:
+    """Cluster 3 addendum: register JSONFixtureAdapter against the repo
+    fixture and optionally auto-load on startup.
+
+    Behaviour:
+
+    - If ``samriddhi_json_fixture_path`` resolves to an existing file,
+      register a JSONFixtureAdapter for it under the well-known source
+      identifier so the audit role's adapter list shows it.
+    - If ``samriddhi_fixture_auto_load`` is True, run the adapter once.
+      Errors are logged but never block startup — a malformed or stale
+      fixture should not prevent the app from coming up.
+    """
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
+    from artha.api_v2.d0 import registry
+    from artha.api_v2.d0.adapters.json_fixture import JSONFixtureAdapter
+    from artha.config import settings
+
+    fixture_path = Path(settings.samriddhi_json_fixture_path)
+    if not fixture_path.exists():
+        logger.info(
+            "Samriddhi fixture not found at %s; skipping JSONFixtureAdapter "
+            "registration. Set SAMRIDDHI_JSON_FIXTURE_PATH or run from the "
+            "repo root.",
+            fixture_path,
+        )
+        return
+
+    adapter = JSONFixtureAdapter(
+        fixture_name="repo",
+        fixture_path=fixture_path,
+    )
+    # ``register_adapter`` replaces existing registrations idempotently, so
+    # repeated lifespan invocations (e.g. during dev-server reload) don't
+    # raise.
+    registry.register_adapter(adapter)
+
+    if not settings.samriddhi_fixture_auto_load:
+        logger.info(
+            "JSONFixtureAdapter registered at %s; auto-load disabled "
+            "(set SAMRIDDHI_FIXTURE_AUTO_LOAD=true to load on startup).",
+            fixture_path,
+        )
+        return
+
+    engine = get_engine()
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with factory() as session:
+            async with session.begin():
+                result = await adapter.run(session, mode="full")
+        logger.info(
+            "Cluster 3 addendum auto-load: status=%s, instruments=%s, "
+            "macro=%s, industry=%s, errors=%s",
+            result.status,
+            result.canonical_entities_created.get("Instrument", 0)
+            + result.canonical_entities_updated.get("Instrument", 0),
+            result.canonical_entities_created.get("MacroSnapshot", 0)
+            + result.canonical_entities_updated.get("MacroSnapshot", 0),
+            result.canonical_entities_created.get("IndustryReport", 0)
+            + result.canonical_entities_updated.get("IndustryReport", 0),
+            len(result.errors),
+        )
+    except Exception:  # noqa: BLE001 — auto-load must never block startup
+        logger.exception(
+            "Cluster 3 addendum auto-load failed; continuing startup."
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup: create all tables
     engine = get_engine()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    # Cluster 3 addendum: register + maybe auto-load the JSON fixture.
+    await _register_and_maybe_autoload_fixture_adapter()
     yield
     # Shutdown
     await dispose_engine()

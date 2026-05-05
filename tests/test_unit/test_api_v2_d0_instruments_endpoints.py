@@ -270,14 +270,14 @@ class TestDetailEndpoint:
 
 class TestSebiCategoriesEndpoint:
     @pytest.mark.asyncio
-    async def test_lists_all_46_categories(self, http):
+    async def test_lists_all_50_categories(self, http):
         token = await _login(http, "audit1")
         r = await http.get(
             "/api/v2/admin/sebi-categories", headers=_h(token)
         )
         assert r.status_code == 200
         body = r.json()
-        assert len(body["categories"]) == 46
+        assert len(body["categories"]) == 50
 
     @pytest.mark.asyncio
     async def test_each_category_carries_asset_class_and_vehicle(self, http):

@@ -27,7 +27,7 @@ export function SebiCategoriesPage() {
         SEBI Categories
       </h1>
       <p className="text-sm text-gray-600 mb-6">
-        The 46-category SEBI mutual-fund taxonomy with the asset_class +
+        The SEBI mutual-fund taxonomy with the asset_class +
         vehicle_type pair Samriddhi maps each category to. Liquid +
         overnight + ultra-short + arbitrage map to <em>cash</em> reflecting
         Indian wealth-management practice.

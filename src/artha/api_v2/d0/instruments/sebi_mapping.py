@@ -48,14 +48,20 @@ from __future__ import annotations
 #: Cluster-3 four-band asset class vocabulary.
 ASSET_CLASSES: tuple[str, ...] = ("equity", "debt", "cash", "alternatives")
 
-#: Vehicle types the catalogue currently recognises. Cluster 3 ships
-#: ``mutual_fund``, ``etf``, ``stock``, ``bond``. Future clusters may add
-#: ``fixed_deposit``, ``ulip``, ``aif``, etc.
+#: Vehicle types the catalogue currently recognises. Cluster 3 chunk 3.2
+#: shipped ``mutual_fund``, ``etf``, ``stock``, ``bond``. The cluster 3
+#: addendum (Kush Goyal merged JSON) introduced ``pms``, ``aif``, and
+#: ``unlisted_equity`` so the JSONFixtureAdapter can land all 5 source
+#: vehicle slices. Future clusters may add ``fixed_deposit``, ``ulip``,
+#: etc.
 VEHICLE_TYPES: tuple[str, ...] = (
     "mutual_fund",
     "etf",
     "stock",
     "bond",
+    "pms",
+    "aif",
+    "unlisted_equity",
 )
 
 
@@ -110,7 +116,8 @@ SEBI_CATEGORY_MAP: dict[str, tuple[str, str]] = {
     "retirement_fund": ("equity", "mutual_fund"),
     "childrens_fund": ("equity", "mutual_fund"),
 
-    # ---- Other (9) — Index, ETFs, FoFs, FMP, capital-protection ----
+    # ---- Other (13) — Index, ETFs, FoFs, FMP, capital-protection ----
+    # Cluster 3 chunk 3.2 base entries:
     "index_fund": ("equity", "mutual_fund"),
     "etf_equity": ("equity", "etf"),
     "etf_debt": ("debt", "etf"),
@@ -120,15 +127,43 @@ SEBI_CATEGORY_MAP: dict[str, tuple[str, str]] = {
     "fof_overseas": ("equity", "mutual_fund"),
     "fixed_maturity_plan": ("debt", "mutual_fund"),
     "capital_protection_oriented": ("debt", "mutual_fund"),
+    # Cluster 3 addendum extensions — categories surfaced in the merged
+    # JSON fixture that the chunk-3.2 base 46 didn't cover cleanly:
+    "debt_index": ("debt", "mutual_fund"),
+    "etf_commodity": ("alternatives", "etf"),
+    "etf_global": ("equity", "etf"),
+    "sectoral_foreign_equity": ("equity", "mutual_fund"),
 }
 
 
-#: Sanity check at import time — 46 entries (FR 10.7 cluster-3 revision):
-#: 12 equity + 16 debt + 7 hybrid + 2 solution-oriented + 9 other.
-assert len(SEBI_CATEGORY_MAP) == 46, (
-    f"SEBI category map must hold exactly 46 entries; "
+#: Sanity check at import time — 50 entries after cluster-3-addendum
+#: extensions (12 equity + 16 debt + 7 hybrid + 2 solution-oriented +
+#: 13 other). The chunk 3.2 base was 46; the addendum added 4 entries
+#: covering Debt Index, ETFs- Commodity, ETFs- Global, Sectoral- Foreign
+#: Equity.
+assert len(SEBI_CATEGORY_MAP) == 50, (
+    f"SEBI category map must hold exactly 50 entries; "
     f"found {len(SEBI_CATEGORY_MAP)}."
 )
+
+
+# ---------------------------------------------------------------------------
+# Display-form aliases (cluster 3 addendum)
+# ---------------------------------------------------------------------------
+
+#: Display-form keys (after :func:`_normalise`) that resolve to canonical
+#: keys. Used by :func:`to_canonical_key` so adapters that consume
+#: human-readable category labels (e.g. SAMRIDDHI_MF_Database keys like
+#: "Passive ELSS", "Dynamic Asset Allocation or Bal", "Sectoral- Banking")
+#: can resolve through the same lookup as canonical keys.
+SEBI_DISPLAY_ALIASES: dict[str, str] = {
+    "passive_elss": "elss",
+    "dynamic_asset_allocation_or_bal": "dynamic_asset_allocation",
+    "sectoral_banking": "sectoral_thematic",
+    "equity_index": "index_fund",
+    "fofs_domestic": "fof_domestic",
+    "fofs_overseas": "fof_overseas",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -143,12 +178,14 @@ class UnknownSebiCategoryError(ValueError):
 def classify(sebi_category: str) -> tuple[str, str]:
     """Return the ``(asset_class, vehicle_type)`` pair for a SEBI category.
 
-    The lookup is case-insensitive and tolerates whitespace + hyphens by
-    normalising both inputs to lowercase snake_case before matching.
+    Resolves canonical keys (e.g. ``"large_cap"``) directly; falls back to
+    display-form normalisation + alias resolution so human-readable labels
+    from external feeds (e.g. SAMRIDDHI_MF_Database keys like
+    ``"Large Cap Fund"``, ``"Passive ELSS"``) classify cleanly.
     """
-    normalised = _normalise(sebi_category)
+    canonical = to_canonical_key(sebi_category)
     try:
-        return SEBI_CATEGORY_MAP[normalised]
+        return SEBI_CATEGORY_MAP[canonical]
     except KeyError as exc:
         raise UnknownSebiCategoryError(
             f"Unknown SEBI category: {sebi_category!r}"
@@ -157,7 +194,66 @@ def classify(sebi_category: str) -> tuple[str, str]:
 
 def is_known(sebi_category: str) -> bool:
     """Cheap predicate — true if the category resolves cleanly."""
-    return _normalise(sebi_category) in SEBI_CATEGORY_MAP
+    return to_canonical_key(sebi_category) in SEBI_CATEGORY_MAP
+
+
+def to_canonical_key(display_or_canonical: str) -> str:
+    """Resolve a display-form or canonical category to its canonical key.
+
+    Handles all of:
+
+    - Canonical keys directly (e.g. ``"large_cap"``)
+    - Display forms with capitalisation, ampersands, and trailing
+      ``" Fund"`` / ``" Funds"`` suffixes (e.g. ``"Large & Mid Cap Fund"``)
+    - SEBI display peculiarities like ``"ETFs- Equity"``, ``"FoFs Domestic"``,
+      ``"Sectoral- Banking"``, apostrophes (``"Children's Fund"``)
+    - Display-form-only aliases (e.g. ``"Passive ELSS"`` → ``"elss"``)
+
+    Returns the canonical key string regardless of whether the canonical
+    key is registered in :data:`SEBI_CATEGORY_MAP`. Callers who need a
+    membership check should use :func:`is_known` or call
+    :func:`classify` and catch :class:`UnknownSebiCategoryError`.
+    """
+    raw = display_or_canonical.strip().lower()
+    # Replace "&" with "and" before normalising whitespace.
+    raw = raw.replace("&", "and")
+    # Drop apostrophes ("Children's" → "Childrens") so the post-normalised
+    # key matches our canonical "childrens_fund".
+    raw = raw.replace("'", "").replace("’", "")
+    # Compact "ETFs-" / "ETFs - " into "etf_" so "ETFs- Commodity" resolves
+    # to "etf_commodity". Same idea for "FoFs ".
+    raw = raw.replace("etfs- ", "etf_").replace("etfs-", "etf_")
+    raw = raw.replace("etfs ", "etf_")
+    raw = raw.replace("fofs ", "fofs_")
+    # Now collapse the rest of the whitespace + hyphens to underscores.
+    raw = raw.replace("-", "_").replace(" ", "_")
+    while "__" in raw:
+        raw = raw.replace("__", "_")
+    raw = raw.strip("_")
+
+    # Direct hit on the canonical map?
+    if raw in SEBI_CATEGORY_MAP:
+        return raw
+
+    # Strip trailing "_fund" / "_funds" — many display forms end in
+    # "Fund" / "Funds" but the canonical keys for those categories don't
+    # carry the suffix (e.g. "Large Cap Fund" → "large_cap").
+    for suffix in ("_funds", "_fund"):
+        if raw.endswith(suffix):
+            stripped = raw[: -len(suffix)]
+            if stripped in SEBI_CATEGORY_MAP:
+                return stripped
+            # Try alias resolution on the stripped form too.
+            if stripped in SEBI_DISPLAY_ALIASES:
+                return SEBI_DISPLAY_ALIASES[stripped]
+
+    # Display-form alias?
+    if raw in SEBI_DISPLAY_ALIASES:
+        return SEBI_DISPLAY_ALIASES[raw]
+
+    # Return whatever we ended up with — caller decides whether it's an
+    # error.
+    return raw
 
 
 def all_categories() -> tuple[str, ...]:
