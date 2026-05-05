@@ -9,6 +9,15 @@ import {
 import { useAuthStore } from '../auth/store'
 import type { Role } from '../auth/types'
 import { AppShell } from '../components/AppShell'
+import { AdaptersPage } from '../pages/admin/AdaptersPage'
+import { AdminLandingPage } from '../pages/admin/AdminLandingPage'
+import { FreshnessPage } from '../pages/admin/FreshnessPage'
+import { IndustryReportsPage } from '../pages/admin/IndustryReportsPage'
+import { InstrumentsPage } from '../pages/admin/InstrumentsPage'
+import { MacroSnapshotsPage } from '../pages/admin/MacroSnapshotsPage'
+import { SebiCategoriesPage } from '../pages/admin/SebiCategoriesPage'
+import { SnapshotsPage } from '../pages/admin/SnapshotsPage'
+import { StagingPage } from '../pages/admin/StagingPage'
 import { ConversationalPage } from '../pages/conversational/ConversationalPage'
 import { DevLoginPage } from '../pages/DevLoginPage'
 import { InvestorDetailPage } from '../pages/investors/InvestorDetailPage'
@@ -182,7 +191,74 @@ const cioAmendmentReviewRoute = createRoute({
   component: AmendmentReviewPage,
 })
 
-// ----- Other role trees (no nested routes in cluster 1) -----
+// ----- Audit tree (cluster 3 chunk 3.4 admin surface) -----
+
+const auditRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: ROLE_PATHS.audit,
+  beforeLoad: requireRole('audit'),
+  component: () => (
+    <AppShell>
+      <Outlet />
+    </AppShell>
+  ),
+})
+
+const auditIndexRoute = createRoute({
+  getParentRoute: () => auditRoute,
+  path: '/',
+  component: AdminLandingPage,
+})
+
+const auditFreshnessRoute = createRoute({
+  getParentRoute: () => auditRoute,
+  path: '/freshness',
+  component: FreshnessPage,
+})
+
+const auditAdaptersRoute = createRoute({
+  getParentRoute: () => auditRoute,
+  path: '/adapters',
+  component: AdaptersPage,
+})
+
+const auditStagingRoute = createRoute({
+  getParentRoute: () => auditRoute,
+  path: '/staging',
+  component: StagingPage,
+})
+
+const auditSnapshotsRoute = createRoute({
+  getParentRoute: () => auditRoute,
+  path: '/snapshots',
+  component: SnapshotsPage,
+})
+
+const auditInstrumentsRoute = createRoute({
+  getParentRoute: () => auditRoute,
+  path: '/instruments',
+  component: InstrumentsPage,
+})
+
+const auditMacroSnapshotsRoute = createRoute({
+  getParentRoute: () => auditRoute,
+  path: '/macro-snapshots',
+  component: MacroSnapshotsPage,
+})
+
+const auditIndustryReportsRoute = createRoute({
+  getParentRoute: () => auditRoute,
+  path: '/industry-reports',
+  component: IndustryReportsPage,
+})
+
+const auditSebiCategoriesRoute = createRoute({
+  getParentRoute: () => auditRoute,
+  path: '/sebi-categories',
+  component: SebiCategoriesPage,
+})
+
+// ----- Compliance tree (no nested routes yet) -----
 
 function makeSimpleRoleRoute(role: Role) {
   return createRoute({
@@ -198,7 +274,6 @@ function makeSimpleRoleRoute(role: Role) {
 }
 
 const complianceRoute = makeSimpleRoleRoute('compliance')
-const auditRoute = makeSimpleRoleRoute('audit')
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -219,7 +294,17 @@ const routeTree = rootRoute.addChildren([
     cioAmendmentReviewRoute,
   ]),
   complianceRoute,
-  auditRoute,
+  auditRoute.addChildren([
+    auditIndexRoute,
+    auditFreshnessRoute,
+    auditAdaptersRoute,
+    auditStagingRoute,
+    auditSnapshotsRoute,
+    auditInstrumentsRoute,
+    auditMacroSnapshotsRoute,
+    auditIndustryReportsRoute,
+    auditSebiCategoriesRoute,
+  ]),
 ])
 
 export const router = createRouter({

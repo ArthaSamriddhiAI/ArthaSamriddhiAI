@@ -43,6 +43,7 @@ from artha.api_v2.d0.router import router as d0_v2_router
 from artha.api_v2.d0.industry.router import router as d0_industry_router
 from artha.api_v2.d0.instruments.router import router as d0_instruments_router
 from artha.api_v2.d0.macro.router import router as d0_macro_router
+from artha.api_v2.d0.snapshot.router import router as d0_snapshot_router
 from artha.api_v2.investors.router import router as investors_v2_router
 from artha.api_v2.llm.router import router as llm_v2_router
 from artha.api_v2.m1.router import router as m1_v2_router
@@ -141,6 +142,8 @@ def create_app() -> FastAPI:
     # Cluster 3 chunk 3.3: macro snapshots + industry reports.
     app.include_router(d0_macro_router)
     app.include_router(d0_industry_router)
+    # Cluster 3 chunk 3.4: snapshot machinery (create / list / verify / diff).
+    app.include_router(d0_snapshot_router)
 
     @app.get("/api/v1/health")
     async def health():
