@@ -19,14 +19,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from artha.api_v2.c0.models import Conversation as _C0Conversation  # noqa: F401
 from artha.api_v2.d0 import freshness as freshness_lib
+from artha.api_v2.d0.instruments.models import Instrument
 from artha.api_v2.d0.schemas import FreshnessRow
 from artha.api_v2.investors.models import Household, Investor
 from artha.api_v2.m1.models import Mandate, MandateVersion
 
-# Cluster 3 chunk 3.2 + 3.3 will register Instrument, MacroSnapshot,
-# IndustryReport here; for chunk 3.1 we ship the carry-forward entities
-# only. The ``Any`` typing keeps the call site flexible.
+# Cluster 3 chunk 3.3 will register MacroSnapshot + IndustryReport here.
+# Chunk 3.2 added Instrument. The ``Any`` typing keeps the call site
+# flexible.
 _TABLE_TO_MODEL: dict[str, Any] = {
+    "instruments": Instrument,
     "investors": Investor,
     "households": Household,
     "mandates": Mandate,
