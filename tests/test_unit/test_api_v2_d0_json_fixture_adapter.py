@@ -110,9 +110,15 @@ class TestConstructor:
         a = JSONFixtureAdapter(fixture_name="demo", fixture={"instruments": []})
         assert a.source_identifier == "json_fixture:demo"
 
-    def test_supported_entity_types_is_instrument_only_chunk_32(self):
+    def test_supported_entity_types_includes_three_canonical_entities(self):
+        # Chunk 3.2 shipped Instrument; chunk 3.3 added MacroSnapshot and
+        # IndustryReport to the same adapter.
         a = JSONFixtureAdapter(fixture_name="demo", fixture={"instruments": []})
-        assert a.supported_entity_types == ["Instrument"]
+        assert a.supported_entity_types == [
+            "Instrument",
+            "MacroSnapshot",
+            "IndustryReport",
+        ]
 
 
 class TestHealthCheck:

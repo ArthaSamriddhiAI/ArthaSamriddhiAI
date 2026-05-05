@@ -11,38 +11,55 @@ tests). The fixture is keyed by canonical entity type:
          "isin": "INF200K01XX2",
          "amfi_scheme_code": "118989",
          "name": "SBI Bluechip Fund Direct Plan Growth",
-         "short_name": "SBI Bluechip Direct G",
          "sebi_category": "large_cap",
-         "amc_name": "SBI Mutual Fund",
-         "issuer_name": "SBI Funds Management",
-         "riskometer_label": "very_high",
-         "inception_date": "2013-01-01",
-         "status": "active"
+         ...
        },
        ...
      ],
-     "macro_snapshots": [...],
-     "industry_reports": [...]
+     "macro_snapshots": [
+       {
+         "country_code": "IN",
+         "snapshot_period": "2026-Q1",
+         "snapshot_date": "2026-03-31",
+         "gdp_growth_pct": 7.2,
+         "cpi_inflation_pct": 4.5,
+         "repo_rate_pct": 6.5,
+         "bond_yield_10y_pct": 7.1,
+         "fx_usd_inr": 83.5,
+         "themes": ["disinflation_underway"]
+       },
+       ...
+     ],
+     "industry_reports": [
+       {
+         "industry_code": "BFSI",
+         "industry_name": "Banking, Financial Services and Insurance",
+         "report_period": "2026-Q1",
+         "report_date": "2026-03-31",
+         "outlook": "positive",
+         "summary": "...",
+         "key_themes": ["credit_growth_normalizing"],
+         "drivers": ["loan_book_expansion"],
+         "risks": ["unsecured_lending_stress"]
+       },
+       ...
+     ]
    }
+
+Cluster 3 chunk 3.2 shipped the instruments section; chunk 3.3 adds
+macro_snapshots + industry_reports. Each section is processed by its
+own helper, allowing chunks 3.3+ to add sections without bloating the
+adapter's ``run()`` body.
 
 The adapter:
 
 1. Reads the fixture once per ``run()``.
 2. Writes a single staging record holding the full fixture (so audit
    replay can reproduce the input deterministically).
-3. For each entity in each section, derives ``asset_class`` +
-   ``vehicle_type`` from the SEBI category map, falls back to literal
-   ``asset_class`` + ``vehicle_type`` fields if present, or marks the row
-   ``classification_confidence=low`` and emits the
-   ``instrument_classification_uncertain`` T1 event.
-4. Upserts via :func:`service.upsert_instrument` (chunk 3.2 only ships
-   the instruments section; chunks 3.3 will add macro + industry).
-5. Returns an :class:`AdapterRunResult` summarising counts.
-
-The whole adapter is decoupled from where the fixture lives: callers
-pass either a ``fixture`` dict directly (tests, in-process loading) or
-``fixture_path`` pointing at a file on disk (the seed-data path used by
-the demo deployment).
+3. Processes each section in turn — instrument classification edge cases
+   land in errors but don't fail the whole run; missing-required-field
+   schema mismatches land in errors with ``error_type="schema_mismatch"``.
+4. Returns an :class:`AdapterRunResult` summarising counts.
 """
 
 from __future__ import annotations
@@ -62,8 +79,10 @@ from artha.api_v2.d0.adapter_base import (
     D0Adapter,
 )
 from artha.api_v2.d0.event_names import INSTRUMENT_CLASSIFICATION_UNCERTAIN
+from artha.api_v2.d0.industry import service as industry_service
 from artha.api_v2.d0.instruments import sebi_mapping
 from artha.api_v2.d0.instruments import service as instrument_service
+from artha.api_v2.d0.macro import service as macro_service
 from artha.api_v2.d0.staging import record_staging
 from artha.api_v2.observability.t1 import emit_event
 
@@ -72,9 +91,7 @@ class JSONFixtureAdapter(D0Adapter):
     """Adapter that loads instruments + macro + industry sections from a
     JSON fixture.
 
-    Source identifier convention: ``json_fixture:<fixture_name>``. A
-    deployment can register multiple fixture adapters with different
-    fixture names for different demo personas.
+    Source identifier convention: ``json_fixture:<fixture_name>``.
     """
 
     def __init__(
@@ -107,7 +124,7 @@ class JSONFixtureAdapter(D0Adapter):
 
     @property
     def supported_entity_types(self) -> list[str]:
-        return ["Instrument"]
+        return ["Instrument", "MacroSnapshot", "IndustryReport"]
 
     async def run(
         self, db: AsyncSession, *, mode: str = "full"
@@ -115,8 +132,8 @@ class JSONFixtureAdapter(D0Adapter):
         run_id = str(ULID())
         started_at = datetime.now(timezone.utc)
         errors: list[AdapterError] = []
-        created = 0
-        updated = 0
+        created: dict[str, int] = {}
+        updated: dict[str, int] = {}
 
         try:
             fixture = self._load_fixture()
@@ -149,10 +166,115 @@ class JSONFixtureAdapter(D0Adapter):
             firm_id=self._firm_id,
         )
 
-        instruments = fixture.get("instruments", []) or []
-        for raw in instruments:
+        # ----- Section: instruments -----
+        i_created, i_updated = await self._process_instruments(
+            fixture.get("instruments", []) or [],
+            db=db,
+            run_id=run_id,
+            staging_id=staging.staging_record_id,
+            mode=mode,
+            errors=errors,
+        )
+        if i_created:
+            created["Instrument"] = i_created
+        if i_updated:
+            updated["Instrument"] = i_updated
+
+        # ----- Section: macro_snapshots -----
+        m_created, m_updated = await self._process_macro_snapshots(
+            fixture.get("macro_snapshots", []) or [],
+            db=db,
+            run_id=run_id,
+            staging_id=staging.staging_record_id,
+            mode=mode,
+            errors=errors,
+        )
+        if m_created:
+            created["MacroSnapshot"] = m_created
+        if m_updated:
+            updated["MacroSnapshot"] = m_updated
+
+        # ----- Section: industry_reports -----
+        r_created, r_updated = await self._process_industry_reports(
+            fixture.get("industry_reports", []) or [],
+            db=db,
+            run_id=run_id,
+            staging_id=staging.staging_record_id,
+            mode=mode,
+            errors=errors,
+        )
+        if r_created:
+            created["IndustryReport"] = r_created
+        if r_updated:
+            updated["IndustryReport"] = r_updated
+
+        completed_at = datetime.now(timezone.utc)
+        self._last_successful_fetch_at = completed_at
+        any_writes = any(created.values()) or any(updated.values())
+        status = (
+            "success"
+            if not errors
+            else ("partial_success" if any_writes else "failure")
+        )
+
+        return AdapterRunResult(
+            run_id=run_id,
+            started_at=started_at,
+            completed_at=completed_at,
+            status=status,
+            staging_records_created=1,
+            canonical_entities_created=created,
+            canonical_entities_updated=updated,
+            errors=errors,
+            metadata={
+                "fixture_name": self._fixture_name,
+                "mode": mode,
+                "instruments_seen": len(
+                    fixture.get("instruments", []) or []
+                ),
+                "macro_snapshots_seen": len(
+                    fixture.get("macro_snapshots", []) or []
+                ),
+                "industry_reports_seen": len(
+                    fixture.get("industry_reports", []) or []
+                ),
+            },
+        )
+
+    async def health_check(self) -> AdapterHealth:
+        """For fixture adapters: healthy iff the fixture loads."""
+        try:
+            self._load_fixture()
+        except Exception as exc:
+            return AdapterHealth(
+                healthy=False,
+                last_successful_fetch_at=self._last_successful_fetch_at,
+                error_message=str(exc),
+            )
+        return AdapterHealth(
+            healthy=True,
+            last_successful_fetch_at=self._last_successful_fetch_at,
+        )
+
+    # ------------------------------------------------------------------
+    # Section processors
+    # ------------------------------------------------------------------
+
+    async def _process_instruments(
+        self,
+        rows: list[dict[str, Any]],
+        *,
+        db: AsyncSession,
+        run_id: str,
+        staging_id: str,
+        mode: str,
+        errors: list[AdapterError],
+    ) -> tuple[int, int]:
+        created = 0
+        updated = 0
+        for raw in rows:
             try:
-                normalised = self._normalise_instrument(raw, db=db)
+                normalised = self._normalise_instrument(raw)
             except _ClassificationError as exc:
                 errors.append(
                     AdapterError(
@@ -189,8 +311,6 @@ class JSONFixtureAdapter(D0Adapter):
                 continue
 
             if mode == "validation":
-                # Validation pass: count the row as if we'd write it but
-                # don't actually upsert.
                 created += 1
                 continue
 
@@ -199,7 +319,7 @@ class JSONFixtureAdapter(D0Adapter):
                 payload=normalised,
                 source_identifier=self.source_identifier,
                 adapter_run_id=run_id,
-                staging_record_id=staging.staging_record_id,
+                staging_record_id=staging_id,
                 source_subkey=normalised.get("isin")
                 or normalised.get("amfi_scheme_code"),
                 firm_id=self._firm_id,
@@ -208,48 +328,133 @@ class JSONFixtureAdapter(D0Adapter):
                 created += 1
             else:
                 updated += 1
+        return created, updated
 
-        completed_at = datetime.now(timezone.utc)
-        self._last_successful_fetch_at = completed_at
-        status = (
-            "success"
-            if not errors
-            else ("partial_success" if (created or updated) else "failure")
-        )
+    async def _process_macro_snapshots(
+        self,
+        rows: list[dict[str, Any]],
+        *,
+        db: AsyncSession,
+        run_id: str,
+        staging_id: str,
+        mode: str,
+        errors: list[AdapterError],
+    ) -> tuple[int, int]:
+        created = 0
+        updated = 0
+        for raw in rows:
+            for required in ("country_code", "snapshot_period", "snapshot_date"):
+                if required not in raw:
+                    errors.append(
+                        AdapterError(
+                            error_type="schema_mismatch",
+                            message=(
+                                f"MacroSnapshot record missing required "
+                                f"field {required!r}"
+                            ),
+                            record_identifier=str(
+                                raw.get("snapshot_period", "<unknown>")
+                            ),
+                        )
+                    )
+                    break
+            else:
+                if mode == "validation":
+                    created += 1
+                    continue
+                _, was_created = await macro_service.upsert_macro_snapshot(
+                    db,
+                    payload=raw,
+                    source_identifier=self.source_identifier,
+                    adapter_run_id=run_id,
+                    staging_record_id=staging_id,
+                    source_subkey=(
+                        f"{raw['country_code']}:{raw['snapshot_period']}"
+                    ),
+                    firm_id=self._firm_id,
+                )
+                if was_created:
+                    created += 1
+                else:
+                    updated += 1
+        return created, updated
 
-        canonical_created: dict[str, int] = {"Instrument": created} if created else {}
-        canonical_updated: dict[str, int] = {"Instrument": updated} if updated else {}
-
-        return AdapterRunResult(
-            run_id=run_id,
-            started_at=started_at,
-            completed_at=completed_at,
-            status=status,
-            staging_records_created=1,
-            canonical_entities_created=canonical_created,
-            canonical_entities_updated=canonical_updated,
-            errors=errors,
-            metadata={
-                "fixture_name": self._fixture_name,
-                "mode": mode,
-                "instruments_seen": len(instruments),
-            },
-        )
-
-    async def health_check(self) -> AdapterHealth:
-        """For fixture adapters: healthy iff the fixture loads."""
-        try:
-            self._load_fixture()
-        except Exception as exc:
-            return AdapterHealth(
-                healthy=False,
-                last_successful_fetch_at=self._last_successful_fetch_at,
-                error_message=str(exc),
-            )
-        return AdapterHealth(
-            healthy=True,
-            last_successful_fetch_at=self._last_successful_fetch_at,
-        )
+    async def _process_industry_reports(
+        self,
+        rows: list[dict[str, Any]],
+        *,
+        db: AsyncSession,
+        run_id: str,
+        staging_id: str,
+        mode: str,
+        errors: list[AdapterError],
+    ) -> tuple[int, int]:
+        created = 0
+        updated = 0
+        for raw in rows:
+            missing = [
+                f
+                for f in (
+                    "industry_code",
+                    "industry_name",
+                    "report_period",
+                    "report_date",
+                    "outlook",
+                    "summary",
+                )
+                if f not in raw
+            ]
+            if missing:
+                errors.append(
+                    AdapterError(
+                        error_type="schema_mismatch",
+                        message=(
+                            f"IndustryReport record missing required "
+                            f"fields: {missing}"
+                        ),
+                        record_identifier=str(
+                            raw.get("industry_code", "<unknown>")
+                        ),
+                    )
+                )
+                continue
+            try:
+                if mode == "validation":
+                    # Even in validation mode we want to surface invalid
+                    # outlook values; service.upsert validates so call it
+                    # but discard via a try/raise — simpler: validate inline.
+                    if raw["outlook"] not in industry_service.VALID_OUTLOOKS:
+                        raise ValueError(
+                            f"Unknown outlook {raw['outlook']!r}"
+                        )
+                    created += 1
+                    continue
+                _, was_created = await industry_service.upsert_industry_report(
+                    db,
+                    payload=raw,
+                    source_identifier=self.source_identifier,
+                    adapter_run_id=run_id,
+                    staging_record_id=staging_id,
+                    source_subkey=(
+                        f"{raw['industry_code']}:{raw['report_period']}"
+                    ),
+                    firm_id=self._firm_id,
+                )
+                if was_created:
+                    created += 1
+                else:
+                    updated += 1
+            except ValueError as exc:
+                errors.append(
+                    AdapterError(
+                        error_type="schema_mismatch",
+                        message=str(exc),
+                        record_identifier=str(
+                            raw.get("industry_code", "<unknown>")
+                        ),
+                    )
+                )
+        return created, updated
 
     # ------------------------------------------------------------------
     # Internals
@@ -263,7 +468,7 @@ class JSONFixtureAdapter(D0Adapter):
             return json.load(fh)
 
     def _normalise_instrument(
-        self, raw: dict[str, Any], *, db: AsyncSession
+        self, raw: dict[str, Any]
     ) -> dict[str, Any]:
         """Resolve asset_class + vehicle_type from the SEBI map (or
         explicit fields), normalise dates, and return the upsert payload.
