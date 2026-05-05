@@ -39,6 +39,8 @@ const formSchema = z
     equity_max_pct: z.number().int().min(0).max(100),
     debt_min_pct: z.number().int().min(0).max(100),
     debt_max_pct: z.number().int().min(0).max(100),
+    cash_min_pct: z.number().int().min(0).max(100),
+    cash_max_pct: z.number().int().min(0).max(100),
     alternatives_min_pct: z.number().int().min(0).max(100),
     alternatives_max_pct: z.number().int().min(0).max(100),
     single_position_max_pct: z.number().int().min(0).max(100),
@@ -54,13 +56,21 @@ const formSchema = z
     message: 'Debt max must be ≥ debt min',
     path: ['debt_max_pct'],
   })
+  .refine((d) => d.cash_max_pct >= d.cash_min_pct, {
+    message: 'Cash max must be ≥ cash min',
+    path: ['cash_max_pct'],
+  })
   .refine((d) => d.alternatives_max_pct >= d.alternatives_min_pct, {
     message: 'Alternatives max must be ≥ alternatives min',
     path: ['alternatives_max_pct'],
   })
   .refine(
     (d) =>
-      d.equity_min_pct + d.debt_min_pct + d.alternatives_min_pct <= 100,
+      d.equity_min_pct +
+        d.debt_min_pct +
+        d.cash_min_pct +
+        d.alternatives_min_pct <=
+      100,
     {
       message: 'Sum of asset-allocation minimums must be ≤ 100',
       path: ['equity_min_pct'],
@@ -68,7 +78,11 @@ const formSchema = z
   )
   .refine(
     (d) =>
-      d.equity_max_pct + d.debt_max_pct + d.alternatives_max_pct >= 100,
+      d.equity_max_pct +
+        d.debt_max_pct +
+        d.cash_max_pct +
+        d.alternatives_max_pct >=
+      100,
     {
       message: 'Sum of asset-allocation maximums must be ≥ 100',
       path: ['equity_max_pct'],
@@ -104,10 +118,12 @@ export function NewMandatePage() {
     // Empty defaults; replaced once defaultsQuery resolves OR a stored
     // draft loads from sessionStorage.
     defaultValues: {
-      equity_min_pct: 50,
-      equity_max_pct: 70,
-      debt_min_pct: 20,
-      debt_max_pct: 40,
+      equity_min_pct: 45,
+      equity_max_pct: 65,
+      debt_min_pct: 15,
+      debt_max_pct: 35,
+      cash_min_pct: 5,
+      cash_max_pct: 15,
       alternatives_min_pct: 5,
       alternatives_max_pct: 15,
       single_position_max_pct: 5,
@@ -249,6 +265,13 @@ export function NewMandatePage() {
               maxName="debt_max_pct"
               form={form}
               source={sources.debt_min_pct}
+            />
+            <BandPair
+              label="Cash"
+              minName="cash_min_pct"
+              maxName="cash_max_pct"
+              form={form}
+              source={sources.cash_min_pct}
             />
             <BandPair
               label="Alternatives"
@@ -597,6 +620,8 @@ function defaultsToFormValues(d: MandateDefaults): FormValues {
     equity_max_pct: d.equity_max_pct,
     debt_min_pct: d.debt_min_pct,
     debt_max_pct: d.debt_max_pct,
+    cash_min_pct: d.cash_min_pct,
+    cash_max_pct: d.cash_max_pct,
     alternatives_min_pct: d.alternatives_min_pct,
     alternatives_max_pct: d.alternatives_max_pct,
     single_position_max_pct: d.single_position_max_pct,

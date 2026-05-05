@@ -48,6 +48,15 @@ export function MandateSummaryCard({
           }
         />
         <BandRow
+          label="Cash"
+          min={version.cash_min_pct}
+          max={version.cash_max_pct}
+          modified={
+            highlightFields.has('cash_min_pct')
+            || highlightFields.has('cash_max_pct')
+          }
+        />
+        <BandRow
           label="Alternatives"
           min={version.alternatives_min_pct}
           max={version.alternatives_max_pct}

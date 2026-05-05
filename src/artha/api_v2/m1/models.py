@@ -101,10 +101,14 @@ class MandateVersion(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False)
 
     # ---- Constraint family 1: asset allocation bands (FR 12.1 §2) ----
+    # Cluster 3 chunk 3.1: added cash_min_pct + cash_max_pct (FR 12.1 §2.5
+    # cluster 2 → 3 migration). Existing records get 0,0 via Alembic default.
     equity_min_pct: Mapped[int] = mapped_column(Integer, nullable=False)
     equity_max_pct: Mapped[int] = mapped_column(Integer, nullable=False)
     debt_min_pct: Mapped[int] = mapped_column(Integer, nullable=False)
     debt_max_pct: Mapped[int] = mapped_column(Integer, nullable=False)
+    cash_min_pct: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    cash_max_pct: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     alternatives_min_pct: Mapped[int] = mapped_column(Integer, nullable=False)
     alternatives_max_pct: Mapped[int] = mapped_column(Integer, nullable=False)
 

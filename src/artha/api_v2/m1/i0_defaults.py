@@ -25,12 +25,15 @@ from dataclasses import dataclass
 # ---------------------------------------------------------------------------
 
 
-#: Asset-allocation bands keyed by ``risk_appetite``. Values are
-#: ``(equity_min, equity_max, debt_min, debt_max, alts_min, alts_max)``.
-_RISK_TO_ASSET_BANDS: dict[str, tuple[int, int, int, int, int, int]] = {
-    "aggressive":   (70, 90,  5, 25, 5, 15),
-    "moderate":     (50, 70, 20, 40, 5, 15),
-    "conservative": (30, 50, 40, 60, 5, 15),
+#: Asset-allocation bands keyed by ``risk_appetite`` (FR 11.1 §4.1, cluster
+#: 3 revision). Values are ``(equity_min, equity_max, debt_min, debt_max,
+#: cash_min, cash_max, alts_min, alts_max)`` — eight ints across four
+#: bands. Cluster 2 had three bands; cluster 3 adds the cash band per
+#: FR Entry 12.1 §2.4 cluster-3 revision.
+_RISK_TO_ASSET_BANDS: dict[str, tuple[int, int, int, int, int, int, int, int]] = {
+    "aggressive":   (65, 85,  5, 20, 0, 10, 5, 15),
+    "moderate":     (45, 65, 15, 35, 5, 15, 5, 15),
+    "conservative": (25, 45, 35, 55, 10, 20, 5, 15),
 }
 
 #: Liquidity-floor pct keyed by I0 ``liquidity_tier``.
@@ -47,20 +50,25 @@ _DEFAULT_SECTOR_MAX_PCT = 25
 
 @dataclass(frozen=True)
 class MandateDefaults:
-    """Cluster 2 mandate-default bundle.
+    """Cluster 2+3 mandate-default bundle.
 
     Each field carries the suggested value; ``sources`` is a parallel dict
     that names the I0 field each default came from (``"i0_liquidity_tier"``,
     ``"i0_risk_appetite"``, or ``"industry_standard"``). The frontend
     renders the source as the small "I0 source label" alongside each input
     (per chunk plan 2.1 §scope_in).
+
+    Cluster 3 chunk 3.1 added the cash band fields per FR 11.1 §4.1
+    revision; ``enrichment_version`` bumps to ``i0_active_layer_v1.1``.
     """
 
-    # Asset allocation
+    # Asset allocation (4 bands; cash added in cluster 3)
     equity_min_pct: int
     equity_max_pct: int
     debt_min_pct: int
     debt_max_pct: int
+    cash_min_pct: int
+    cash_max_pct: int
     alternatives_min_pct: int
     alternatives_max_pct: int
 
@@ -101,8 +109,10 @@ def compute_defaults(
         equity_max_pct=bands[1],
         debt_min_pct=bands[2],
         debt_max_pct=bands[3],
-        alternatives_min_pct=bands[4],
-        alternatives_max_pct=bands[5],
+        cash_min_pct=bands[4],
+        cash_max_pct=bands[5],
+        alternatives_min_pct=bands[6],
+        alternatives_max_pct=bands[7],
         single_position_max_pct=_DEFAULT_SINGLE_POSITION_MAX_PCT,
         liquidity_floor_pct=liquidity_floor,
         sector_max_pct=_DEFAULT_SECTOR_MAX_PCT,
@@ -112,6 +122,8 @@ def compute_defaults(
             "equity_max_pct": "i0_risk_appetite",
             "debt_min_pct": "i0_risk_appetite",
             "debt_max_pct": "i0_risk_appetite",
+            "cash_min_pct": "i0_risk_appetite",
+            "cash_max_pct": "i0_risk_appetite",
             "alternatives_min_pct": "i0_risk_appetite",
             "alternatives_max_pct": "i0_risk_appetite",
             "single_position_max_pct": "industry_standard",

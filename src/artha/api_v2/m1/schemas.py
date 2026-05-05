@@ -30,11 +30,13 @@ class MandateConstraintInput(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    # Asset allocation bands (FR 12.1 §2.2)
+    # Asset allocation bands (FR 12.1 §2.2; cluster 3 four-band revision)
     equity_min_pct: int = Field(ge=0, le=100)
     equity_max_pct: int = Field(ge=0, le=100)
     debt_min_pct: int = Field(ge=0, le=100)
     debt_max_pct: int = Field(ge=0, le=100)
+    cash_min_pct: int = Field(ge=0, le=100, default=0)
+    cash_max_pct: int = Field(ge=0, le=100, default=0)
     alternatives_min_pct: int = Field(ge=0, le=100)
     alternatives_max_pct: int = Field(ge=0, le=100)
 
@@ -85,11 +87,13 @@ class MandateVersionRead(BaseModel):
     version_number: int
     status: MandateStatus
 
-    # Constraint families
+    # Constraint families (cluster 3: four-band asset allocation)
     equity_min_pct: int
     equity_max_pct: int
     debt_min_pct: int
     debt_max_pct: int
+    cash_min_pct: int = 0
+    cash_max_pct: int = 0
     alternatives_min_pct: int
     alternatives_max_pct: int
     single_position_max_pct: int
@@ -307,10 +311,13 @@ class MandateDefaultsRead(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    # Cluster 3 four-band asset allocation defaults
     equity_min_pct: int
     equity_max_pct: int
     debt_min_pct: int
     debt_max_pct: int
+    cash_min_pct: int
+    cash_max_pct: int
     alternatives_min_pct: int
     alternatives_max_pct: int
     single_position_max_pct: int
@@ -334,6 +341,8 @@ class MandateDefaultsRead(BaseModel):
             equity_max_pct=defaults.equity_max_pct,
             debt_min_pct=defaults.debt_min_pct,
             debt_max_pct=defaults.debt_max_pct,
+            cash_min_pct=defaults.cash_min_pct,
+            cash_max_pct=defaults.cash_max_pct,
             alternatives_min_pct=defaults.alternatives_min_pct,
             alternatives_max_pct=defaults.alternatives_max_pct,
             single_position_max_pct=defaults.single_position_max_pct,

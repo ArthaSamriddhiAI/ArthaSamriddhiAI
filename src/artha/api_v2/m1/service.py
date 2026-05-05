@@ -221,6 +221,8 @@ async def create_mandate(
         equity_max_pct=payload.equity_max_pct,
         debt_min_pct=payload.debt_min_pct,
         debt_max_pct=payload.debt_max_pct,
+        cash_min_pct=payload.cash_min_pct,
+        cash_max_pct=payload.cash_max_pct,
         alternatives_min_pct=payload.alternatives_min_pct,
         alternatives_max_pct=payload.alternatives_max_pct,
         single_position_max_pct=payload.single_position_max_pct,
@@ -410,6 +412,8 @@ async def propose_amendment(
         equity_max_pct=active.equity_max_pct,
         debt_min_pct=active.debt_min_pct,
         debt_max_pct=active.debt_max_pct,
+        cash_min_pct=active.cash_min_pct,
+        cash_max_pct=active.cash_max_pct,
         alternatives_min_pct=active.alternatives_min_pct,
         alternatives_max_pct=active.alternatives_max_pct,
         single_position_max_pct=active.single_position_max_pct,
@@ -472,6 +476,8 @@ async def update_draft(
     version.equity_max_pct = payload.equity_max_pct
     version.debt_min_pct = payload.debt_min_pct
     version.debt_max_pct = payload.debt_max_pct
+    version.cash_min_pct = payload.cash_min_pct
+    version.cash_max_pct = payload.cash_max_pct
     version.alternatives_min_pct = payload.alternatives_min_pct
     version.alternatives_max_pct = payload.alternatives_max_pct
     version.single_position_max_pct = payload.single_position_max_pct
@@ -502,6 +508,8 @@ async def submit_for_approval(
         "equity_max_pct": version.equity_max_pct,
         "debt_min_pct": version.debt_min_pct,
         "debt_max_pct": version.debt_max_pct,
+        "cash_min_pct": version.cash_min_pct,
+        "cash_max_pct": version.cash_max_pct,
         "alternatives_min_pct": version.alternatives_min_pct,
         "alternatives_max_pct": version.alternatives_max_pct,
         "single_position_max_pct": version.single_position_max_pct,
@@ -970,6 +978,8 @@ def _version_read(row: MandateVersion) -> MandateVersionRead:
         equity_max_pct=row.equity_max_pct,
         debt_min_pct=row.debt_min_pct,
         debt_max_pct=row.debt_max_pct,
+        cash_min_pct=row.cash_min_pct,
+        cash_max_pct=row.cash_max_pct,
         alternatives_min_pct=row.alternatives_min_pct,
         alternatives_max_pct=row.alternatives_max_pct,
         single_position_max_pct=row.single_position_max_pct,

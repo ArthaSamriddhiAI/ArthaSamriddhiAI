@@ -163,6 +163,8 @@ function AmendEditor({
     equity_max_pct: draft.equity_max_pct,
     debt_min_pct: draft.debt_min_pct,
     debt_max_pct: draft.debt_max_pct,
+    cash_min_pct: draft.cash_min_pct,
+    cash_max_pct: draft.cash_max_pct,
     alternatives_min_pct: draft.alternatives_min_pct,
     alternatives_max_pct: draft.alternatives_max_pct,
     single_position_max_pct: draft.single_position_max_pct,
@@ -260,6 +262,16 @@ function AmendEditor({
             setValues={setValues}
             modified={
               modified.has('debt_min_pct') || modified.has('debt_max_pct')
+            }
+          />
+          <BandPair
+            label="Cash"
+            minKey="cash_min_pct"
+            maxKey="cash_max_pct"
+            values={values}
+            setValues={setValues}
+            modified={
+              modified.has('cash_min_pct') || modified.has('cash_max_pct')
             }
           />
           <BandPair

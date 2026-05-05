@@ -28,6 +28,8 @@ _NUMERIC_FIELD_LABELS: dict[str, str] = {
     "equity_max_pct": "equity max",
     "debt_min_pct": "debt min",
     "debt_max_pct": "debt max",
+    "cash_min_pct": "cash min",
+    "cash_max_pct": "cash max",
     "alternatives_min_pct": "alternatives min",
     "alternatives_max_pct": "alternatives max",
     "single_position_max_pct": "single-position limit",

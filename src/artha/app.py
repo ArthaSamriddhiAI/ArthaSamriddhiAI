@@ -18,6 +18,7 @@ import artha.api_v2.auth.models  # noqa: F401 — register sessions table
 import artha.api_v2.observability.models  # noqa: F401 — register t1_events table
 # Cluster 1 (api_v2): investor + household tables (v2_ prefix to avoid v1 collision).
 import artha.api_v2.c0.models  # noqa: F401 — register v2_c0_conversations + v2_c0_messages (chunk 1.2)
+import artha.api_v2.d0.models  # noqa: F401 — register v2_staging_records + v2_snapshots (cluster 3)
 import artha.api_v2.investors.models  # noqa: F401 — register v2_investors + v2_households
 import artha.api_v2.llm.models  # noqa: F401 — register v2_llm_provider_config (chunk 1.3)
 import artha.api_v2.m1.models  # noqa: F401 — register v2_mandates + v2_mandate_versions (cluster 2)
@@ -35,6 +36,7 @@ from artha.accountability.router import router as accountability_router
 from artha.api_v2.auth.router import router as auth_v2_router
 from artha.api_v2.events.router import router as events_v2_router
 from artha.api_v2.c0.router import router as c0_v2_router
+from artha.api_v2.d0.router import router as d0_v2_router
 from artha.api_v2.investors.router import router as investors_v2_router
 from artha.api_v2.llm.router import router as llm_v2_router
 from artha.api_v2.m1.router import router as m1_v2_router
@@ -126,6 +128,8 @@ def create_app() -> FastAPI:
     app.include_router(c0_v2_router)
     # Cluster 2 chunks 2.1 + 2.4: M1 mandate management + PDF stub.
     app.include_router(m1_v2_router)
+    # Cluster 3 chunk 3.1: D0 admin surface (adapters + staging + freshness).
+    app.include_router(d0_v2_router)
 
     @app.get("/api/v1/health")
     async def health():

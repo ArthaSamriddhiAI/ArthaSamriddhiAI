@@ -132,11 +132,14 @@ def _valid_investor_payload(**overrides) -> dict:
 
 
 def _valid_mandate_payload(**overrides) -> dict:
+    """Cluster 3 four-band moderate fixture (sum_min=70, sum_max=130)."""
     base = {
-        "equity_min_pct": 50,
-        "equity_max_pct": 70,
-        "debt_min_pct": 20,
-        "debt_max_pct": 40,
+        "equity_min_pct": 45,
+        "equity_max_pct": 65,
+        "debt_min_pct": 15,
+        "debt_max_pct": 35,
+        "cash_min_pct": 5,
+        "cash_max_pct": 15,
         "alternatives_min_pct": 5,
         "alternatives_max_pct": 15,
         "single_position_max_pct": 5,
@@ -175,15 +178,20 @@ class TestDefaultsEndpoint:
         )
         assert resp.status_code == 200, resp.text
         body = resp.json()
-        # Moderate / over_5_years → essential liquidity tier; equity 50-70.
-        assert body["equity_min_pct"] == 50
-        assert body["equity_max_pct"] == 70
+        # Cluster 3 revision: moderate four-band defaults — equity 45-65,
+        # debt 15-35, cash 5-15, alts 5-15. liquidity_floor stays at 10
+        # for essential tier (over_5_years + moderate).
+        assert body["equity_min_pct"] == 45
+        assert body["equity_max_pct"] == 65
+        assert body["cash_min_pct"] == 5
+        assert body["cash_max_pct"] == 15
         assert body["liquidity_floor_pct"] == 10
         assert body["risk_appetite"] == "moderate"
         assert body["liquidity_tier"] == "essential"
-        # Source labels populated for every constraint field.
+        # Source labels populated for every constraint field, including cash.
         assert body["sources"]["liquidity_floor_pct"] == "i0_liquidity_tier"
         assert body["sources"]["equity_min_pct"] == "i0_risk_appetite"
+        assert body["sources"]["cash_min_pct"] == "i0_risk_appetite"
         assert body["sources"]["sector_max_pct"] == "industry_standard"
 
     @pytest.mark.asyncio

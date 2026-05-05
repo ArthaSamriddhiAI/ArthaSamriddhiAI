@@ -293,10 +293,11 @@ class TestMandateFlowE2E:
                 # The "yes" disambiguation turn is intercepted by
                 # _parse_candidate_selection before extract_slots runs,
                 # so the queue starts with the asset-allocation response.
-                # Asset allocation:
+                # Asset allocation (cluster 3: four bands including cash):
                 '{"extracted_fields": {'
-                '"equity_min_pct": 50, "equity_max_pct": 70, '
-                '"debt_min_pct": 20, "debt_max_pct": 40, '
+                '"equity_min_pct": 45, "equity_max_pct": 65, '
+                '"debt_min_pct": 15, "debt_max_pct": 35, '
+                '"cash_min_pct": 5, "cash_max_pct": 15, '
                 '"alternatives_min_pct": 5, "alternatives_max_pct": 15'
                 '}, "extraction_confidence": "high"}',
                 # Concentration:
@@ -428,9 +429,13 @@ class TestSkipToDefaults:
             )
             body = r.json()
             assert body["state"] == MandateConversationState.AWAITING_CONFIRMATION.value
-            # All five constraint families are filled with I0/industry defaults.
+            # Cluster 3 four-band defaults populated by skip-to-defaults.
+            # Moderate / over_5_years → essential tier:
+            #   equity 45-65, debt 15-35, cash 5-15, alts 5-15.
             slots = body["collected_slots"]
-            assert slots["equity_min_pct"] == 50  # moderate I0 risk_appetite
+            assert slots["equity_min_pct"] == 45  # moderate I0 risk_appetite
+            assert slots["cash_min_pct"] == 5     # cluster 3 cash band
+            assert slots["cash_max_pct"] == 15
             assert slots["liquidity_floor_pct"] == 10  # essential I0 liquidity_tier
             assert slots["sector_max_pct"] == 25  # industry standard
         finally:
@@ -523,12 +528,13 @@ class TestExistingMandateGuard:
     async def test_already_has_mandate_blocks_flow(self, http, db):
         advisor = await _login(http, "advisor1")
         investor_id = await _create_investor(http, advisor)
-        # Pre-create a mandate so the guard fires.
+        # Pre-create a mandate so the guard fires (cluster 3 four-band).
         await http.post(
             f"/api/v2/investors/{investor_id}/mandate",
             json={
-                "equity_min_pct": 50, "equity_max_pct": 70,
-                "debt_min_pct": 20, "debt_max_pct": 40,
+                "equity_min_pct": 45, "equity_max_pct": 65,
+                "debt_min_pct": 15, "debt_max_pct": 35,
+                "cash_min_pct": 5, "cash_max_pct": 15,
                 "alternatives_min_pct": 5, "alternatives_max_pct": 15,
                 "single_position_max_pct": 5,
                 "liquidity_floor_pct": 20,

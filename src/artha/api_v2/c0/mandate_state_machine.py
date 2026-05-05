@@ -43,8 +43,11 @@ class MandateConversationState(str, Enum):
 
 
 ASSET_ALLOCATION_FIELDS: tuple[str, ...] = (
+    # Cluster 3 chunk 3.1: four bands (cash added per FR 12.1 §2 cluster-3
+    # revision). Order matches the form's display order.
     "equity_min_pct", "equity_max_pct",
     "debt_min_pct", "debt_max_pct",
+    "cash_min_pct", "cash_max_pct",
     "alternatives_min_pct", "alternatives_max_pct",
 )
 

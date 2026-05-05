@@ -17,11 +17,17 @@ from artha.api_v2.m1.validation import (
 
 
 def _valid_constraints(**overrides):
+    """Cluster 3 four-band fixture (moderate-tier defaults).
+
+    Sums: mins = 45+15+5+5 = 70 ≤ 100 ✓; maxes = 65+35+15+15 = 130 ≥ 100 ✓.
+    """
     base = {
-        "equity_min_pct": 50,
-        "equity_max_pct": 70,
-        "debt_min_pct": 20,
-        "debt_max_pct": 40,
+        "equity_min_pct": 45,
+        "equity_max_pct": 65,
+        "debt_min_pct": 15,
+        "debt_max_pct": 35,
+        "cash_min_pct": 5,
+        "cash_max_pct": 15,
         "alternatives_min_pct": 5,
         "alternatives_max_pct": 15,
         "single_position_max_pct": 5,
@@ -67,30 +73,40 @@ class TestHardRules:
         assert "max_less_than_min" in [f["code"] for f in exc.value.failures]
 
     def test_sum_of_mins_over_100_raises(self):
-        # 60 + 30 + 20 = 110.
+        # Four-band: 60 + 30 + 20 + 5 = 115 → exceeds 100.
         with pytest.raises(MandateValidationError) as exc:
             validate_hard_rules(
                 _valid_constraints(
                     equity_min_pct=60, equity_max_pct=70,
                     debt_min_pct=30, debt_max_pct=40,
-                    alternatives_min_pct=20, alternatives_max_pct=30,
+                    cash_min_pct=20, cash_max_pct=30,
+                    alternatives_min_pct=5, alternatives_max_pct=15,
                 )
             )
         codes = [f["code"] for f in exc.value.failures]
         assert "sum_min_exceeds_100" in codes
 
     def test_sum_of_maxes_below_100_raises(self):
-        # 30 + 30 + 30 = 90.
+        # Four-band: 25 + 25 + 25 + 20 = 95 → below 100.
         with pytest.raises(MandateValidationError) as exc:
             validate_hard_rules(
                 _valid_constraints(
-                    equity_min_pct=10, equity_max_pct=30,
-                    debt_min_pct=10, debt_max_pct=30,
-                    alternatives_min_pct=10, alternatives_max_pct=30,
+                    equity_min_pct=10, equity_max_pct=25,
+                    debt_min_pct=10, debt_max_pct=25,
+                    cash_min_pct=5, cash_max_pct=25,
+                    alternatives_min_pct=5, alternatives_max_pct=20,
                 )
             )
         codes = [f["code"] for f in exc.value.failures]
         assert "sum_max_below_100" in codes
+
+    def test_cash_band_max_less_than_min_raises(self):
+        """Cluster 3 chunk 3.1 — cash band gets the same max>=min check."""
+        with pytest.raises(MandateValidationError) as exc:
+            validate_hard_rules(
+                _valid_constraints(cash_min_pct=15, cash_max_pct=5)
+            )
+        assert "max_less_than_min" in [f["code"] for f in exc.value.failures]
 
     def test_multiple_failures_collected_in_one_raise(self):
         with pytest.raises(MandateValidationError) as exc:
@@ -98,6 +114,7 @@ class TestHardRules:
                 _valid_constraints(
                     equity_min_pct=80, equity_max_pct=20,  # max < min
                     debt_min_pct=80, debt_max_pct=80,      # plus sum>100
+                    cash_min_pct=5, cash_max_pct=15,
                     alternatives_min_pct=10, alternatives_max_pct=10,
                 )
             )

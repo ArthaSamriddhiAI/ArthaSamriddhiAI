@@ -76,9 +76,13 @@ def validate_hard_rules(constraints: dict[str, Any]) -> None:
     """
     failures: list[dict[str, str]] = []
 
+    # Cluster 3 chunk 3.1: four bands (equity, debt, cash, alternatives) per
+    # FR 12.1 §2.3 cluster-3 revision. The within-class max>=min check
+    # iterates all four pairs; the cross-class sums likewise span four.
     pairs = [
         ("equity", "equity_min_pct", "equity_max_pct"),
         ("debt", "debt_min_pct", "debt_max_pct"),
+        ("cash", "cash_min_pct", "cash_max_pct"),
         ("alternatives", "alternatives_min_pct", "alternatives_max_pct"),
     ]
     for label, min_key, max_key in pairs:
@@ -94,6 +98,7 @@ def validate_hard_rules(constraints: dict[str, Any]) -> None:
     sum_min = (
         constraints["equity_min_pct"]
         + constraints["debt_min_pct"]
+        + constraints["cash_min_pct"]
         + constraints["alternatives_min_pct"]
     )
     if sum_min > 100:
@@ -109,6 +114,7 @@ def validate_hard_rules(constraints: dict[str, Any]) -> None:
     sum_max = (
         constraints["equity_max_pct"]
         + constraints["debt_max_pct"]
+        + constraints["cash_max_pct"]
         + constraints["alternatives_max_pct"]
     )
     if sum_max < 100:

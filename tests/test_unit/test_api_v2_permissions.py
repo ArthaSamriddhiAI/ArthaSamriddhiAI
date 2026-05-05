@@ -219,6 +219,37 @@ class TestPermissionVocabulary:
             Permission.MANDATES_READ_OWN_BOOK not in ROLE_PERMISSIONS[role]
         )
 
+    def test_cluster_3_d0_admin_permissions_present(self):
+        # Cluster 3 chunk 3.1 — 2 new entries for D0 admin surface.
+        cluster_3_perms = {
+            Permission.D0_ADMIN_READ,
+            Permission.D0_ADMIN_WRITE,
+        }
+        assert cluster_3_perms.issubset(set(Permission))
+
+    def test_only_audit_has_d0_admin_write(self):
+        # Audit triggers adapter runs + creates snapshots; CIO + compliance
+        # only read for governance visibility; advisor has neither.
+        assert (
+            Permission.D0_ADMIN_WRITE in ROLE_PERMISSIONS[Role.AUDIT]
+        )
+        for role in (Role.ADVISOR, Role.CIO, Role.COMPLIANCE):
+            assert (
+                Permission.D0_ADMIN_WRITE not in ROLE_PERMISSIONS[role]
+            ), f"{role.value} should not have D0_ADMIN_WRITE"
+
+    @pytest.mark.parametrize(
+        "role,has_read",
+        [
+            (Role.AUDIT, True),
+            (Role.CIO, True),
+            (Role.COMPLIANCE, True),
+            (Role.ADVISOR, False),
+        ],
+    )
+    def test_d0_admin_read_split(self, role, has_read):
+        assert (Permission.D0_ADMIN_READ in ROLE_PERMISSIONS[role]) is has_read
+
     @pytest.mark.parametrize("perm", [
         Permission.SYSTEM_LLM_CONFIG_READ,
         Permission.SYSTEM_LLM_CONFIG_WRITE,

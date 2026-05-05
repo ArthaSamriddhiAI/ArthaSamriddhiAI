@@ -54,9 +54,11 @@ class TestExpectedFields:
 
 class TestSlotGates:
     def test_asset_allocation_complete(self):
+        # Cluster 3 chunk 3.1: four bands (cash added).
         slots = {
-            "equity_min_pct": 50, "equity_max_pct": 70,
-            "debt_min_pct": 20, "debt_max_pct": 40,
+            "equity_min_pct": 45, "equity_max_pct": 65,
+            "debt_min_pct": 15, "debt_max_pct": 35,
+            "cash_min_pct": 5, "cash_max_pct": 15,
             "alternatives_min_pct": 5, "alternatives_max_pct": 15,
         }
         assert msm.has_asset_allocation(slots) is True
@@ -76,9 +78,11 @@ class TestSlotGates:
         ) is False
 
     def test_all_constraints_filled_requires_all_five_families(self):
+        # Cluster 3 chunk 3.1: cash band counts toward asset_allocation.
         slots = {
-            "equity_min_pct": 50, "equity_max_pct": 70,
-            "debt_min_pct": 20, "debt_max_pct": 40,
+            "equity_min_pct": 45, "equity_max_pct": 65,
+            "debt_min_pct": 15, "debt_max_pct": 35,
+            "cash_min_pct": 5, "cash_max_pct": 15,
             "alternatives_min_pct": 5, "alternatives_max_pct": 15,
             "single_position_max_pct": 5,
             "liquidity_floor_pct": 20,
@@ -107,9 +111,11 @@ class TestStateTransitions:
         )
 
     def test_asset_allocation_advances_when_complete(self):
+        # Cluster 3 chunk 3.1: requires cash band too.
         slots = {
-            "equity_min_pct": 50, "equity_max_pct": 70,
-            "debt_min_pct": 20, "debt_max_pct": 40,
+            "equity_min_pct": 45, "equity_max_pct": 65,
+            "debt_min_pct": 15, "debt_max_pct": 35,
+            "cash_min_pct": 5, "cash_max_pct": 15,
             "alternatives_min_pct": 5, "alternatives_max_pct": 15,
         }
         assert (

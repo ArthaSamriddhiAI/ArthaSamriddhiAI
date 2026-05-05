@@ -84,6 +84,15 @@ class Permission(str, Enum):
     MANDATES_WRITE_OWN_BOOK = "mandates:write:own_book"
     MANDATES_APPROVE_FIRM_SCOPE = "mandates:approve:firm_scope"
 
+    # ---- Cluster 3 chunks 3.1–3.4 (D0 admin surface) ----
+    # Audit-role-only — adapter management, staging queries, canonical-entity
+    # browsing, snapshot demo tool, freshness UI. Per cluster 3 demo addendum
+    # §1.18: cluster 3 grants the audit role full access; finer-grained RBAC
+    # is deferred to production-readiness. Compliance + CIO get read access
+    # for governance visibility but cannot trigger adapter runs.
+    D0_ADMIN_READ = "d0:admin:read"
+    D0_ADMIN_WRITE = "d0:admin:write"
+
 
 # Cluster 0 role-to-permission mapping per FR 17.2 §2 / §6.
 # Frozen so accidental mutation at module level is prevented; configurable
@@ -132,6 +141,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         # Read firm-wide for the pending queue + diff review.
         Permission.MANDATES_READ_FIRM_SCOPE,
         Permission.MANDATES_APPROVE_FIRM_SCOPE,
+        # Cluster 3 — CIO reads D0 admin surfaces for governance visibility.
+        Permission.D0_ADMIN_READ,
     }),
     Role.COMPLIANCE: frozenset({
         # Cluster 0
@@ -146,6 +157,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.CONVERSATIONS_READ_FIRM_SCOPE,
         # Cluster 2 — compliance reads firm-wide mandates for audit trail.
         Permission.MANDATES_READ_FIRM_SCOPE,
+        # Cluster 3 — compliance reads D0 admin surfaces.
+        Permission.D0_ADMIN_READ,
     }),
     Role.AUDIT: frozenset({
         # Cluster 0
@@ -160,6 +173,12 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.CONVERSATIONS_READ_FIRM_SCOPE,
         # Cluster 2 — audit reads everything firm-wide read-only.
         Permission.MANDATES_READ_FIRM_SCOPE,
+        # Cluster 3 — audit role is the primary D0 admin actor (chunk plan
+        # §3.1 §scope_in: "admin endpoints (audit role only)"). Audit gets
+        # both read AND write so they can trigger adapter runs + create
+        # snapshots from the demo tool.
+        Permission.D0_ADMIN_READ,
+        Permission.D0_ADMIN_WRITE,
     }),
 }
 

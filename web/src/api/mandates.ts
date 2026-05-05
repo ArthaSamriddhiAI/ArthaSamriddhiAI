@@ -18,10 +18,13 @@ export interface MandateVersion {
   version_number: number
   status: MandateVersionStatus
 
+  // Cluster 3 four-band asset allocation (cash added per FR 12.1 §2 cluster-3 rev)
   equity_min_pct: number
   equity_max_pct: number
   debt_min_pct: number
   debt_max_pct: number
+  cash_min_pct: number
+  cash_max_pct: number
   alternatives_min_pct: number
   alternatives_max_pct: number
   single_position_max_pct: number
@@ -67,10 +70,13 @@ export interface SoftWarning {
 }
 
 export interface MandateDefaults {
+  // Cluster 3 four-band defaults (cash added)
   equity_min_pct: number
   equity_max_pct: number
   debt_min_pct: number
   debt_max_pct: number
+  cash_min_pct: number
+  cash_max_pct: number
   alternatives_min_pct: number
   alternatives_max_pct: number
   single_position_max_pct: number
@@ -83,10 +89,13 @@ export interface MandateDefaults {
 }
 
 export interface MandateCreatePayload {
+  // Cluster 3 four-band asset allocation
   equity_min_pct: number
   equity_max_pct: number
   debt_min_pct: number
   debt_max_pct: number
+  cash_min_pct: number
+  cash_max_pct: number
   alternatives_min_pct: number
   alternatives_max_pct: number
   single_position_max_pct: number
