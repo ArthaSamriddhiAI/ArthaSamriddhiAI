@@ -41,6 +41,11 @@ class Household(Base):
     created_by: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
+    # Cluster 5 demo seed framework (FR 10.7 cluster-5 revision §3.2).
+    is_seed_data: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, index=True,
+    )
+
 
 class Investor(Base):
     """Canonical Investor entity per FR Entry 10.7 §2.1.
@@ -97,7 +102,13 @@ class Investor(Base):
     duplicate_pan_acknowledged: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     last_modified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     last_modified_by: Mapped[str] = mapped_column(String(255), nullable=False)
-    schema_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    # ----- Cluster 5 demo seed framework (FR 10.7 cluster-5 revision §3.2 / FR 19.0) -----
+    is_seed_data: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, index=True,
+    )
+    seed_archetype_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    schema_version: Mapped[int] = mapped_column(Integer, default=2, nullable=False)
 
     __table_args__ = (
         # FR 10.7 §2.3 indexes: composite on (advisor_id, created_at) for

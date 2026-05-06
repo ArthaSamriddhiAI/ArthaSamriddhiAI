@@ -15,6 +15,7 @@ from starlette.types import Scope
 
 # Cluster 0 (api_v2): register ORM tables + auth/events/system routers.
 import artha.api_v2.auth.models  # noqa: F401 — register sessions table
+import artha.api_v2.cases.models  # noqa: F401 — register v2_cases + 10 stage tables (cluster 5 chunk 5.1)
 
 # Cluster 1 (api_v2): investor + household tables (v2_ prefix to avoid v1 collision).
 import artha.api_v2.c0.models  # noqa: F401 — register v2_c0_conversations + v2_c0_messages (chunk 1.2)

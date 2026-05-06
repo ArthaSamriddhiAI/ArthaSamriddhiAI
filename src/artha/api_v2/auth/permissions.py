@@ -100,6 +100,22 @@ class Permission(str, Enum):
     MODEL_PORTFOLIO_READ = "model_portfolio:read"
     MODEL_PORTFOLIO_WRITE = "model_portfolio:write"
 
+    # ---- Cluster 5 (Case framework) ----
+    # Per cluster 5 chunk plan §8.2 + FR Entry 17.2 cluster-5 revision.
+    #
+    # Advisors open + view their own book's cases. CIO opens cases firm-wide
+    # AND records decisions on cases sent up for committee review. Compliance
+    # + audit see firm-wide cases for governance trail. Senior-advisor
+    # case-decision authority is reserved for production-readiness; cluster 5
+    # ships CIO-only decision recording per FR 20.4 §7.1.
+    CASES_CREATE_OWN_BOOK = "cases:create:own_book"
+    CASES_CREATE_FIRM_SCOPE = "cases:create:firm_scope"
+    CASES_READ_OWN_BOOK = "cases:read:own_book"
+    CASES_READ_FIRM_SCOPE = "cases:read:firm_scope"
+    CASES_DECIDE_FIRM_SCOPE = "cases:decide:firm_scope"
+    # Demo seed framework — CIO-only per FR 19.0 §3.2 and chunk 5.6 plan.
+    SEED_ADMIN = "seed:admin"
+
 
 # Cluster 0 role-to-permission mapping per FR 17.2 §2 / §6.
 # Frozen so accidental mutation at module level is prevented; configurable
@@ -125,6 +141,10 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         # Cluster 4 — advisor reads model portfolio for case construction
         # context (FR 11.0 cluster 4 revision §2.3); only CIO writes.
         Permission.MODEL_PORTFOLIO_READ,
+        # Cluster 5 — advisor opens + views cases on their own book.
+        # Decision recording is CIO-only (FR 20.4 §7.1).
+        Permission.CASES_CREATE_OWN_BOOK,
+        Permission.CASES_READ_OWN_BOOK,
     }),
     Role.CIO: frozenset({
         # Cluster 0
@@ -157,6 +177,13 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         # (FR 13.0 §5.1). Read + write.
         Permission.MODEL_PORTFOLIO_READ,
         Permission.MODEL_PORTFOLIO_WRITE,
+        # Cluster 5 — CIO opens cases firm-wide, reviews + decides on cases
+        # sent up via materiality gate (FR 20.4 §7.1). Also runs the demo
+        # seed framework (FR 19.0 §3.2).
+        Permission.CASES_CREATE_FIRM_SCOPE,
+        Permission.CASES_READ_FIRM_SCOPE,
+        Permission.CASES_DECIDE_FIRM_SCOPE,
+        Permission.SEED_ADMIN,
     }),
     Role.COMPLIANCE: frozenset({
         # Cluster 0
@@ -175,6 +202,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.D0_ADMIN_READ,
         # Cluster 4 — compliance reads model portfolio for governance audit.
         Permission.MODEL_PORTFOLIO_READ,
+        # Cluster 5 — compliance reads cases firm-wide for governance trail.
+        Permission.CASES_READ_FIRM_SCOPE,
     }),
     Role.AUDIT: frozenset({
         # Cluster 0
@@ -197,6 +226,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.D0_ADMIN_WRITE,
         # Cluster 4 — audit reads model portfolio for governance audit.
         Permission.MODEL_PORTFOLIO_READ,
+        # Cluster 5 — audit reads cases firm-wide read-only for governance.
+        Permission.CASES_READ_FIRM_SCOPE,
     }),
 }
 

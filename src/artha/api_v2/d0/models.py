@@ -14,7 +14,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, Index, Integer, String
+from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from artha.common.db.base import Base
@@ -121,8 +121,15 @@ class Snapshot(Base):
         String(40), nullable=False, default="never_verified"
     )
 
+    # Cluster 5 demo seed framework (FR 10.7 cluster-5 revision §3.2).
+    # Snapshots taken during seeded-case construction get tagged so the
+    # reset path can collect them via the same idempotent flow.
+    is_seed_data: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, index=True,
+    )
+
     schema_version: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=1
+        Integer, nullable=False, default=2
     )
 
     __table_args__ = (

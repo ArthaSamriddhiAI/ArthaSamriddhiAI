@@ -25,6 +25,7 @@ from enum import Enum
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     DateTime,
     ForeignKey,
     Index,
@@ -74,8 +75,12 @@ class Mandate(Base):
         DateTime(timezone=True), nullable=False
     )
     created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Cluster 5 demo seed framework (FR 10.7 cluster-5 revision §3.2).
+    is_seed_data: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, index=True,
+    )
     schema_version: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=1
+        Integer, nullable=False, default=2
     )
 
     __table_args__ = (
@@ -170,6 +175,11 @@ class MandateVersion(Base):
     )
     archived_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+
+    # Cluster 5 demo seed framework (FR 10.7 cluster-5 revision §3.2).
+    is_seed_data: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, index=True,
     )
 
     __table_args__ = (
