@@ -197,7 +197,10 @@ class TestCreate:
         )
         assert resp.status_code == 201, resp.text
         body = resp.json()
-        assert body["status"] == "gathering_evidence"
+        # Chunk 5.4 pipeline runs the case to its mode-specific end-state.
+        # Diagnostic auto-decides without a CIO decision form.
+        assert body["status"] == "decided"
+        assert body["closed_reason"] == "decided"
         assert body["snapshot_bundle_id"] is not None
         assert body["case_mode"] == "diagnostic"
         assert body["created_via"] == "api"
@@ -236,6 +239,7 @@ class TestCreate:
         assert body["opened_by"] == "cio1"
         # Assigned-to follows the investor's advisor, not the opener.
         assert body["assigned_to"] == "advisor_other"
+        assert body["status"] == "decided"
 
     @pytest.mark.asyncio
     async def test_compliance_blocked_from_create(self, http, seeded_book):
@@ -288,6 +292,8 @@ class TestCreate:
             "e1_equity_evidence",
             "e1_tax_evidence",
         ]
+        # proposed_action stops at awaiting_decision (CIO records decision in 5.5).
+        assert body["status"] == "awaiting_decision"
 
     @pytest.mark.asyncio
     async def test_invalid_mode_intent_returns_422(self, http, seeded_book):
@@ -337,6 +343,11 @@ class TestCreate:
         assert body["proposed_action"] == "Buy 5L of HDFC PMS"
         assert Decimal(body["proposed_action_amount_inr"]) == Decimal("500000")
         assert body["proposed_action_products"] == ["pms"]
+        # Materiality gate fires for PMS product → IC1 → governance →
+        # challenge → awaiting_decision.
+        assert body["status"] == "awaiting_decision"
+        assert body["is_material"] is True
+        assert "MAT_PRODUCT_PMS_AIF_SIF" in body["materiality_reason"]
 
 
 # ---------------------------------------------------------------------------
@@ -426,7 +437,7 @@ class TestRead:
         assert resp.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_get_case_detail_includes_empty_stage_rows(
+    async def test_get_case_detail_includes_pipeline_stage_rows(
         self, http, seeded_book,
     ):
         token = await _login(http, "advisor1")
@@ -436,8 +447,10 @@ class TestRead:
             json={
                 "investor_id": seeded_book["advisor1_investor"],
                 "case_mode": "diagnostic",
+                "case_intent": "portfolio_health",
             },
         )
+        assert resp.status_code == 201, resp.text
         case_id = resp.json()["case_id"]
 
         resp = await http.get(
@@ -446,10 +459,17 @@ class TestRead:
         )
         assert resp.status_code == 200, resp.text
         body = resp.json()
-        # Stage rows are empty until chunk 5.4's stub layer fills them.
-        assert body["evidence_verdicts"] == []
-        assert body["governance_results"] == []
-        assert body["synthesis"] is None
+        # Diagnostic pipeline writes evidence + portfolio_risk + synthesis +
+        # G1 governance + health report.
+        assert len(body["evidence_verdicts"]) > 0
+        assert body["portfolio_risk_analytics"] is not None
+        assert body["synthesis"] is not None
+        assert body["synthesis"]["output_mode"] == "diagnostic"
+        assert len(body["governance_results"]) == 1
+        assert body["governance_results"][0]["gate"] == "g1_mandate"
+        assert body["health_report"] is not None
+        # Diagnostic skips IC1 + A1 + decision artifact.
+        assert body["ic1_deliberation"] is None
+        assert body["a1_challenge"] is None
         assert body["decision_artifact"] is None
-        # Case is hydrated.
         assert body["case"]["case_id"] == case_id

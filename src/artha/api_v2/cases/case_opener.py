@@ -99,6 +99,11 @@ class OpenCaseRequest:
     #: ``ui_form``, ``n0_alert``, ``m0_scheduled`` per :class:`CaseCreatedVia`.
     #: C0 service / seed loader override before calling the opener.
     created_via: str = "api"
+    #: Test-only escape hatch: skip the chunk 5.4 pipeline run and leave
+    #: the case in ``gathering_evidence``. Production callers always run
+    #: the pipeline; chunk 5.3 unit tests (orchestrator-only assertions)
+    #: opt out via this flag.
+    skip_pipeline: bool = False
 
 
 @dataclass(frozen=True)
@@ -330,6 +335,33 @@ async def open_case(
         to_status=CaseStatus.GATHERING_EVIDENCE,
         firm_id=actor.firm_id,
     )
+
+    # Step 6 — run the case through its mode-specific pipeline (chunk 5.4).
+    # Stub layer is sub-millisecond per stage so we run inline. Cluster 7
+    # swaps in real LLM calls and this hop moves to a background worker.
+    if not request.skip_pipeline:
+        try:
+            from artha.api_v2.cases import pipeline as case_pipeline
+
+            await case_pipeline.run_pipeline(
+                db,
+                case=case,
+                firm_id=actor.firm_id,
+            )
+        except case_pipeline.PipelineError as exc:
+            try:
+                await repository.transition_status(
+                    db,
+                    case=case,
+                    to_status=CaseStatus.FAILED,
+                    closed_reason=CaseClosedReason.FAILED,
+                    firm_id=actor.firm_id,
+                )
+            except Exception:  # noqa: BLE001 — best-effort failure recording
+                pass
+            raise CaseOpeningError(
+                f"Pipeline failed for case {case.case_id!r}: {exc}",
+            ) from exc
 
     return OpenCaseResult(
         case=case,

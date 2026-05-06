@@ -160,6 +160,11 @@ def _cio_actor() -> UserContext:
 
 
 class TestHappyPath:
+    """Orchestrator-only tests with skip_pipeline=True so we assert the
+    state immediately after step 5 (transition to gathering_evidence).
+    Pipeline integration is covered in test_api_v2_cases_pipeline.py.
+    """
+
     @pytest.mark.asyncio
     async def test_opens_case_in_gathering_evidence_status(
         self, db, seeded_investor
@@ -176,6 +181,7 @@ class TestHappyPath:
                 case_intent="rebalance_proposal",
                 proposed_action="Shift 10% equity to debt",
                 proposed_action_amount_inr=Decimal("500000"),
+                skip_pipeline=True,
             ),
             actor=actor,
             deps=OpenCaseDeps(boss=boss),
@@ -205,6 +211,7 @@ class TestHappyPath:
                 investor_id=investor_id,
                 case_mode="diagnostic",
                 case_intent="portfolio_health",
+                skip_pipeline=True,
             ),
             actor=_advisor_actor(),
             deps=OpenCaseDeps(boss=boss),
@@ -223,6 +230,7 @@ class TestHappyPath:
             OpenCaseRequest(
                 investor_id=investor_id,
                 case_mode=CaseMode.DIAGNOSTIC,
+                skip_pipeline=True,
             ),
             actor=actor,
             deps=OpenCaseDeps(boss=_StubBoss()),
@@ -242,6 +250,7 @@ class TestHappyPath:
                 is_seed_data=True,
                 seed_archetype_id="aarav_sharma",
                 created_via="seed_loader",
+                skip_pipeline=True,
             ),
             actor=_cio_actor(),
             deps=OpenCaseDeps(boss=_StubBoss()),
@@ -403,6 +412,7 @@ class TestManualOverride:
                     "e1_equity_evidence",
                     "e1_tax_evidence",
                 ),
+                skip_pipeline=True,
             ),
             actor=_cio_actor(),
             deps=OpenCaseDeps(boss=boss),
