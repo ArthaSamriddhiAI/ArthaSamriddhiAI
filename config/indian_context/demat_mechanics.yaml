@@ -1,0 +1,52 @@
+# Demat + settlement mechanics. Per SEBI circulars + NSE / BSE
+# operations manual.
+
+version: "2024-q4"
+last_updated: "2024-10-15"
+
+settlement:
+  equity_t_plus_n: 1
+  equity_t_plus_0_optional: true
+  debt_corporate_t_plus_n: 2
+  debt_g_sec_t_plus_n: 1
+  mutual_fund_redemption_business_days:
+    equity: 3
+    debt: 2
+    liquid: 1
+
+depositories:
+  - id: "NSDL"
+    name: "National Securities Depository Limited"
+  - id: "CDSL"
+    name: "Central Depository Services Limited"
+
+demat_requirements:
+  must_demat:
+    - "listed_equity"
+    - "etf"
+    - "reit"
+    - "invit"
+    - "corporate_bonds"
+    - "sovereign_gold_bond"  # optional but recommended
+    - "pms_holdings"
+    - "aif_units"
+
+  not_required:
+    - "mutual_fund_units"  # SOA permitted
+    - "ppf"
+    - "physical_gold"
+    - "fixed_deposits"
+
+stt_rates_pct:
+  equity_delivery_buy: 0.1
+  equity_delivery_sell: 0.1
+  equity_intraday_sell: 0.025
+  futures_sell: 0.0125
+  options_sell_premium: 0.0625
+  etf_buy: 0.001
+  etf_sell: 0.001
+
+exchange_windows:
+  equity_normal_market: "09:15-15:30 IST"
+  equity_pre_open: "09:00-09:15 IST"
+  debt_repo: "09:00-17:00 IST"

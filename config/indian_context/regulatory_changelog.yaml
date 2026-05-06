@@ -1,0 +1,63 @@
+# Recent SEBI / RBI / FEMA / income-tax changes the evidence + governance
+# layers should be aware of. Cluster 6 enrichment will replace this with
+# a live changelog feed; today the loader reads this static file.
+
+version: "2024-q4"
+last_updated: "2024-10-15"
+
+entries:
+  - date: "2024-07-23"
+    issuer: "Ministry of Finance"
+    title: "Budget 2024-25 — capital gains tax overhaul"
+    summary: >
+      Indexation removed for most asset classes. Equity LTCG rate
+      revised from 10% to 12.5% with exemption raised to ₹1.25 L.
+      Debt slab taxation continues post-Apr-2023.
+    affected_areas:
+      - "ltcg_rates"
+      - "indexation"
+    severity: "high"
+
+  - date: "2024-09-30"
+    issuer: "SEBI"
+    title: "Specialized Investment Fund (SIF) framework"
+    summary: >
+      New product category between mutual funds and PMS / AIF;
+      ₹10 L minimum ticket; differentiated strategies allowed.
+    affected_areas:
+      - "structure_matrix"
+      - "product_eligibility"
+    severity: "medium"
+
+  - date: "2024-08-12"
+    issuer: "RBI"
+    title: "LRS clarification — international fund routing"
+    summary: >
+      Reaffirmed $250k annual LRS limit; clarified GIFT-City
+      feeder funds count separately from direct LRS.
+    affected_areas:
+      - "gift_city_routing"
+    severity: "medium"
+
+  - date: "2024-06-01"
+    issuer: "SEBI"
+    title: "T+0 optional settlement window"
+    summary: >
+      T+0 introduced for top-25 stocks as an opt-in trade window
+      alongside the standard T+1 cycle.
+    affected_areas:
+      - "demat_mechanics"
+      - "settlement"
+    severity: "low"
+
+  - date: "2024-04-01"
+    issuer: "SEBI"
+    title: "AIF nominal-ownership clarification"
+    summary: >
+      AIFs holding equity must report look-through positions for
+      single-issuer cap calculations; affects firm-level concentration
+      reporting.
+    affected_areas:
+      - "sebi_boundaries"
+      - "concentration_reporting"
+    severity: "medium"

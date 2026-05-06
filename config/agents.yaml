@@ -1,0 +1,108 @@
+# Agent registry config — cluster 5 chunk 5.2.
+#
+# This file is the single source of truth for which agents the system
+# expects to be authored. The Python registry
+# (`artha.api_v2.m0.registry.CANONICAL_AGENTS`) mirrors this list;
+# `validate_inventory()` cross-checks this YAML against the on-disk
+# skill.md set at startup and flags drift.
+#
+# Per FR Entry 20.2 §10.3: every entry here MUST have a corresponding
+# `config/skills/<agent_id>.md` file. Deferred agents still need their
+# skill.md draft on disk — `deferred=True` only changes runtime
+# dispatch.
+
+version: "1.0"
+authored_in_cluster: 5
+
+agents:
+  # ---------------------------------------------------------------------
+  # M0 tier — boss + sub-agents
+  # ---------------------------------------------------------------------
+  - agent_id: m0_router
+    tier: m0
+    deferred: false
+  - agent_id: m0_portfolio_state
+    tier: m0
+    deferred: false
+  - agent_id: m0_indian_context
+    tier: m0
+    deferred: false
+  - agent_id: m0_stitcher
+    tier: m0
+    deferred: false
+  - agent_id: m0_portfolio_analytics
+    tier: m0
+    deferred: false
+  - agent_id: m0_portfolio_risk_analytics
+    tier: m0
+    deferred: false
+  - agent_id: m0_briefer
+    tier: m0
+    deferred: true
+  - agent_id: m0_librarian
+    tier: m0
+    deferred: true
+
+  # ---------------------------------------------------------------------
+  # Evidence tier
+  # ---------------------------------------------------------------------
+  - agent_id: e1_equity_evidence
+    tier: evidence
+    deferred: false
+  - agent_id: e1_debt_evidence
+    tier: evidence
+    deferred: false
+  - agent_id: e1_alternatives_evidence
+    tier: evidence
+    deferred: false
+  - agent_id: e1_macro_evidence
+    tier: evidence
+    deferred: false
+  - agent_id: e1_sentiment_evidence
+    tier: evidence
+    deferred: false
+  - agent_id: e1_behavioural_evidence
+    tier: evidence
+    deferred: false
+  - agent_id: e1_tax_evidence
+    tier: evidence
+    deferred: false
+
+  # ---------------------------------------------------------------------
+  # Synthesis tier
+  # ---------------------------------------------------------------------
+  - agent_id: s1_case_mode
+    tier: synthesis
+    deferred: false
+  - agent_id: s1_diagnostic_mode
+    tier: synthesis
+    deferred: false
+  - agent_id: s1_briefing_mode
+    tier: synthesis
+    deferred: false
+
+  # ---------------------------------------------------------------------
+  # Deliberation tier
+  # ---------------------------------------------------------------------
+  - agent_id: ic1_chair
+    tier: deliberation
+    deferred: false
+  - agent_id: ic1_member_quant
+    tier: deliberation
+    deferred: false
+  - agent_id: g1_mandate_gate
+    tier: deliberation
+    deferred: false
+  - agent_id: g2_sebi_regulatory_gate
+    tier: deliberation
+    deferred: false
+  - agent_id: g3_action_filter_gate
+    tier: deliberation
+    deferred: false
+
+  # ---------------------------------------------------------------------
+  # Challenge tier
+  # ---------------------------------------------------------------------
+  - agent_id: a1_challenge
+    tier: challenge
+    deferred: false

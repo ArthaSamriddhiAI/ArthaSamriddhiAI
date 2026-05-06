@@ -1,0 +1,77 @@
+# Indian product structure matrix — minimum tickets, demat requirements,
+# investor-eligibility flags. Per SEBI regulations + FR Entry 9.2 §4.
+
+version: "2024-q4"
+last_updated: "2024-10-15"
+
+structures:
+  mutual_fund:
+    description: "Equity / debt / hybrid mutual funds"
+    minimum_ticket_inr: 500
+    demat_required: false
+    sebi_regulation: "MF Regulations, 1996"
+    investor_eligibility: "all"
+
+  pms:
+    description: "Portfolio Management Services"
+    minimum_ticket_inr: 5000000
+    demat_required: true
+    sebi_regulation: "PMS Regulations, 2020"
+    investor_eligibility: "all"
+
+  aif_category_i:
+    description: "Category I AIF — venture / SME / social-impact"
+    minimum_ticket_inr: 10000000
+    demat_required: true
+    sebi_regulation: "AIF Regulations, 2012"
+    investor_eligibility: "all"
+
+  aif_category_ii:
+    description: "Category II AIF — PE / debt funds without leverage"
+    minimum_ticket_inr: 10000000
+    demat_required: true
+    sebi_regulation: "AIF Regulations, 2012"
+    investor_eligibility: "all"
+
+  aif_category_iii:
+    description: "Category III AIF — hedge / leveraged strategies"
+    minimum_ticket_inr: 10000000
+    demat_required: true
+    sebi_regulation: "AIF Regulations, 2012"
+    investor_eligibility: "all"
+
+  sif:
+    description: "Specialized Investment Fund — new SEBI category 2024"
+    minimum_ticket_inr: 1000000
+    demat_required: true
+    sebi_regulation: "SIF Framework, 2024"
+    investor_eligibility: "all"
+
+  unlisted_equity:
+    description: "Direct unlisted equity"
+    minimum_ticket_inr: 500000
+    demat_required: false
+    investor_eligibility: "all"
+
+  reit:
+    description: "Real Estate Investment Trust"
+    minimum_ticket_inr: 10000
+    demat_required: true
+    sebi_regulation: "REIT Regulations, 2014"
+
+  invit:
+    description: "Infrastructure Investment Trust"
+    minimum_ticket_inr: 10000
+    demat_required: true
+    sebi_regulation: "InvIT Regulations, 2014"
+
+  sovereign_gold_bond:
+    description: "Sovereign Gold Bonds"
+    minimum_ticket_inr: 5000  # 1 gram
+    demat_required: false
+    investor_eligibility: "resident_individual"
+
+  direct_equity:
+    description: "Listed equity"
+    minimum_ticket_inr: 1
+    demat_required: true

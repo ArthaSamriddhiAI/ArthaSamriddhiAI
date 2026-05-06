@@ -1,0 +1,71 @@
+# Indian tax matrix — STCG / LTCG rates by asset class + holding period.
+# Per FR Entry 9.2 §3 + budget 2024-25 indexation removal.
+# Source: Income Tax Act sections 111A / 112A / 112 + budget annexure.
+#
+# All rates are percentages (15.0 = 15%). Indexation flag indicates
+# whether the asset class still benefits from cost inflation indexation
+# (post-23-Jul-2024 changes removed indexation for most categories).
+
+version: "2024-25-budget"
+last_updated: "2024-07-23"
+
+asset_classes:
+  equity_listed:
+    description: "Listed equity / equity-oriented mutual funds"
+    holding_period_long_term_months: 12
+    stcg_rate_pct: 20.0
+    ltcg_rate_pct: 12.5
+    ltcg_exemption_inr: 125000
+    indexation_eligible: false
+    section: "111A / 112A"
+
+  debt_listed:
+    description: "Listed debt instruments + debt mutual funds (post-Apr-2023)"
+    holding_period_long_term_months: 24
+    stcg_rate_pct: null
+    stcg_taxed_at_slab: true
+    ltcg_rate_pct: null
+    ltcg_taxed_at_slab: true
+    indexation_eligible: false
+    section: "Slab"
+
+  unlisted_equity:
+    description: "Unlisted shares + AIF Cat-I/II"
+    holding_period_long_term_months: 24
+    stcg_rate_pct: null
+    stcg_taxed_at_slab: true
+    ltcg_rate_pct: 12.5
+    indexation_eligible: false
+    section: "112"
+
+  real_estate:
+    description: "Immovable property"
+    holding_period_long_term_months: 24
+    stcg_rate_pct: null
+    stcg_taxed_at_slab: true
+    ltcg_rate_pct: 12.5
+    indexation_eligible: false  # post-23-Jul-2024
+    indexation_grandfathered_until: "2024-07-23"
+    section: "112"
+
+  gold:
+    description: "Physical gold + gold ETFs + sovereign gold bonds"
+    holding_period_long_term_months: 24
+    stcg_rate_pct: null
+    stcg_taxed_at_slab: true
+    ltcg_rate_pct: 12.5
+    indexation_eligible: false
+    sgb_redemption_exempt: true
+    section: "112"
+
+surcharge_thresholds_inr:
+  - threshold: 5000000
+    rate_pct: 10.0
+  - threshold: 10000000
+    rate_pct: 15.0
+  - threshold: 20000000
+    rate_pct: 25.0
+  - threshold: 50000000
+    rate_pct: 37.0  # capped at 25 from FY24-25 for capital-gains heads
+
+cess_rate_pct: 4.0

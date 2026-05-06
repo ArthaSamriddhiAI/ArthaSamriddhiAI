@@ -1,0 +1,35 @@
+# SEBI prescribed concentration / single-issuer / sector caps that the
+# governance gates check against. Per FR Entry 20.3 §3.1 + SEBI MF
+# Regulations Schedule 7 + PMS Regulations Sec. 24.
+
+version: "2024-q4"
+last_updated: "2024-10-15"
+
+mutual_fund:
+  single_issuer_cap_pct: 10.0
+  single_issuer_cap_pct_aaa_debt: 12.0
+  sector_cap_pct: 25.0
+  group_company_cap_pct: 20.0
+  reit_invit_cap_pct: 10.0
+  unlisted_securities_cap_pct: 5.0
+
+pms:
+  single_issuer_cap_pct: 25.0
+  notes: "PMS managers may exceed 25% with explicit written client consent."
+
+aif_category_i:
+  single_investee_cap_pct: 25.0
+
+aif_category_ii:
+  single_investee_cap_pct: 25.0
+
+aif_category_iii:
+  single_investee_cap_pct: 10.0
+  short_position_disclosure_required: true
+
+# General firm-level prudence caps that overlay the SEBI minimums.
+firm_prudence:
+  single_position_max_pct: 15.0
+  single_sector_max_pct: 30.0
+  alternatives_max_pct: 20.0
+  unlisted_max_pct: 10.0

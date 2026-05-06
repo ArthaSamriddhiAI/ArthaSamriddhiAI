@@ -1,0 +1,43 @@
+# GIFT-City IFSC routing rules for international assets. Per FR 9.x +
+# IFSCA Fund Management Regulations 2022 + RBI Liberalised Remittance
+# Scheme (LRS) circular.
+
+version: "2024-q4"
+last_updated: "2024-10-15"
+
+lrs_annual_limit_usd: 250000
+lrs_per_remitter_per_year: true
+
+gift_city_advantages:
+  tax_holiday_years: 10
+  tax_holiday_section: "10AA"
+  no_stt: true
+  no_dividend_distribution_tax: true
+  no_securities_transaction_tax_on_otc: true
+
+eligible_routes:
+  international_equity_direct_lrs:
+    description: "Direct US / global equity via LRS"
+    limit_usd: 250000
+    requires_demat_abroad: true
+    tax_treatment: "Indian-resident slab on dividends + LTCG/STCG"
+
+  international_via_gift_city_fund:
+    description: "Feeder fund / ODI / FPI in GIFT IFSC"
+    limit_usd: null
+    requires_demat_abroad: false
+    tax_treatment: "GIFT-City structure benefits — see fund offer doc"
+
+  international_via_indian_mf:
+    description: "Indian MF schemes investing abroad"
+    limit_usd: null
+    requires_demat_abroad: false
+    sebi_industry_cap_usd: 7000000000
+    notes: "Subject to SEBI industry cap; some schemes paused in 2022"
+
+restricted_assets:
+  - description: "Direct crypto / digital virtual assets"
+    reason: "RBI prohibits via banking channels; routed cases must use crypto exchange directly with PAN reporting"
+
+  - description: "Foreign real estate"
+    reason: "FEMA prohibits LRS use for real-estate purchase abroad"
