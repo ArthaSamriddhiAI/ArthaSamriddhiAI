@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiFetch } from './client'
 
@@ -280,5 +280,140 @@ export function useModelPortfolioHealth() {
       if (!r.ok) throw new Error(`health fetch failed: ${r.status}`)
       return (await r.json()) as ModelPortfolioHealth
     },
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Chunk 4.2 mutation hooks (CIO-only writes)
+// ---------------------------------------------------------------------------
+
+export interface BulkTagOperationResponse {
+  affected_count: number
+  skipped_count: number
+  failed_count: number
+  operation: string
+}
+
+function invalidateModelPortfolio(qc: ReturnType<typeof useQueryClient>) {
+  void qc.invalidateQueries({ queryKey: ['model-portfolio'] })
+}
+
+export function useReplaceInstrumentTags() {
+  const qc = useQueryClient()
+  return useMutation<
+    InstrumentWithTags,
+    Error,
+    { instrumentId: string; tags: string[] }
+  >({
+    mutationFn: async ({ instrumentId, tags }) => {
+      const r = await apiFetch(
+        `/api/v2/model-portfolio/instruments/${instrumentId}/tags`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tags }),
+        },
+      )
+      if (!r.ok) {
+        const detail = (await r.json().catch(() => ({}))) as Record<string, unknown>
+        throw new Error(
+          (detail.detail as string) ?? `tag replace failed: ${r.status}`,
+        )
+      }
+      return (await r.json()) as InstrumentWithTags
+    },
+    onSuccess: () => invalidateModelPortfolio(qc),
+  })
+}
+
+export function useBulkAddTag() {
+  const qc = useQueryClient()
+  return useMutation<
+    BulkTagOperationResponse,
+    Error,
+    { tag: string; instrumentIds: string[] }
+  >({
+    mutationFn: async ({ tag, instrumentIds }) => {
+      const r = await apiFetch(
+        '/api/v2/model-portfolio/instruments/tags/bulk-add',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tag, instrument_ids: instrumentIds }),
+        },
+      )
+      if (!r.ok) throw new Error(`bulk-add failed: ${r.status}`)
+      return (await r.json()) as BulkTagOperationResponse
+    },
+    onSuccess: () => invalidateModelPortfolio(qc),
+  })
+}
+
+export function useBulkRemoveTag() {
+  const qc = useQueryClient()
+  return useMutation<
+    BulkTagOperationResponse,
+    Error,
+    { tag: string; instrumentIds: string[] }
+  >({
+    mutationFn: async ({ tag, instrumentIds }) => {
+      const r = await apiFetch(
+        '/api/v2/model-portfolio/instruments/tags/bulk-remove',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tag, instrument_ids: instrumentIds }),
+        },
+      )
+      if (!r.ok) throw new Error(`bulk-remove failed: ${r.status}`)
+      return (await r.json()) as BulkTagOperationResponse
+    },
+    onSuccess: () => invalidateModelPortfolio(qc),
+  })
+}
+
+export function useBulkReplaceTags() {
+  const qc = useQueryClient()
+  return useMutation<
+    BulkTagOperationResponse,
+    Error,
+    { tags: string[]; instrumentIds: string[] }
+  >({
+    mutationFn: async ({ tags, instrumentIds }) => {
+      const r = await apiFetch(
+        '/api/v2/model-portfolio/instruments/tags/bulk-replace',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tags, instrument_ids: instrumentIds }),
+        },
+      )
+      if (!r.ok) throw new Error(`bulk-replace failed: ${r.status}`)
+      return (await r.json()) as BulkTagOperationResponse
+    },
+    onSuccess: () => invalidateModelPortfolio(qc),
+  })
+}
+
+export function useResetTagsToDefault() {
+  const qc = useQueryClient()
+  return useMutation<
+    BulkTagOperationResponse,
+    Error,
+    { instrumentIds: string[] }
+  >({
+    mutationFn: async ({ instrumentIds }) => {
+      const r = await apiFetch(
+        '/api/v2/model-portfolio/instruments/tags/reset-to-default',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ instrument_ids: instrumentIds }),
+        },
+      )
+      if (!r.ok) throw new Error(`reset failed: ${r.status}`)
+      return (await r.json()) as BulkTagOperationResponse
+    },
+    onSuccess: () => invalidateModelPortfolio(qc),
   })
 }

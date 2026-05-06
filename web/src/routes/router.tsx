@@ -27,6 +27,7 @@ import { AmendMandatePage } from '../pages/mandates/AmendMandatePage'
 import { AmendmentReviewPage } from '../pages/mandates/AmendmentReviewPage'
 import { NewMandatePage } from '../pages/mandates/NewMandatePage'
 import { PendingAmendmentsPage } from '../pages/mandates/PendingAmendmentsPage'
+import { ModelPortfolioInstrumentsPage } from '../pages/model-portfolio/InstrumentsPage'
 import { RoleHomePage } from '../pages/RoleHomePage'
 import { LLMRouterSettingsPage } from '../pages/settings/LLMRouterSettingsPage'
 
@@ -152,6 +153,13 @@ const advisorMandateAmendRoute = createRoute({
   component: AmendMandatePage,
 })
 
+// Cluster 4 chunk 4.2 — advisor read-only model-portfolio tag editing.
+const advisorModelPortfolioInstrumentsRoute = createRoute({
+  getParentRoute: () => advisorRoute,
+  path: '/model-portfolio/instruments',
+  component: () => <ModelPortfolioInstrumentsPage readOnly={true} backTo="/" />,
+})
+
 // ----- CIO tree (with nested settings routes from chunk 1.3) -----
 
 const cioRoute = createRoute({
@@ -189,6 +197,13 @@ const cioAmendmentReviewRoute = createRoute({
   getParentRoute: () => cioRoute,
   path: '/pending-amendments/$versionId',
   component: AmendmentReviewPage,
+})
+
+// Cluster 4 chunk 4.2 — CIO model-portfolio tag editing surface.
+const cioModelPortfolioInstrumentsRoute = createRoute({
+  getParentRoute: () => cioRoute,
+  path: '/model-portfolio/instruments',
+  component: () => <ModelPortfolioInstrumentsPage readOnly={false} backTo="/" />,
 })
 
 // ----- Audit tree (cluster 3 chunk 3.4 admin surface) -----
@@ -286,12 +301,14 @@ const routeTree = rootRoute.addChildren([
     advisorConversationalRoute,
     advisorMandateNewRoute,
     advisorMandateAmendRoute,
+    advisorModelPortfolioInstrumentsRoute,
   ]),
   cioRoute.addChildren([
     cioIndexRoute,
     cioSettingsLlmRouterRoute,
     cioPendingAmendmentsRoute,
     cioAmendmentReviewRoute,
+    cioModelPortfolioInstrumentsRoute,
   ]),
   complianceRoute,
   auditRoute.addChildren([

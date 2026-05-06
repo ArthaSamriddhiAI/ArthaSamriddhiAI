@@ -25,6 +25,7 @@ from artha.api_v2.d0.instruments.models import Instrument
 from artha.api_v2.m2 import cells
 from artha.api_v2.m2.event_names import (
     INSTRUMENT_TAGS_CHANGED,
+    MODEL_PORTFOLIO_TAGS_BULK_RESET,
     PREFERRED_PORTFOLIO_ENTRY_CREATED,
     PREFERRED_PORTFOLIO_ENTRY_DELETED,
     PREFERRED_PORTFOLIO_ENTRY_MODIFIED,
@@ -337,7 +338,9 @@ async def update_instrument_tags(
     """
     old_tags = list(instrument.model_portfolio_tags or [])
     now = datetime.now(timezone.utc)
-    instrument.model_portfolio_tags = list(dict.fromkeys(new_tags))  # dedupe + preserve order
+    # Dedupe + preserve matrix-row order so JSON encoding is deterministic.
+    canonical = [t for t in cells.ALL_CELLS if t in set(new_tags)]
+    instrument.model_portfolio_tags = canonical
     instrument.model_portfolio_tags_modified_at = now
     instrument.model_portfolio_tags_modified_by = actor_user_id
     instrument.last_modified_at = now
@@ -355,6 +358,248 @@ async def update_instrument_tags(
         firm_id=firm_id,
     )
     return instrument
+
+
+def validate_tag_set(tags: list[str]) -> list[str]:
+    """Validate + canonicalise a tag list. Raises :class:`ValueError` on
+    unknown tags. Duplicates are silently deduped; the result is in
+    matrix-row order regardless of input order.
+    """
+    seen: set[str] = set()
+    for t in tags:
+        if t not in cells.ALL_CELLS:
+            raise ValueError(f"Unknown cell tag: {t!r}")
+        seen.add(t)
+    return [t for t in cells.ALL_CELLS if t in seen]
+
+
+async def fetch_instruments_by_ids(
+    db: AsyncSession, *, instrument_ids: list[str]
+) -> list[Instrument]:
+    """Bulk fetch instruments by ID, preserving caller's order."""
+    if not instrument_ids:
+        return []
+    rows = list(
+        (
+            await db.execute(
+                select(Instrument).where(
+                    Instrument.instrument_id.in_(instrument_ids)
+                )
+            )
+        ).scalars()
+    )
+    by_id = {r.instrument_id: r for r in rows}
+    return [by_id[i] for i in instrument_ids if i in by_id]
+
+
+async def bulk_add_tag(
+    db: AsyncSession,
+    *,
+    tag: str,
+    instrument_ids: list[str],
+    actor_user_id: str,
+    firm_id: str | None = None,
+) -> dict[str, int]:
+    """Add ``tag`` to each instrument that doesn't already carry it.
+
+    Returns ``{"affected": N, "skipped": N}``: ``skipped`` covers
+    instruments that already had the tag (no write needed). All writes
+    happen in the caller's transaction; emits one bulk T1 event with the
+    full affected list.
+    """
+    if tag not in cells.ALL_CELLS:
+        raise ValueError(f"Unknown cell tag: {tag!r}")
+    instruments = await fetch_instruments_by_ids(db, instrument_ids=instrument_ids)
+    affected: list[str] = []
+    skipped: list[str] = []
+    now = datetime.now(timezone.utc)
+    for inst in instruments:
+        current = set(inst.model_portfolio_tags or [])
+        if tag in current:
+            skipped.append(inst.instrument_id)
+            continue
+        current.add(tag)
+        inst.model_portfolio_tags = [t for t in cells.ALL_CELLS if t in current]
+        inst.model_portfolio_tags_modified_at = now
+        inst.model_portfolio_tags_modified_by = actor_user_id
+        inst.last_modified_at = now
+        affected.append(inst.instrument_id)
+    if affected:
+        await db.flush()
+        await emit_event(
+            db,
+            event_name=INSTRUMENT_TAGS_CHANGED,
+            payload={
+                "operation": "bulk_add",
+                "tag": tag,
+                "affected_instrument_ids": affected,
+                "skipped_instrument_ids": skipped,
+                "actor": actor_user_id,
+                "change_type": "bulk",
+            },
+            firm_id=firm_id,
+        )
+    return {
+        "affected": len(affected),
+        "skipped": len(skipped),
+        "failed": len(instrument_ids) - len(affected) - len(skipped),
+    }
+
+
+async def bulk_remove_tag(
+    db: AsyncSession,
+    *,
+    tag: str,
+    instrument_ids: list[str],
+    actor_user_id: str,
+    firm_id: str | None = None,
+) -> dict[str, int]:
+    """Remove ``tag`` from each instrument that carries it.
+
+    Returns ``{"affected": N, "skipped": N, "failed": N}``: ``skipped``
+    covers instruments that didn't have the tag.
+    """
+    if tag not in cells.ALL_CELLS:
+        raise ValueError(f"Unknown cell tag: {tag!r}")
+    instruments = await fetch_instruments_by_ids(db, instrument_ids=instrument_ids)
+    affected: list[str] = []
+    skipped: list[str] = []
+    now = datetime.now(timezone.utc)
+    for inst in instruments:
+        current = set(inst.model_portfolio_tags or [])
+        if tag not in current:
+            skipped.append(inst.instrument_id)
+            continue
+        current.discard(tag)
+        inst.model_portfolio_tags = [t for t in cells.ALL_CELLS if t in current]
+        inst.model_portfolio_tags_modified_at = now
+        inst.model_portfolio_tags_modified_by = actor_user_id
+        inst.last_modified_at = now
+        affected.append(inst.instrument_id)
+    if affected:
+        await db.flush()
+        await emit_event(
+            db,
+            event_name=INSTRUMENT_TAGS_CHANGED,
+            payload={
+                "operation": "bulk_remove",
+                "tag": tag,
+                "affected_instrument_ids": affected,
+                "skipped_instrument_ids": skipped,
+                "actor": actor_user_id,
+                "change_type": "bulk",
+            },
+            firm_id=firm_id,
+        )
+    return {
+        "affected": len(affected),
+        "skipped": len(skipped),
+        "failed": len(instrument_ids) - len(affected) - len(skipped),
+    }
+
+
+async def bulk_replace_tags(
+    db: AsyncSession,
+    *,
+    tags: list[str],
+    instrument_ids: list[str],
+    actor_user_id: str,
+    firm_id: str | None = None,
+) -> dict[str, int]:
+    """Replace each selected instrument's tag set with the given ``tags``."""
+    canonical = validate_tag_set(tags)
+    instruments = await fetch_instruments_by_ids(db, instrument_ids=instrument_ids)
+    affected: list[str] = []
+    now = datetime.now(timezone.utc)
+    for inst in instruments:
+        old = list(inst.model_portfolio_tags or [])
+        if old == canonical:
+            continue  # skip — no change needed
+        inst.model_portfolio_tags = canonical
+        inst.model_portfolio_tags_modified_at = now
+        inst.model_portfolio_tags_modified_by = actor_user_id
+        inst.last_modified_at = now
+        affected.append(inst.instrument_id)
+    if affected:
+        await db.flush()
+        await emit_event(
+            db,
+            event_name=INSTRUMENT_TAGS_CHANGED,
+            payload={
+                "operation": "bulk_replace",
+                "new_tags": canonical,
+                "affected_instrument_ids": affected,
+                "actor": actor_user_id,
+                "change_type": "bulk",
+            },
+            firm_id=firm_id,
+        )
+    return {
+        "affected": len(affected),
+        "skipped": len(instruments) - len(affected),
+        "failed": len(instrument_ids) - len(instruments),
+    }
+
+
+async def reset_tags_to_default(
+    db: AsyncSession,
+    *,
+    instrument_ids: list[str] | None,
+    actor_user_id: str,
+    firm_id: str | None = None,
+) -> dict[str, int]:
+    """Reset instruments to their default tag set (FR 13.3 §2 rules).
+
+    ``instrument_ids=None`` resets the whole universe; a list resets only
+    the named subset. Unlike :func:`apply_default_tags`, this OVERWRITES
+    existing tag sets — used by the chunk 4.2 admin "reset to default"
+    affordance with explicit confirmation.
+    """
+    from artha.api_v2.m2 import default_tags
+
+    if instrument_ids is None:
+        rows = list((await db.execute(select(Instrument))).scalars())
+    else:
+        rows = await fetch_instruments_by_ids(db, instrument_ids=instrument_ids)
+
+    affected: list[str] = []
+    failed: list[str] = []
+    now = datetime.now(timezone.utc)
+    for inst in rows:
+        new_tags = default_tags.default_tags_for_instrument(
+            vehicle_type=inst.vehicle_type,
+            sebi_category=inst.sebi_category,
+            name=inst.name,
+            amc_name=inst.amc_name,
+            market_cap_rank=None,
+        )
+        if not new_tags:
+            failed.append(inst.instrument_id)
+            continue
+        canonical = [t for t in cells.ALL_CELLS if t in new_tags]
+        inst.model_portfolio_tags = canonical
+        inst.model_portfolio_tags_modified_at = now
+        inst.model_portfolio_tags_modified_by = actor_user_id
+        inst.last_modified_at = now
+        affected.append(inst.instrument_id)
+    if affected:
+        await db.flush()
+        await emit_event(
+            db,
+            event_name=MODEL_PORTFOLIO_TAGS_BULK_RESET,
+            payload={
+                "scope": "all" if instrument_ids is None else "filtered",
+                "affected_instrument_ids": affected,
+                "failed_instrument_ids": failed,
+                "actor": actor_user_id,
+            },
+            firm_id=firm_id,
+        )
+    return {
+        "affected": len(affected),
+        "skipped": 0,
+        "failed": len(failed),
+    }
 
 
 # ---------------------------------------------------------------------------

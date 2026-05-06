@@ -154,3 +154,56 @@ class HealthResponse(BaseModel):
     preferred_entries_by_cell: dict[str, CellRoleSummary]
     last_tag_modification_at: datetime | None
     last_preferred_modification_at: datetime | None
+
+
+# ---------------------------------------------------------------------------
+# Chunk 4.2 tag-write request shapes
+# ---------------------------------------------------------------------------
+
+
+class TagSetRequest(BaseModel):
+    """PUT /instruments/{id}/tags payload — replace the instrument's tag set."""
+
+    tags: list[str] = Field(default_factory=list, max_length=9)
+
+
+class BulkTagAddRequest(BaseModel):
+    """POST /instruments/tags/bulk-add — add one tag to multiple instruments."""
+
+    tag: str
+    instrument_ids: list[str] = Field(min_length=1, max_length=2000)
+
+
+class BulkTagRemoveRequest(BaseModel):
+    """POST /instruments/tags/bulk-remove — remove one tag from multiple instruments."""
+
+    tag: str
+    instrument_ids: list[str] = Field(min_length=1, max_length=2000)
+
+
+class BulkTagReplaceRequest(BaseModel):
+    """POST /instruments/tags/bulk-replace — overwrite tag set for many instruments."""
+
+    tags: list[str] = Field(default_factory=list, max_length=9)
+    instrument_ids: list[str] = Field(min_length=1, max_length=2000)
+
+
+class TagResetRequest(BaseModel):
+    """POST /instruments/tags/reset-to-default — reset to FR 13.3 defaults.
+
+    When ``instrument_ids`` is empty the reset applies to every instrument
+    matching the filter (or all instruments if no filter). Filtered reset
+    by ``instrument_ids`` is the chunk-4.2 default UI flow; the whole-
+    universe reset uses an empty list with no filter.
+    """
+
+    instrument_ids: list[str] = Field(default_factory=list, max_length=5000)
+
+
+class BulkTagOperationResponse(BaseModel):
+    """Summary of a bulk tag operation (returned by add/remove/replace/reset)."""
+
+    affected_count: int
+    skipped_count: int
+    failed_count: int
+    operation: str

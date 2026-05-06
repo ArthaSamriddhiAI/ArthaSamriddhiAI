@@ -28,6 +28,10 @@ from artha.api_v2.d0.instruments.models import Instrument
 from artha.api_v2.m2 import cells, service
 from artha.api_v2.m2.models import PreferredPortfolioEntry
 from artha.api_v2.m2.schemas import (
+    BulkTagAddRequest,
+    BulkTagOperationResponse,
+    BulkTagRemoveRequest,
+    BulkTagReplaceRequest,
     CellDetailResponse,
     CellRoleSummary,
     CellSummary,
@@ -38,6 +42,8 @@ from artha.api_v2.m2.schemas import (
     InstrumentWithTagsRead,
     MatrixOverviewResponse,
     PreferredPortfolioEntryRead,
+    TagResetRequest,
+    TagSetRequest,
 )
 from artha.api_v2.problem_details import problem_response
 from artha.common.db.session import get_session
@@ -362,4 +368,190 @@ async def health_endpoint(
         preferred_entries_by_cell=by_cell,
         last_tag_modification_at=summary["last_tag_modification_at"],
         last_preferred_modification_at=summary["last_preferred_modification_at"],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Chunk 4.2: tag editing write endpoints (CIO-only)
+# ---------------------------------------------------------------------------
+
+
+@router.put(
+    "/instruments/{instrument_id}/tags",
+    response_model=InstrumentWithTagsRead,
+)
+async def replace_instrument_tags_endpoint(
+    instrument_id: str,
+    body: TagSetRequest,
+    actor: Annotated[
+        UserContext,
+        Depends(require_permission(Permission.MODEL_PORTFOLIO_WRITE)),
+    ],
+    db: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Replace one instrument's tag set. CIO-only (chunk 4.2)."""
+    try:
+        canonical = service.validate_tag_set(body.tags)
+    except ValueError as exc:
+        return problem_response(
+            status=status.HTTP_400_BAD_REQUEST,
+            title="Invalid tag set",
+            detail=str(exc),
+        )
+    async with db.begin():
+        inst = await service.get_instrument(db, instrument_id=instrument_id)
+        if inst is None:
+            return problem_response(
+                status=status.HTTP_404_NOT_FOUND,
+                title="Instrument not found",
+                detail=f"No instrument with id={instrument_id!r}",
+            )
+        updated = await service.update_instrument_tags(
+            db,
+            instrument=inst,
+            new_tags=canonical,
+            actor_user_id=actor.user_id,
+            change_type="single",
+            firm_id=actor.firm_id,
+        )
+    return _instrument_to_read(updated)
+
+
+@router.post(
+    "/instruments/tags/bulk-add",
+    response_model=BulkTagOperationResponse,
+)
+async def bulk_add_tag_endpoint(
+    body: BulkTagAddRequest,
+    actor: Annotated[
+        UserContext,
+        Depends(require_permission(Permission.MODEL_PORTFOLIO_WRITE)),
+    ],
+    db: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Add one tag to many instruments. Atomic bulk write (chunk 4.2)."""
+    try:
+        async with db.begin():
+            counts = await service.bulk_add_tag(
+                db,
+                tag=body.tag,
+                instrument_ids=body.instrument_ids,
+                actor_user_id=actor.user_id,
+                firm_id=actor.firm_id,
+            )
+    except ValueError as exc:
+        return problem_response(
+            status=status.HTTP_400_BAD_REQUEST,
+            title="Invalid tag",
+            detail=str(exc),
+        )
+    return BulkTagOperationResponse(
+        affected_count=counts["affected"],
+        skipped_count=counts["skipped"],
+        failed_count=counts["failed"],
+        operation="bulk_add",
+    )
+
+
+@router.post(
+    "/instruments/tags/bulk-remove",
+    response_model=BulkTagOperationResponse,
+)
+async def bulk_remove_tag_endpoint(
+    body: BulkTagRemoveRequest,
+    actor: Annotated[
+        UserContext,
+        Depends(require_permission(Permission.MODEL_PORTFOLIO_WRITE)),
+    ],
+    db: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Remove one tag from many instruments (chunk 4.2)."""
+    try:
+        async with db.begin():
+            counts = await service.bulk_remove_tag(
+                db,
+                tag=body.tag,
+                instrument_ids=body.instrument_ids,
+                actor_user_id=actor.user_id,
+                firm_id=actor.firm_id,
+            )
+    except ValueError as exc:
+        return problem_response(
+            status=status.HTTP_400_BAD_REQUEST,
+            title="Invalid tag",
+            detail=str(exc),
+        )
+    return BulkTagOperationResponse(
+        affected_count=counts["affected"],
+        skipped_count=counts["skipped"],
+        failed_count=counts["failed"],
+        operation="bulk_remove",
+    )
+
+
+@router.post(
+    "/instruments/tags/bulk-replace",
+    response_model=BulkTagOperationResponse,
+)
+async def bulk_replace_tags_endpoint(
+    body: BulkTagReplaceRequest,
+    actor: Annotated[
+        UserContext,
+        Depends(require_permission(Permission.MODEL_PORTFOLIO_WRITE)),
+    ],
+    db: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Overwrite the tag set of many instruments with the same value
+    (chunk 4.2)."""
+    try:
+        async with db.begin():
+            counts = await service.bulk_replace_tags(
+                db,
+                tags=body.tags,
+                instrument_ids=body.instrument_ids,
+                actor_user_id=actor.user_id,
+                firm_id=actor.firm_id,
+            )
+    except ValueError as exc:
+        return problem_response(
+            status=status.HTTP_400_BAD_REQUEST,
+            title="Invalid tag set",
+            detail=str(exc),
+        )
+    return BulkTagOperationResponse(
+        affected_count=counts["affected"],
+        skipped_count=counts["skipped"],
+        failed_count=counts["failed"],
+        operation="bulk_replace",
+    )
+
+
+@router.post(
+    "/instruments/tags/reset-to-default",
+    response_model=BulkTagOperationResponse,
+)
+async def reset_tags_to_default_endpoint(
+    body: TagResetRequest,
+    actor: Annotated[
+        UserContext,
+        Depends(require_permission(Permission.MODEL_PORTFOLIO_WRITE)),
+    ],
+    db: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Reset tags for the given instrument IDs (or all, when empty) to
+    the FR 13.3 default rules. Used by the chunk 4.2 admin UI's "reset
+    to default" affordance with explicit confirmation."""
+    instrument_ids: list[str] | None = body.instrument_ids or None
+    async with db.begin():
+        counts = await service.reset_tags_to_default(
+            db,
+            instrument_ids=instrument_ids,
+            actor_user_id=actor.user_id,
+            firm_id=actor.firm_id,
+        )
+    return BulkTagOperationResponse(
+        affected_count=counts["affected"],
+        skipped_count=counts["skipped"],
+        failed_count=counts["failed"],
+        operation="reset_to_default",
     )
