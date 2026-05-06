@@ -36,10 +36,11 @@ class TestSkillLoad:
         assert "<current_state_machine_prompt>" in body
         assert "<list_of_fields_with_descriptions>" in body
 
-    def test_skill_version_is_v1_1(self):
+    def test_skill_version_is_v1_2(self):
         # v1.0 — cluster 1 chunk 1.2 (initial)
         # v1.1 — cluster 2 chunk 2.2 (added mandate_creation intent)
-        assert prompts.SKILL_VERSION == "v1.1"
+        # v1.2 — cluster 5 chunk 5.3 (added case_opening intent)
+        assert prompts.SKILL_VERSION == "v1.2"
 
 
 class TestRenderers:

@@ -256,3 +256,49 @@ class CaseFilters(BaseModel):
     case_mode: str | None = None
     limit: int = Field(default=100, ge=1, le=500)
     offset: int = Field(default=0, ge=0)
+
+
+class CaseCreateRequest(BaseModel):
+    """Request body for ``POST /api/v2/cases``.
+
+    The router converts this into an ``OpenCaseRequest`` for the
+    case_opener service. ``investor_id`` is required; everything else
+    has sensible defaults so the simplest UI form (a quick "diagnostic"
+    or "briefing" run on an investor) submits with just two fields.
+    """
+
+    investor_id: str = Field(..., description="Investor ULID")
+    case_mode: str = Field(
+        ...,
+        description="proposed_action | scenario | diagnostic | briefing",
+    )
+    case_intent: str | None = None
+    dominant_lens: str | None = Field(
+        default=None,
+        description="portfolio_shift | proposal_evaluation",
+    )
+    proposed_action: str | None = Field(
+        default=None,
+        description="Free-text description of the action under consideration",
+    )
+    proposed_action_amount_inr: Decimal | None = Field(
+        default=None,
+        ge=0,
+        description="Rupee value of the proposed action (for materiality gate)",
+    )
+    proposed_action_products: list[str] = Field(
+        default_factory=list,
+        description="Product categories involved (PMS / AIF / SIF / etc.)",
+    )
+    materiality_manual_flag: bool = Field(
+        default=False,
+        description="CIO-set escape hatch to force materiality regardless of rules",
+    )
+    supersedes_case_id: str | None = Field(
+        default=None,
+        description="ULID of the case this one replaces (e.g. revised proposal)",
+    )
+    manual_override_evidence_agents: list[str] | None = Field(
+        default=None,
+        description="CIO-only override of the M0 router's evidence-agent set",
+    )

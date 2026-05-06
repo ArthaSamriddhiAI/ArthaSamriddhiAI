@@ -30,11 +30,13 @@ from ulid import ULID
 
 from artha.api_v2.auth.user_context import Role, UserContext
 from artha.api_v2.c0 import (
+    case_opening_state_machine,
     investor_lookup,
     llm_client,
     mandate_state_machine,
     state_machine,
 )
+from artha.api_v2.c0.case_opening_state_machine import CaseOpeningState
 from artha.api_v2.c0.event_names import (
     C0_CONVERSATION_ABANDONED,
     C0_CONVERSATION_COMPLETED,
@@ -177,6 +179,10 @@ async def post_message(
         await _handle_mandate_turn(
             db, convo=convo, user_message=user_message, actor=actor, router=router
         )
+    elif convo.intent == "case_opening":
+        await _handle_case_opening_turn(
+            db, convo=convo, user_message=user_message, actor=actor, router=router
+        )
     else:
         # Cluster 1 investor_onboarding flow (unchanged from chunk 1.2).
         current_state = ConversationState(convo.state)
@@ -256,8 +262,14 @@ async def _handle_intent_turn(
         )
         return
 
-    # Other intents (case_opening, alert_response, briefing_request,
-    # general_question) return placeholder responses per FR 14.0 §2.1.
+    if result.intent == "case_opening":
+        await _handle_case_opening_intent_extraction(
+            db, convo=convo, result=result
+        )
+        return
+
+    # Other intents (alert_response, briefing_request, general_question)
+    # return placeholder responses per FR 14.0 §2.1.
     await _transition(db, convo=convo, to=ConversationState.COMPLETED)
     convo.status = "completed"
     convo.completed_at = datetime.now(timezone.utc)
@@ -1078,9 +1090,11 @@ async def confirm_action(
             "confirm is only valid when the conversation is awaiting confirmation"
         )
     # Dispatch by intent — investor_onboarding hits the cluster 1 path,
-    # mandate_creation hits chunk 2.2's path.
+    # mandate_creation hits chunk 2.2's path, case_opening hits chunk 5.3.
     if convo.intent == "mandate_creation":
         await _execute_mandate_creation(db, convo=convo, actor=actor)
+    elif convo.intent == "case_opening":
+        await _execute_case_opening(db, convo=convo, actor=actor)
     else:
         await _execute_action(db, convo=convo)
     convo.last_message_at = datetime.now(timezone.utc)
@@ -1486,3 +1500,484 @@ def _slots_to_investor_payload(slots: dict[str, Any]) -> InvestorCreateRequest:
     if slots.get("_duplicate_pan_pending"):
         payload["duplicate_pan_acknowledged"] = True
     return InvestorCreateRequest(**payload)
+
+
+# ---------------------------------------------------------------------------
+# Case-opening intent (chunk 5.3 — FR Entry 14.0 cluster-5 revision)
+# ---------------------------------------------------------------------------
+
+
+async def _transition_case_opening(
+    db: AsyncSession, *, convo: Conversation, to: CaseOpeningState
+) -> None:
+    """Mirror of :func:`_transition_mandate` for the case_opening FSM."""
+    src = convo.state
+    convo.state = to.value
+    await db.flush()
+    await emit_event(
+        db,
+        event_name=C0_STATE_TRANSITIONED,
+        payload={
+            "conversation_id": convo.conversation_id,
+            "from": src,
+            "to": to.value,
+            "intent": "case_opening",
+        },
+        firm_id=convo.firm_id,
+    )
+
+
+async def _handle_case_opening_intent_extraction(
+    db: AsyncSession,
+    *,
+    convo: Conversation,
+    result: llm_client.IntentDetectionResult,
+) -> None:
+    """Turn-1 handler when the LLM classifies as ``case_opening``.
+
+    Stamps any extracted investor / case_mode hints into the slot bag,
+    transitions to disambiguation, runs the structured investor lookup.
+    """
+    fields_to_apply = {
+        k: v
+        for k, v in result.extracted_fields.items()
+        if k in (
+            "investor_name",
+            "investor_pan",
+            "case_mode",
+            "case_intent",
+            "proposed_action",
+        )
+    }
+    if fields_to_apply:
+        await _apply_extracted_fields(
+            db,
+            convo=convo,
+            fields=fields_to_apply,
+            confidence="medium",
+            llm_provider=result.llm_provider,
+            llm_latency_ms=result.llm_latency_ms,
+        )
+
+    await _transition_case_opening(
+        db,
+        convo=convo,
+        to=CaseOpeningState.INVESTOR_DISAMBIGUATION,
+    )
+    await _run_investor_disambiguation_for_case_opening(db, convo=convo)
+
+
+async def _handle_case_opening_turn(
+    db: AsyncSession,
+    *,
+    convo: Conversation,
+    user_message: str,
+    actor: UserContext,
+    router: SmartLLMRouter,
+) -> None:
+    """Subsequent-turn dispatcher for the case_opening intent."""
+    state = CaseOpeningState(convo.state)
+
+    if state is CaseOpeningState.AWAITING_CONFIRMATION:
+        await _handle_case_opening_confirmation_text(
+            db, convo=convo, user_message=user_message, actor=actor
+        )
+        return
+
+    if state is CaseOpeningState.INVESTOR_DISAMBIGUATION:
+        await _handle_case_opening_disambiguation_turn(
+            db, convo=convo, user_message=user_message, router=router
+        )
+        return
+
+    # COLLECTING_DETAILS
+    await _handle_case_opening_slot_turn(
+        db, convo=convo, user_message=user_message, router=router
+    )
+
+
+async def _handle_case_opening_disambiguation_turn(
+    db: AsyncSession,
+    *,
+    convo: Conversation,
+    user_message: str,
+    router: SmartLLMRouter,
+) -> None:
+    state = CaseOpeningState.INVESTOR_DISAMBIGUATION
+    expected = list(case_opening_state_machine.expected_fields_for(state))
+    current_prompt = case_opening_state_machine.system_prompt_for(
+        state, convo.collected_slots
+    )
+
+    candidates = convo.collected_slots.get("_disambiguation_candidates") or []
+    selection = _parse_candidate_selection(user_message, candidates)
+    if selection is not None:
+        await _lock_in_investor_for_case_opening(
+            db, convo=convo, candidate=selection
+        )
+        return
+
+    result = await llm_client.extract_slots(
+        db=db,
+        router=router,
+        user_response=user_message,
+        current_prompt=current_prompt,
+        expected_fields=expected,
+    )
+    if isinstance(result, LLMFallback):
+        await _emit_llm_failure(db, convo=convo, fallback=result, stage="slot")
+        await _append_system_message(
+            db,
+            convo=convo,
+            content=(
+                LLM_FALLBACK_NOTICE
+                + "\n\nReply with the investor's full name or PAN."
+            ),
+            metadata={"fallback_mode": True},
+        )
+        return
+
+    if result.extracted_fields:
+        await _apply_extracted_fields(
+            db,
+            convo=convo,
+            fields={
+                k: v
+                for k, v in result.extracted_fields.items()
+                if k in ("investor_name", "investor_pan")
+            },
+            confidence=result.extraction_confidence,
+            llm_provider=result.llm_provider,
+            llm_latency_ms=result.llm_latency_ms,
+        )
+
+    await _run_investor_disambiguation_for_case_opening(db, convo=convo)
+
+
+async def _run_investor_disambiguation_for_case_opening(
+    db: AsyncSession, *, convo: Conversation
+) -> None:
+    """Like :func:`_run_investor_disambiguation` but uses the case_opening
+    state names. Logic identical otherwise: structured lookup, branch on
+    cardinality, prompt accordingly."""
+    actor = UserContext(
+        user_id=convo.user_id,
+        firm_id=convo.firm_id,
+        role=Role.ADVISOR,
+        email="",
+        name="",
+        session_id="",
+    )
+    matches = await investor_lookup.find_matching_investors(
+        db,
+        name_query=convo.collected_slots.get("investor_name"),
+        pan_query=convo.collected_slots.get("investor_pan"),
+        actor=actor,
+    )
+
+    if len(matches) == 1:
+        candidate = matches[0]
+        await _stash_candidates(db, convo=convo, candidates=matches)
+        await _append_system_message(
+            db,
+            convo=convo,
+            content=(
+                f"I found {candidate.name} (PAN {candidate.pan}). "
+                "Is this the right investor? Reply 'yes' to proceed."
+            ),
+            metadata={
+                "disambiguation_candidates": [
+                    _candidate_dict(c) for c in matches
+                ],
+            },
+        )
+        return
+
+    if len(matches) > 1:
+        await _stash_candidates(db, convo=convo, candidates=matches)
+        lines = ["I found multiple investors. Which one?"]
+        for i, c in enumerate(matches, start=1):
+            lines.append(f"  {i}. {c.name} · PAN {c.pan} · age {c.age}")
+        lines.append("")
+        lines.append("Reply with the number or the name to select.")
+        await _append_system_message(
+            db,
+            convo=convo,
+            content="\n".join(lines),
+            metadata={
+                "disambiguation_candidates": [
+                    _candidate_dict(c) for c in matches
+                ],
+            },
+        )
+        return
+
+    await _append_system_message(
+        db,
+        convo=convo,
+        content=(
+            "I couldn't find an investor matching that name or PAN. "
+            "Can you provide the full name or PAN? If this client isn't "
+            "in your book yet, I can help you onboard them first — say "
+            "'onboard new client'."
+        ),
+        metadata={"disambiguation_candidates": []},
+    )
+
+
+async def _lock_in_investor_for_case_opening(
+    db: AsyncSession,
+    *,
+    convo: Conversation,
+    candidate: investor_lookup.InvestorMatch,
+) -> None:
+    """Confirm an investor and advance to detail collection.
+
+    Unlike the mandate variant, we don't gate on existing-mandate state
+    — case_opening *requires* an existing mandate (the governance gate
+    consumes it), and missing-mandate is surfaced as a soft warning at
+    decision-time rather than blocking case creation.
+    """
+    new_slots = {**convo.collected_slots}
+    new_slots["investor_id"] = candidate.investor_id
+    new_slots["investor_name"] = candidate.name
+    new_slots["investor_pan"] = candidate.pan
+    new_slots.pop("_disambiguation_candidates", None)
+    convo.collected_slots = new_slots
+
+    next_state = CaseOpeningState.COLLECTING_DETAILS
+    await _transition_case_opening(db, convo=convo, to=next_state)
+    await _append_system_message(
+        db,
+        convo=convo,
+        content=case_opening_state_machine.system_prompt_for(
+            next_state, convo.collected_slots
+        ),
+        metadata={
+            "expected_fields": list(
+                case_opening_state_machine.expected_fields_for(next_state)
+            ),
+        },
+    )
+
+
+async def _handle_case_opening_slot_turn(
+    db: AsyncSession,
+    *,
+    convo: Conversation,
+    user_message: str,
+    router: SmartLLMRouter,
+) -> None:
+    state = CaseOpeningState(convo.state)
+    expected = list(case_opening_state_machine.expected_fields_for(state))
+    current_prompt = case_opening_state_machine.system_prompt_for(
+        state, convo.collected_slots
+    )
+
+    result = await llm_client.extract_slots(
+        db=db,
+        router=router,
+        user_response=user_message,
+        current_prompt=current_prompt,
+        expected_fields=expected,
+    )
+
+    if isinstance(result, LLMFallback):
+        await _emit_llm_failure(db, convo=convo, fallback=result, stage="slot")
+        await _append_system_message(
+            db,
+            convo=convo,
+            content=LLM_FALLBACK_NOTICE + "\n\n" + current_prompt,
+            metadata={"fallback_mode": True},
+        )
+        return
+
+    extracted = {
+        k: v
+        for k, v in result.extracted_fields.items()
+        if k in case_opening_state_machine.DETAIL_FIELDS
+    }
+    if extracted:
+        await _apply_extracted_fields(
+            db,
+            convo=convo,
+            fields=extracted,
+            confidence=result.extraction_confidence,
+            llm_provider=result.llm_provider,
+            llm_latency_ms=result.llm_latency_ms,
+        )
+
+    next_state = case_opening_state_machine.next_state_after(
+        state, convo.collected_slots
+    )
+    if next_state is not state:
+        await _transition_case_opening(db, convo=convo, to=next_state)
+    await _append_system_message(
+        db,
+        convo=convo,
+        content=case_opening_state_machine.system_prompt_for(
+            next_state, convo.collected_slots
+        ),
+        metadata={
+            "expected_fields": list(
+                case_opening_state_machine.expected_fields_for(next_state)
+            ),
+            "extraction_confidence": result.extraction_confidence,
+        },
+    )
+
+
+async def _handle_case_opening_confirmation_text(
+    db: AsyncSession,
+    *,
+    convo: Conversation,
+    user_message: str,
+    actor: UserContext,
+) -> None:
+    """Yes/no/cancel handler in the case_opening confirmation state."""
+    norm = user_message.strip().lower()
+    if norm in {"cancel", "no", "stop", "abort"}:
+        await _abandon_inline(db, convo=convo, reason="user_cancelled")
+        return
+    if norm in {"yes", "confirm", "go ahead", "open it", "open"}:
+        await _execute_case_opening(db, convo=convo, actor=actor)
+        return
+    await _append_system_message(
+        db,
+        convo=convo,
+        content=case_opening_state_machine.system_prompt_for(
+            CaseOpeningState.AWAITING_CONFIRMATION, convo.collected_slots
+        ),
+        metadata={"hint": "type 'yes' to confirm or 'cancel' to abort"},
+    )
+
+
+async def _execute_case_opening(
+    db: AsyncSession, *, convo: Conversation, actor: UserContext
+) -> None:
+    """Call the chunk 5.3 case_opener with the conversation's slot bag."""
+    from artha.api_v2.cases import case_opener
+    from artha.api_v2.cases.case_opener import (
+        CaseOpeningError,
+        InvalidCaseModeError,
+        InvestorNotFoundError,
+        InvestorScopeError,
+        OpenCaseDeps,
+        OpenCaseRequest,
+    )
+    from artha.api_v2.m0.boss import boss as m0_boss
+
+    await _transition_case_opening(
+        db, convo=convo, to=CaseOpeningState.EXECUTING
+    )
+
+    slots = convo.collected_slots
+    request = OpenCaseRequest(
+        investor_id=slots["investor_id"],
+        case_mode=slots["case_mode"],
+        case_intent=slots.get("case_intent"),
+        proposed_action=slots.get("proposed_action"),
+        created_via="c0_conversational",
+    )
+
+    creator = UserContext(
+        user_id=convo.user_id,
+        firm_id=convo.firm_id,
+        role=Role.ADVISOR,
+        email=actor.email,
+        name=actor.name,
+        session_id=actor.session_id,
+    )
+
+    try:
+        result = await case_opener.open_case(
+            db,
+            request,
+            actor=creator,
+            deps=OpenCaseDeps(boss=m0_boss),
+        )
+    except InvestorNotFoundError as exc:
+        await _transition_case_opening(
+            db, convo=convo, to=CaseOpeningState.INVESTOR_DISAMBIGUATION
+        )
+        await _append_system_message(
+            db,
+            convo=convo,
+            content=f"Investor lookup failed: {exc}. Try again with a name or PAN.",
+            metadata={"error": "investor_not_found"},
+        )
+        return
+    except InvestorScopeError as exc:
+        await _transition_case_opening(
+            db, convo=convo, to=CaseOpeningState.COMPLETED
+        )
+        convo.status = "completed"
+        convo.completed_at = datetime.now(timezone.utc)
+        await _append_system_message(
+            db,
+            convo=convo,
+            content=(
+                "That investor isn't in your book. Ask the assigned advisor "
+                "or your CIO to open the case."
+            ),
+            metadata={"error": "scope", "detail": str(exc)},
+        )
+        return
+    except InvalidCaseModeError as exc:
+        await _transition_case_opening(
+            db, convo=convo, to=CaseOpeningState.COLLECTING_DETAILS
+        )
+        await _append_system_message(
+            db,
+            convo=convo,
+            content=f"That mode/intent combo doesn't work: {exc}.",
+            metadata={"error": "invalid_mode"},
+        )
+        return
+    except CaseOpeningError as exc:
+        await _transition_case_opening(
+            db, convo=convo, to=CaseOpeningState.COMPLETED
+        )
+        convo.status = "completed"
+        convo.completed_at = datetime.now(timezone.utc)
+        await _append_system_message(
+            db,
+            convo=convo,
+            content=f"Case opening failed: {exc}.",
+            metadata={"error": "case_opening_failed"},
+        )
+        return
+
+    convo.investor_id = result.case.investor_id
+    await _transition_case_opening(
+        db, convo=convo, to=CaseOpeningState.COMPLETED
+    )
+    convo.status = "completed"
+    convo.completed_at = datetime.now(timezone.utc)
+
+    await emit_event(
+        db,
+        event_name=C0_CONVERSATION_COMPLETED,
+        payload={
+            "conversation_id": convo.conversation_id,
+            "action_taken": "case_opened",
+            "case_id": result.case.case_id,
+            "investor_id": result.case.investor_id,
+            "final_state": CaseOpeningState.COMPLETED.value,
+        },
+        firm_id=convo.firm_id,
+    )
+
+    await _append_system_message(
+        db,
+        convo=convo,
+        content=(
+            f"Case {result.case.case_id} is open. It's gathering evidence "
+            f"now — you'll see findings appear in the case detail view."
+        ),
+        metadata={
+            "case_id": result.case.case_id,
+            "card": "case_success",
+            "applicable_evidence_agents": list(result.applicable_evidence_agents),
+        },
+    )

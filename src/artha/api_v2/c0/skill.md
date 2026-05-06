@@ -1,7 +1,7 @@
 # C0 Conversational Orchestrator — Skill File
 
 **Owner:** C0
-**Version:** v1.1 (cluster 2 chunk 2.2 — added mandate_creation intent)
+**Version:** v1.2 (cluster 5 chunk 5.3 — added case_opening intent slots)
 **Status:** Live
 **Cross-references:** FR Entry 14.0 §2.3 (prompt templates), FR Entry 14.0 Cluster 2 Revision Note (mandate_creation intent), Principles §3.4 (skill.md mechanism)
 
@@ -30,6 +30,12 @@ Also extract any field values from the message that map to these fields:
   time_horizon (under_3_years/3_to_5_years/over_5_years).
 - Mandate creation: investor_name (the client the mandate is for), investor_pan
   (if mentioned).
+- Case opening: investor_name, investor_pan (the client the case is for),
+  case_mode (proposed_action / scenario / diagnostic / briefing), case_intent
+  (rebalance_proposal / new_investment / exit_position / product_evaluation /
+  asset_allocation_change / tax_loss_harvesting / liquidity_mobilisation /
+  mandate_review_response / portfolio_health / meeting_prep / other),
+  proposed_action (free-text description of the action under consideration).
 
 Reply with a single JSON object and no surrounding prose:
 {"intent": "<intent>", "extracted_fields": {<field>: <value>, ...}}
@@ -71,6 +77,18 @@ Field types and rules:
 - use_defaults: boolean. Set to true when the user says "use defaults",
   "use I0 suggestions", "the suggested values are fine", or similar
   affordances during the mandate_creation flow.
+- case_mode: exactly one of proposed_action, scenario, diagnostic, briefing.
+  Cluster 5 case_opening intent. Map free-text affordances: "I'm thinking of
+  buying X" → proposed_action; "what if X happens" → scenario; "how is the
+  portfolio doing" → diagnostic; "I have a meeting next week" → briefing.
+- case_intent: cluster 5 case_opening intent. Pick the closest match from
+  rebalance_proposal, new_investment, exit_position, product_evaluation,
+  asset_allocation_change, tax_loss_harvesting, liquidity_mobilisation,
+  mandate_review_response, portfolio_health, meeting_prep. Use "other" only
+  if no listed intent fits.
+- proposed_action: cluster 5 case_opening intent. Free-text summary of the
+  action the user is considering, e.g. "shift 10% from equity to debt",
+  "exit RELIANCE", "evaluate adding a multicap PMS".
 
 Map free-text answers to enum values where reasonable (e.g., "he's pretty
 conservative" → risk_appetite=conservative; "long term" → time_horizon=over_5_years).

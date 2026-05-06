@@ -24,7 +24,9 @@ from pathlib import Path
 #: v1.0 — cluster 1 chunk 1.2 (initial)
 #: v1.1 — cluster 2 chunk 2.2 (added mandate_creation intent + slot fields
 #:        for the five constraint families + use_defaults affordance)
-SKILL_VERSION = "v1.1"
+#: v1.2 — cluster 5 chunk 5.3 (added case_opening intent + slot fields for
+#:        case_mode / case_intent / proposed_action)
+SKILL_VERSION = "v1.2"
 
 _SKILL_FILE = Path(__file__).parent / "skill.md"
 
