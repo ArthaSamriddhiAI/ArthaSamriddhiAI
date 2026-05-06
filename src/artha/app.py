@@ -25,6 +25,7 @@ import artha.api_v2.d0.models  # noqa: F401 — register v2_staging_records + v2
 import artha.api_v2.investors.models  # noqa: F401 — register v2_investors + v2_households
 import artha.api_v2.llm.models  # noqa: F401 — register v2_llm_provider_config (chunk 1.3)
 import artha.api_v2.m1.models  # noqa: F401 — register v2_mandates + v2_mandate_versions (cluster 2)
+import artha.api_v2.m2.models  # noqa: F401 — register v2_preferred_portfolio_entries (cluster 4)
 import artha.api_v2.observability.models  # noqa: F401 — register t1_events table
 import artha.data.commodity_pipeline  # noqa: F401 — register commodity tables
 import artha.data.crypto_pipeline  # noqa: F401 — register crypto tables
@@ -48,6 +49,7 @@ from artha.api_v2.events.router import router as events_v2_router
 from artha.api_v2.investors.router import router as investors_v2_router
 from artha.api_v2.llm.router import router as llm_v2_router
 from artha.api_v2.m1.router import router as m1_v2_router
+from artha.api_v2.m2.router import router as m2_v2_router
 from artha.api_v2.system.firm_info import router as system_firm_info_router
 from artha.api_v2.system.role_home import router as system_role_home_router
 from artha.common.db.base import Base
@@ -162,6 +164,61 @@ async def _register_and_maybe_autoload_fixture_adapter() -> None:
         )
 
 
+async def _apply_model_portfolio_defaults() -> None:
+    """Cluster 4 chunk 4.1: apply default tags + load default preferred portfolio.
+
+    Runs after the cluster 3 fixture adapter so the canonical instrument
+    universe exists. Errors never block startup — the audit role can
+    re-trigger loads from the admin UI if the startup pass failed.
+    """
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
+    from artha.api_v2.m2 import default_loader
+    from artha.config import settings
+
+    engine = get_engine()
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+
+    if settings.samriddhi_model_portfolio_auto_default_tags:
+        try:
+            async with factory() as session:
+                async with session.begin():
+                    summary = await default_loader.apply_default_tags(session)
+            logger.info(
+                "Cluster 4 default tagging: tagged=%s, skipped_already_tagged=%s, "
+                "failed_classification=%s",
+                summary["tagged"],
+                summary["skipped_already_tagged"],
+                summary["failed_classification"],
+            )
+        except Exception:  # noqa: BLE001
+            logger.exception(
+                "Cluster 4 default tag loader failed; continuing startup."
+            )
+
+    if settings.samriddhi_model_portfolio_auto_default_preferred:
+        fixture_path = Path(settings.samriddhi_default_model_portfolio_path)
+        try:
+            async with factory() as session:
+                async with session.begin():
+                    summary = await default_loader.load_default_preferred_portfolio(
+                        session, fixture_path=fixture_path
+                    )
+            logger.info(
+                "Cluster 4 default preferred portfolio loader: loaded=%s, "
+                "already_present=%s, skipped_missing_instrument=%s, skipped_invalid=%s",
+                summary["loaded"],
+                summary["already_present"],
+                summary["skipped_missing_instrument"],
+                summary["skipped_invalid"],
+            )
+        except Exception:  # noqa: BLE001
+            logger.exception(
+                "Cluster 4 default preferred portfolio loader failed; "
+                "continuing startup."
+            )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup: create all tables
@@ -170,6 +227,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await conn.run_sync(Base.metadata.create_all)
     # Cluster 3 addendum: register + maybe auto-load the JSON fixture.
     await _register_and_maybe_autoload_fixture_adapter()
+    # Cluster 4 chunk 4.1: apply default tags + load default preferred portfolio.
+    # Runs AFTER the cluster 3 fixture so instruments exist for the loaders
+    # to reference.
+    await _apply_model_portfolio_defaults()
     yield
     # Shutdown
     await dispose_engine()
@@ -217,6 +278,8 @@ def create_app() -> FastAPI:
     app.include_router(d0_industry_router)
     # Cluster 3 chunk 3.4: snapshot machinery (create / list / verify / diff).
     app.include_router(d0_snapshot_router)
+    # Cluster 4 chunks 4.1+: M2 model portfolio (tags + preferred portfolio).
+    app.include_router(m2_v2_router)
 
     @app.get("/api/v1/health")
     async def health():

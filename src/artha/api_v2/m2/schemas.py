@@ -1,0 +1,156 @@
+"""Pydantic shapes for the M2 model portfolio surface."""
+
+from __future__ import annotations
+
+from datetime import date, datetime
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+RiskProfileLiteral = Literal["aggressive", "moderate", "conservative"]
+HorizonLiteral = Literal["long_term", "medium_term", "short_term"]
+PositionRoleLiteral = Literal["core", "satellite", "optional"]
+
+
+# ---------------------------------------------------------------------------
+# Instrument-with-tags shape (chunk 4.1 read; chunk 4.2 write)
+# ---------------------------------------------------------------------------
+
+
+class InstrumentWithTagsRead(BaseModel):
+    """Instrument-shaped read for the model portfolio surfaces.
+
+    Subset of cluster 3's full Instrument with the model-portfolio fields
+    that chunks 4.2 / 4.3 actually need rendered (TER + AUM + Sharpe + 1y/3y
+    returns are read from the staged source JSON in cluster 5+).
+    """
+
+    instrument_id: str
+    isin: str | None
+    amfi_scheme_code: str | None
+    exchange_ticker: str | None
+    name: str
+    asset_class: str
+    vehicle_type: str
+    sebi_category: str | None
+    amc_name: str | None
+    riskometer_label: str | None
+    status: str
+    inception_date: date | None
+
+    # Tag fields (cluster 4 chunk 4.1 schema additions)
+    model_portfolio_tags: list[str]
+    model_portfolio_tags_modified_at: datetime | None
+    model_portfolio_tags_modified_by: str | None
+
+    last_modified_at: datetime
+    schema_version: int
+
+
+class InstrumentListResponse(BaseModel):
+    instruments: list[InstrumentWithTagsRead]
+    total: int
+    limit: int
+    offset: int
+
+
+# ---------------------------------------------------------------------------
+# Preferred portfolio entry shapes (chunk 4.1 read; chunk 4.3 write)
+# ---------------------------------------------------------------------------
+
+
+class PreferredPortfolioEntryRead(BaseModel):
+    """One preferred portfolio entry as the API renders it."""
+
+    entry_id: str
+    risk_profile: RiskProfileLiteral
+    horizon: HorizonLiteral
+    instrument_id: str
+    instrument_name: str
+    instrument_asset_class: str
+    instrument_vehicle_type: str
+    instrument_amc_name: str | None
+    instrument_sebi_category: str | None
+    position_role: PositionRoleLiteral
+    rank_within_role: int
+    notes: str | None
+    has_matching_tag: bool
+    created_at: datetime
+    created_by: str
+    created_via: str
+    last_modified_at: datetime
+    last_modified_by: str
+
+
+class CellRoleSummary(BaseModel):
+    core: int
+    satellite: int
+    optional: int
+
+
+class CellSummary(BaseModel):
+    """One cell's high-level stats for the matrix overview."""
+
+    risk_profile: RiskProfileLiteral
+    horizon: HorizonLiteral
+    cell_id: str
+    counts: CellRoleSummary
+    last_modified_at: datetime | None
+    top_core_names: list[str] = Field(
+        default_factory=list,
+        description="Up to 3 names of the cell's top-rank core entries (for hover preview).",
+    )
+
+
+class MatrixOverviewResponse(BaseModel):
+    cells: list[CellSummary]
+    total_entries: int
+    last_modified_at: datetime | None
+
+
+class CellDetailResponse(BaseModel):
+    risk_profile: RiskProfileLiteral
+    horizon: HorizonLiteral
+    cell_id: str
+    core: list[PreferredPortfolioEntryRead]
+    satellite: list[PreferredPortfolioEntryRead]
+    optional: list[PreferredPortfolioEntryRead]
+    last_modified_at: datetime | None
+
+
+class InstrumentInPreferredEntry(BaseModel):
+    """Where one instrument appears in the preferred portfolio."""
+
+    entry_id: str
+    risk_profile: RiskProfileLiteral
+    horizon: HorizonLiteral
+    cell_id: str
+    position_role: PositionRoleLiteral
+    rank_within_role: int
+
+
+class InstrumentInPreferredResponse(BaseModel):
+    instrument_id: str
+    instrument_name: str
+    appearances: list[InstrumentInPreferredEntry]
+
+
+# ---------------------------------------------------------------------------
+# Health summary (chunk 4.1)
+# ---------------------------------------------------------------------------
+
+
+class HealthResponse(BaseModel):
+    """Health summary for debugging + demos (chunk 4.1 §implementation_notes).
+
+    Returns counts + per-cell role breakdown + last-modified timestamps so
+    the audit role can scan model-portfolio state at a glance.
+    """
+
+    tagged_instruments_count: int
+    untagged_instruments_count: int
+    total_instruments: int
+    total_preferred_entries: int
+    preferred_entries_by_cell: dict[str, CellRoleSummary]
+    last_tag_modification_at: datetime | None
+    last_preferred_modification_at: datetime | None

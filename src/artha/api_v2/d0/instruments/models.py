@@ -30,7 +30,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, Index, Integer, String
+from sqlalchemy import JSON, Date, DateTime, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from artha.common.db.base import Base
@@ -98,7 +98,24 @@ class Instrument(Base):
     last_modified_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, index=True
     )
-    schema_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    # ----- Model portfolio tags (cluster 4 chunk 4.1) -----
+    # Per FR Entry 13.1 §2.1: a JSON array of cell-identifier strings from
+    # the 9-element enum (e.g. "moderate_long_term"). The default loader
+    # populates this from SEBI category + vehicle type rules at startup;
+    # the CIO refines via the chunk 4.2 admin UI. Modification metadata
+    # is initially NULL (defaults applied at startup are not "edited"),
+    # populated when a human edits via the admin UI.
+    model_portfolio_tags: Mapped[list[str]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    model_portfolio_tags_modified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    model_portfolio_tags_modified_by: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )
+
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
 
     __table_args__ = (
         Index("ix_v2_instruments_class_vehicle", "asset_class", "vehicle_type"),

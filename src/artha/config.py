@@ -51,6 +51,19 @@ class Settings(BaseSettings):
     )
     samriddhi_fixture_auto_load: bool = False
 
+    # ---------------- Cluster 4: Model portfolio defaults --
+    # Per FR Entry 13.3 §3.2 + §5.2. Auto-default-tags applies SEBI +
+    # vehicle-type rules to instruments with empty tag arrays at startup.
+    # Auto-default-preferred loads ``default_model_portfolio.json``
+    # entries when the table is empty. Both default to False so test
+    # environments don't trigger; demo deployments set both to True via
+    # the .env file. Both loaders are idempotent on repeated runs.
+    samriddhi_model_portfolio_auto_default_tags: bool = False
+    samriddhi_model_portfolio_auto_default_preferred: bool = False
+    samriddhi_default_model_portfolio_path: str = (
+        "./data/fixtures/default_model_portfolio.json"
+    )
+
     # ---------------- Cluster 0: Authentication & Sessions ----------------
     # Per FR Entry 17.0 §3.1, FR Entry 17.1 §2, and the Cluster 0 Dev-Mode Addendum.
     #

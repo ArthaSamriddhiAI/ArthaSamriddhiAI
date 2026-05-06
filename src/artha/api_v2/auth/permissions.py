@@ -93,6 +93,13 @@ class Permission(str, Enum):
     D0_ADMIN_READ = "d0:admin:read"
     D0_ADMIN_WRITE = "d0:admin:write"
 
+    # ---- Cluster 4 (M2 Model Portfolio) ----
+    # CIO is the sole editor (FR 13.0 §5.1: "no multi-approver flow"). Advisor
+    # gets read so they can understand the firm's preferred portfolio for case
+    # construction. Compliance + audit get read for governance visibility.
+    MODEL_PORTFOLIO_READ = "model_portfolio:read"
+    MODEL_PORTFOLIO_WRITE = "model_portfolio:write"
+
 
 # Cluster 0 role-to-permission mapping per FR 17.2 §2 / §6.
 # Frozen so accidental mutation at module level is prevented; configurable
@@ -115,6 +122,9 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         # Cluster 2 — advisor creates + amends mandates on their own book
         Permission.MANDATES_READ_OWN_BOOK,
         Permission.MANDATES_WRITE_OWN_BOOK,
+        # Cluster 4 — advisor reads model portfolio for case construction
+        # context (FR 11.0 cluster 4 revision §2.3); only CIO writes.
+        Permission.MODEL_PORTFOLIO_READ,
     }),
     Role.CIO: frozenset({
         # Cluster 0
@@ -143,6 +153,10 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.MANDATES_APPROVE_FIRM_SCOPE,
         # Cluster 3 — CIO reads D0 admin surfaces for governance visibility.
         Permission.D0_ADMIN_READ,
+        # Cluster 4 — CIO is the sole editor of the model portfolio
+        # (FR 13.0 §5.1). Read + write.
+        Permission.MODEL_PORTFOLIO_READ,
+        Permission.MODEL_PORTFOLIO_WRITE,
     }),
     Role.COMPLIANCE: frozenset({
         # Cluster 0
@@ -159,6 +173,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.MANDATES_READ_FIRM_SCOPE,
         # Cluster 3 — compliance reads D0 admin surfaces.
         Permission.D0_ADMIN_READ,
+        # Cluster 4 — compliance reads model portfolio for governance audit.
+        Permission.MODEL_PORTFOLIO_READ,
     }),
     Role.AUDIT: frozenset({
         # Cluster 0
@@ -179,6 +195,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         # snapshots from the demo tool.
         Permission.D0_ADMIN_READ,
         Permission.D0_ADMIN_WRITE,
+        # Cluster 4 — audit reads model portfolio for governance audit.
+        Permission.MODEL_PORTFOLIO_READ,
     }),
 }
 
