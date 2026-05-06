@@ -42,6 +42,7 @@ from artha.accountability.router import router as accountability_router
 from artha.api_v2.auth.router import router as auth_v2_router
 from artha.api_v2.c0.router import router as c0_v2_router
 from artha.api_v2.cases.router import router as cases_v2_router
+from artha.api_v2.cases.seed_router import router as cases_seed_router
 from artha.api_v2.d0.industry.router import router as d0_industry_router
 from artha.api_v2.d0.instruments.router import router as d0_instruments_router
 from artha.api_v2.d0.macro.router import router as d0_macro_router
@@ -284,6 +285,8 @@ def create_app() -> FastAPI:
     app.include_router(m2_v2_router)
     # Cluster 5 chunk 5.3: cases REST surface (POST + list + detail).
     app.include_router(cases_v2_router)
+    # Cluster 5 chunk 5.6: demo seed admin (CIO-only via seed:admin).
+    app.include_router(cases_seed_router)
 
     @app.get("/api/v1/health")
     async def health():

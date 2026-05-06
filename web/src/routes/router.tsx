@@ -35,6 +35,7 @@ import { ModelPortfolioInstrumentsPage } from '../pages/model-portfolio/Instrume
 import { PreferredMatrixPage } from '../pages/model-portfolio/PreferredMatrixPage'
 import { RoleHomePage } from '../pages/RoleHomePage'
 import { LLMRouterSettingsPage } from '../pages/settings/LLMRouterSettingsPage'
+import { SeedAdminPage } from '../pages/settings/SeedAdminPage'
 
 // Code-based router. Cluster 0 introduced the four role-tree subtrees;
 // cluster 1 chunk 1.1 adds nested routes under /advisor for investors:
@@ -236,6 +237,13 @@ const cioSettingsLlmRouterRoute = createRoute({
   component: LLMRouterSettingsPage,
 })
 
+// Cluster 5 chunk 5.6 — CIO-only demo seed admin (FR 19.0).
+const cioSettingsSeedRoute = createRoute({
+  getParentRoute: () => cioRoute,
+  path: '/settings/seed',
+  component: SeedAdminPage,
+})
+
 // Cluster 2 chunk 2.3 — CIO pending-amendments queue + review surface.
 const cioPendingAmendmentsRoute = createRoute({
   getParentRoute: () => cioRoute,
@@ -407,6 +415,7 @@ const routeTree = rootRoute.addChildren([
   cioRoute.addChildren([
     cioIndexRoute,
     cioSettingsLlmRouterRoute,
+    cioSettingsSeedRoute,
     cioPendingAmendmentsRoute,
     cioAmendmentReviewRoute,
     cioModelPortfolioInstrumentsRoute,

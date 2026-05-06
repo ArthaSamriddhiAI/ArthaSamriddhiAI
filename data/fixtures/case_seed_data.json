@@ -1,0 +1,196 @@
+{
+  "young_aggressive_techie": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "consensus": {"summary": "Equity rebalance is on-thesis for an aggressive long-horizon investor."},
+      "agreement_areas": {"areas": ["valuation_neutral_midcap", "macro_supportive"]},
+      "conflict_areas": {"areas": []},
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "balanced",
+      "escalation_recommended": false,
+      "synthesis_narrative": "Aarav's equity sleeve is consistent with an aggressive 80/15/5 mandate. The proposed mid-cap shift takes advantage of relative-valuation breadth without breaching the single-position cap. Macro and sentiment support the action. No materiality flag.",
+      "recommendation": "proceed",
+      "flags": {},
+      "reasoning_summary": "Seeded synthesis for archetype young_aggressive_techie."
+    }
+  },
+  "single_high_earner": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "synthesis_narrative": "₹1.2 Cr Cat-II AIF subscription crosses the materiality threshold (PMS/AIF/SIF rule + ticket-size rule). IC1 deliberation expected. AIF cap-headroom adequate; lock-in matches the over_5_year horizon.",
+      "amplification": {"flag": true, "drivers": ["product_classification_aif", "ticket_size_above_threshold"]},
+      "escalation_recommended": true,
+      "escalation_reason": "Material AIF subscription; IC1 review per FR 20.1 §6.",
+      "recommendation": "support_with_conditions",
+      "consensus": {"summary": "Material AIF subscription; supports with size + lock-in caveats."},
+      "agreement_areas": {"areas": ["mandate_compliance", "horizon_match"]},
+      "conflict_areas": {"areas": []},
+      "uncertainty_flag": false,
+      "mode_dominance": "balanced",
+      "flags": {},
+      "reasoning_summary": "Seeded synthesis for archetype single_high_earner."
+    }
+  },
+  "midcareer_business_owner": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "synthesis_narrative": "Tax-loss harvesting from underperforming sectoral fund is appropriate timing — losses bookable, redirect to broad-market index preserves equity allocation. STT impact minimal.",
+      "recommendation": "proceed",
+      "consensus": {"summary": "Routine tax-loss harvesting; clean."},
+      "agreement_areas": {"areas": ["tax_efficiency", "allocation_preserved"]},
+      "conflict_areas": {"areas": []},
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "balanced",
+      "escalation_recommended": false,
+      "flags": {},
+      "reasoning_summary": "Seeded synthesis for archetype midcareer_business_owner."
+    }
+  },
+  "hni_business_concentrated": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "synthesis_narrative": "₹2.5 Cr PMS subscription firmly material (ticket size + product classification). Diversification benefit vs current concentrated business holding is meaningful. IC1 expected to support with conditions.",
+      "amplification": {"flag": true, "drivers": ["large_ticket", "concentrated_book", "pms_classification"]},
+      "escalation_recommended": true,
+      "escalation_reason": "HNI material subscription with concentrated baseline; IC1 escalation.",
+      "recommendation": "support_with_conditions",
+      "consensus": {"summary": "Material PMS subscription; supports with size + manager-quality caveats."},
+      "agreement_areas": {"areas": ["diversification_benefit", "horizon_match"]},
+      "conflict_areas": {"areas": []},
+      "uncertainty_flag": false,
+      "mode_dominance": "balanced",
+      "flags": {},
+      "reasoning_summary": "Seeded synthesis for archetype hni_business_concentrated."
+    }
+  },
+  "spouse_moderate_planner": {
+    "synthesis.diagnostic": {
+      "output_mode": "diagnostic",
+      "synthesis_narrative": "Diya's portfolio is in healthy operating range — equity drift +1.2% within mandate, debt allocation comfortable, no concentration breach. Cash buffer aligned with liquidity tier.",
+      "recommendation": "no_action_required",
+      "consensus": {"summary": "Healthy."},
+      "agreement_areas": {"areas": ["mandate_compliance", "performance_in_range"]},
+      "conflict_areas": {"areas": []},
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "balanced",
+      "escalation_recommended": false,
+      "flags": {},
+      "reasoning_summary": "Seeded synthesis for archetype spouse_moderate_planner."
+    }
+  },
+  "retiree_income_focused": {
+    "synthesis.diagnostic": {
+      "output_mode": "diagnostic",
+      "synthesis_narrative": "Retiree portfolio favouring debt is functioning as designed. SCSS quarterly payouts on schedule; equity sleeve performing in line with peers. Recommend liquidity buffer review at next meeting given recent inflation print.",
+      "recommendation": "no_action_required",
+      "consensus": {"summary": "Healthy with attention-cue on liquidity buffer."},
+      "agreement_areas": {"areas": ["mandate_compliance", "income_continuity"]},
+      "conflict_areas": {"areas": []},
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "balanced",
+      "escalation_recommended": false,
+      "flags": {},
+      "reasoning_summary": "Seeded synthesis for archetype retiree_income_focused."
+    }
+  },
+  "midcareer_salaried_doubleincome": {
+    "synthesis.briefing": {
+      "output_mode": "briefing",
+      "synthesis_narrative": "Ravi's quarterly review: portfolio outperforming benchmark by 80 bps; mandate compliance clean; FY-end tax planning agenda includes ELSS top-up + 80C deductions sweep.",
+      "recommendation": "discuss_with_client",
+      "consensus": {"summary": "Briefing on track."},
+      "agreement_areas": {"areas": ["performance_above_benchmark", "tax_planning_window"]},
+      "conflict_areas": {"areas": []},
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "balanced",
+      "escalation_recommended": false,
+      "flags": {},
+      "reasoning_summary": "Seeded synthesis for archetype midcareer_salaried_doubleincome."
+    }
+  },
+  "spouse_conservative_pragmatist": {
+    "synthesis.briefing": {
+      "output_mode": "briefing",
+      "synthesis_narrative": "Meera's annual review prep: conservative posture validated by recent equity volatility; debt sleeve carrying weight nicely; conversation should anchor on FY tax + nominee verification.",
+      "recommendation": "discuss_with_client",
+      "consensus": {"summary": "Conservative briefing — reaffirm posture."},
+      "agreement_areas": {"areas": ["volatility_management", "income_stability"]},
+      "conflict_areas": {"areas": []},
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "balanced",
+      "escalation_recommended": false,
+      "flags": {},
+      "reasoning_summary": "Seeded synthesis for archetype spouse_conservative_pragmatist."
+    }
+  },
+  "young_professional_starter": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "synthesis_narrative": "Scenario simulation: 10% large-to-midcap shift over 12 months. Expected drawdown +1.5% in stressed regimes; expected return premium +180 bps based on long-term breadth. Aligns with mandate band and time horizon.",
+      "recommendation": "proceed",
+      "consensus": {"summary": "Scenario supports the rebalance — modest risk uplift, meaningful return premium."},
+      "agreement_areas": {"areas": ["horizon_alignment", "breadth_premium"]},
+      "conflict_areas": {"areas": []},
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "balanced",
+      "escalation_recommended": false,
+      "flags": {},
+      "reasoning_summary": "Seeded synthesis for archetype young_professional_starter."
+    }
+  },
+  "spouse_doubleincome_realestate": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "synthesis_narrative": "Exiting thematic infra fund and rotating to flexicap is sensible — the fund's narrow mandate has underperformed broad-market by 240 bps trailing 12m; flexicap retains equity exposure with manager flexibility. STCG impact minor.",
+      "recommendation": "proceed",
+      "consensus": {"summary": "Clean rotation."},
+      "agreement_areas": {"areas": ["theme_underperformance", "flexicap_breadth"]},
+      "conflict_areas": {"areas": []},
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "balanced",
+      "escalation_recommended": false,
+      "flags": {},
+      "reasoning_summary": "Seeded synthesis for archetype spouse_doubleincome_realestate."
+    }
+  },
+  "preretiree_pivot": {
+    "synthesis.diagnostic": {
+      "output_mode": "diagnostic",
+      "synthesis_narrative": "Kavitha is 4-7 years from retirement — current 50% equity is at the upper end of the appropriate range. Transition to liquidity-tier-aligned mix should begin in next mandate review window.",
+      "recommendation": "no_action_required",
+      "consensus": {"summary": "Healthy with pre-retirement glide-path attention."},
+      "agreement_areas": {"areas": ["mandate_compliance", "horizon_glidepath"]},
+      "conflict_areas": {"areas": []},
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "balanced",
+      "escalation_recommended": false,
+      "flags": {},
+      "reasoning_summary": "Seeded synthesis for archetype preretiree_pivot."
+    }
+  },
+  "graduate_first_portfolio": {
+    "synthesis.briefing": {
+      "output_mode": "briefing",
+      "synthesis_narrative": "Harsh's first review since onboarding: ELSS + index fund foundation laid; behavioural pattern healthy (no panic / chase signals); discuss SIP top-up cadence + emergency fund target.",
+      "recommendation": "discuss_with_client",
+      "consensus": {"summary": "Onboarding briefing — momentum positive."},
+      "agreement_areas": {"areas": ["sip_consistency", "behavioural_clean"]},
+      "conflict_areas": {"areas": []},
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "balanced",
+      "escalation_recommended": false,
+      "flags": {},
+      "reasoning_summary": "Seeded synthesis for archetype graduate_first_portfolio."
+    }
+  }
+}
