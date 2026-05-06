@@ -69,7 +69,14 @@ npm run dev
 > `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
 > and try again.
 
-Open <http://127.0.0.1:5173/app> → log in as `cio1` (no password) → done.
+Open <http://127.0.0.1:5173/> → click **Enter the Platform** on the
+landing → log in as `cio1` (no password) → done.
+
+(The Vite dev server proxies the landing page + `/static/*` + `/api/*`
+to FastAPI, so `localhost:5173` mirrors production: `/` shows the
+landing, `/app` is the React platform, `/api/*` hits the backend. You
+can also visit `http://127.0.0.1:5173/app` directly to skip the
+landing.)
 
 The first backend boot takes ~10–15 seconds while the JSONFixtureAdapter
 ingests the 12 MB fixture (3024 instruments + 1 macro snapshot + 14
@@ -215,13 +222,21 @@ npm install
 npm run dev
 ```
 
-Vite serves on <http://127.0.0.1:5173/app>. The dev server proxies
-`/api/*` to the backend on port 8000, so both must be running.
+Vite serves on <http://127.0.0.1:5173/>. The dev server proxies these
+paths to the FastAPI backend (port 8000), so both must be running:
+
+| Path | Served by | What you get |
+|---|---|---|
+| `/` | FastAPI (proxied) | landing page (`static/landing.html`) |
+| `/app/*` | Vite | React platform with HMR |
+| `/static/*` | FastAPI (proxied) | landing assets + v1 SPA |
+| `/api/*` | FastAPI (proxied) | backend APIs |
 
 ### 6. Log in (dev mode)
 
-Open <http://127.0.0.1:5173/app> in your browser. You'll be redirected
-to `/app/dev-login`. Pick any of the 4 demo users:
+Open <http://127.0.0.1:5173/> in your browser. You'll see the landing
+page; click **Enter the Platform** to go to `/app/dev-login`. Pick any
+of the 4 demo users:
 
 | `user_id` | Role | What they see |
 |---|---|---|
