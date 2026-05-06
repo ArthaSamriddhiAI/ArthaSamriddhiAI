@@ -27,7 +27,9 @@ import { AmendMandatePage } from '../pages/mandates/AmendMandatePage'
 import { AmendmentReviewPage } from '../pages/mandates/AmendmentReviewPage'
 import { NewMandatePage } from '../pages/mandates/NewMandatePage'
 import { PendingAmendmentsPage } from '../pages/mandates/PendingAmendmentsPage'
+import { CellDetailPage } from '../pages/model-portfolio/CellDetailPage'
 import { ModelPortfolioInstrumentsPage } from '../pages/model-portfolio/InstrumentsPage'
+import { PreferredMatrixPage } from '../pages/model-portfolio/PreferredMatrixPage'
 import { RoleHomePage } from '../pages/RoleHomePage'
 import { LLMRouterSettingsPage } from '../pages/settings/LLMRouterSettingsPage'
 
@@ -160,6 +162,29 @@ const advisorModelPortfolioInstrumentsRoute = createRoute({
   component: () => <ModelPortfolioInstrumentsPage readOnly={true} backTo="/" />,
 })
 
+// Cluster 4 chunk 4.3 — advisor read-only preferred portfolio matrix.
+const advisorModelPortfolioPreferredRoute = createRoute({
+  getParentRoute: () => advisorRoute,
+  path: '/model-portfolio/preferred',
+  component: () => (
+    <PreferredMatrixPage
+      backTo="/"
+      cellPathPrefix="/advisor/model-portfolio/preferred"
+    />
+  ),
+})
+
+const advisorModelPortfolioCellRoute = createRoute({
+  getParentRoute: () => advisorRoute,
+  path: '/model-portfolio/preferred/$riskProfile/$horizon',
+  component: () => (
+    <CellDetailPage
+      readOnly={true}
+      matrixPath="/advisor/model-portfolio/preferred"
+    />
+  ),
+})
+
 // ----- CIO tree (with nested settings routes from chunk 1.3) -----
 
 const cioRoute = createRoute({
@@ -204,6 +229,29 @@ const cioModelPortfolioInstrumentsRoute = createRoute({
   getParentRoute: () => cioRoute,
   path: '/model-portfolio/instruments',
   component: () => <ModelPortfolioInstrumentsPage readOnly={false} backTo="/" />,
+})
+
+// Cluster 4 chunk 4.3 — CIO preferred portfolio matrix + cell detail.
+const cioModelPortfolioPreferredRoute = createRoute({
+  getParentRoute: () => cioRoute,
+  path: '/model-portfolio/preferred',
+  component: () => (
+    <PreferredMatrixPage
+      backTo="/"
+      cellPathPrefix="/cio/model-portfolio/preferred"
+    />
+  ),
+})
+
+const cioModelPortfolioCellRoute = createRoute({
+  getParentRoute: () => cioRoute,
+  path: '/model-portfolio/preferred/$riskProfile/$horizon',
+  component: () => (
+    <CellDetailPage
+      readOnly={false}
+      matrixPath="/cio/model-portfolio/preferred"
+    />
+  ),
 })
 
 // ----- Audit tree (cluster 3 chunk 3.4 admin surface) -----
@@ -302,6 +350,8 @@ const routeTree = rootRoute.addChildren([
     advisorMandateNewRoute,
     advisorMandateAmendRoute,
     advisorModelPortfolioInstrumentsRoute,
+    advisorModelPortfolioPreferredRoute,
+    advisorModelPortfolioCellRoute,
   ]),
   cioRoute.addChildren([
     cioIndexRoute,
@@ -309,6 +359,8 @@ const routeTree = rootRoute.addChildren([
     cioPendingAmendmentsRoute,
     cioAmendmentReviewRoute,
     cioModelPortfolioInstrumentsRoute,
+    cioModelPortfolioPreferredRoute,
+    cioModelPortfolioCellRoute,
   ]),
   complianceRoute,
   auditRoute.addChildren([

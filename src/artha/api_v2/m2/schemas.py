@@ -207,3 +207,60 @@ class BulkTagOperationResponse(BaseModel):
     skipped_count: int
     failed_count: int
     operation: str
+
+
+# ---------------------------------------------------------------------------
+# Chunk 4.3 preferred-portfolio write request shapes
+# ---------------------------------------------------------------------------
+
+
+class CreatePreferredEntryRequest(BaseModel):
+    """POST /preferred — add a new preferred portfolio entry."""
+
+    risk_profile: RiskProfileLiteral
+    horizon: HorizonLiteral
+    instrument_id: str
+    position_role: PositionRoleLiteral = "satellite"
+    rank_within_role: int = Field(default=0, ge=0)
+    notes: str | None = Field(default=None, max_length=500)
+
+
+class UpdatePreferredEntryRequest(BaseModel):
+    """PUT /preferred/{entry_id} — update role / rank / notes (any subset)."""
+
+    position_role: PositionRoleLiteral | None = None
+    rank_within_role: int | None = Field(default=None, ge=0)
+    notes: str | None = Field(default=None, max_length=500)
+
+
+class CellReorderItem(BaseModel):
+    entry_id: str
+    position_role: PositionRoleLiteral
+    rank_within_role: int = Field(ge=0)
+
+
+class CellReorderRequest(BaseModel):
+    """POST /preferred/{rp}/{horizon}/reorder — atomic role + rank update for
+    every entry in a cell."""
+
+    items: list[CellReorderItem] = Field(min_length=1, max_length=200)
+
+
+class CellDuplicateRequest(BaseModel):
+    """POST /preferred/{rp}/{horizon}/duplicate-from — copy entries from
+    a source cell to the current cell."""
+
+    source_risk_profile: RiskProfileLiteral
+    source_horizon: HorizonLiteral
+    skip_existing: bool = True
+    only_matching_tags: bool = True
+
+
+class CellOperationResponse(BaseModel):
+    """Summary returned by per-cell mutations (reorder / duplicate / reset)."""
+
+    risk_profile: RiskProfileLiteral
+    horizon: HorizonLiteral
+    affected_count: int
+    skipped_count: int
+    operation: str

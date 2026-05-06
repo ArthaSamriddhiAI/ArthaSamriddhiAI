@@ -5,6 +5,7 @@ import { useInvestor } from '../../api/investors'
 import { useActiveMandate } from '../../api/mandates'
 import { cn } from '../../lib/cn'
 import { MandateSummaryCard } from '../mandates/components/MandateSummaryCard'
+import { InvestorCellLinkageCard } from '../model-portfolio/components/InvestorCellLinkageCard'
 
 import { InvestorProfileCard } from './components/InvestorProfileCard'
 
@@ -51,6 +52,15 @@ export function InvestorDetailPage() {
             </p>
           </div>
           <InvestorProfileCard investor={data} />
+
+          {/* Cluster 4 chunk 4.3 — model portfolio cell linkage card. */}
+          <section className="mt-8">
+            <InvestorCellLinkageCard
+              riskAppetite={data.risk_appetite}
+              timeHorizon={data.time_horizon}
+              cellPathPrefix="/advisor/model-portfolio/preferred"
+            />
+          </section>
 
           {/* Mandate section — chunk 2.1 §scope_in */}
           <section className="mt-8">

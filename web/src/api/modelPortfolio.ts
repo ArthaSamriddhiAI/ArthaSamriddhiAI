@@ -417,3 +417,198 @@ export function useResetTagsToDefault() {
     onSuccess: () => invalidateModelPortfolio(qc),
   })
 }
+
+// ---------------------------------------------------------------------------
+// Chunk 4.3 preferred-portfolio mutation hooks
+// ---------------------------------------------------------------------------
+
+export interface CellOperationResponse {
+  risk_profile: RiskProfile
+  horizon: Horizon
+  affected_count: number
+  skipped_count: number
+  operation: string
+}
+
+export function useCreatePreferredEntry() {
+  const qc = useQueryClient()
+  return useMutation<
+    PreferredPortfolioEntry,
+    Error,
+    {
+      riskProfile: RiskProfile
+      horizon: Horizon
+      instrumentId: string
+      positionRole: PositionRole
+      rankWithinRole: number
+      notes?: string
+    }
+  >({
+    mutationFn: async (input) => {
+      const r = await apiFetch('/api/v2/model-portfolio/preferred', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          risk_profile: input.riskProfile,
+          horizon: input.horizon,
+          instrument_id: input.instrumentId,
+          position_role: input.positionRole,
+          rank_within_role: input.rankWithinRole,
+          notes: input.notes,
+        }),
+      })
+      if (!r.ok) {
+        const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
+        throw new Error((body.detail as string) ?? `create failed: ${r.status}`)
+      }
+      return (await r.json()) as PreferredPortfolioEntry
+    },
+    onSuccess: () => invalidateModelPortfolio(qc),
+  })
+}
+
+export function useUpdatePreferredEntry() {
+  const qc = useQueryClient()
+  return useMutation<
+    PreferredPortfolioEntry,
+    Error,
+    {
+      entryId: string
+      positionRole?: PositionRole
+      rankWithinRole?: number
+      notes?: string | null
+    }
+  >({
+    mutationFn: async (input) => {
+      const r = await apiFetch(
+        `/api/v2/model-portfolio/preferred/${input.entryId}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            position_role: input.positionRole,
+            rank_within_role: input.rankWithinRole,
+            notes: input.notes,
+          }),
+        },
+      )
+      if (!r.ok) throw new Error(`update failed: ${r.status}`)
+      return (await r.json()) as PreferredPortfolioEntry
+    },
+    onSuccess: () => invalidateModelPortfolio(qc),
+  })
+}
+
+export function useDeletePreferredEntry() {
+  const qc = useQueryClient()
+  return useMutation<void, Error, { entryId: string }>({
+    mutationFn: async ({ entryId }) => {
+      const r = await apiFetch(
+        `/api/v2/model-portfolio/preferred/${entryId}`,
+        { method: 'DELETE' },
+      )
+      if (!r.ok) throw new Error(`delete failed: ${r.status}`)
+    },
+    onSuccess: () => invalidateModelPortfolio(qc),
+  })
+}
+
+export function useReorderCell() {
+  const qc = useQueryClient()
+  return useMutation<
+    CellOperationResponse,
+    Error,
+    {
+      riskProfile: RiskProfile
+      horizon: Horizon
+      items: Array<{
+        entry_id: string
+        position_role: PositionRole
+        rank_within_role: number
+      }>
+    }
+  >({
+    mutationFn: async ({ riskProfile, horizon, items }) => {
+      const r = await apiFetch(
+        `/api/v2/model-portfolio/preferred/${riskProfile}/${horizon}/reorder`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items }),
+        },
+      )
+      if (!r.ok) throw new Error(`reorder failed: ${r.status}`)
+      return (await r.json()) as CellOperationResponse
+    },
+    onSuccess: () => invalidateModelPortfolio(qc),
+  })
+}
+
+export function useDuplicateCell() {
+  const qc = useQueryClient()
+  return useMutation<
+    CellOperationResponse,
+    Error,
+    {
+      targetRiskProfile: RiskProfile
+      targetHorizon: Horizon
+      sourceRiskProfile: RiskProfile
+      sourceHorizon: Horizon
+      onlyMatchingTags?: boolean
+      skipExisting?: boolean
+    }
+  >({
+    mutationFn: async (input) => {
+      const r = await apiFetch(
+        `/api/v2/model-portfolio/preferred/${input.targetRiskProfile}/${input.targetHorizon}/duplicate-from`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source_risk_profile: input.sourceRiskProfile,
+            source_horizon: input.sourceHorizon,
+            only_matching_tags: input.onlyMatchingTags ?? true,
+            skip_existing: input.skipExisting ?? true,
+          }),
+        },
+      )
+      if (!r.ok) throw new Error(`duplicate failed: ${r.status}`)
+      return (await r.json()) as CellOperationResponse
+    },
+    onSuccess: () => invalidateModelPortfolio(qc),
+  })
+}
+
+export function useResetCellToDefault() {
+  const qc = useQueryClient()
+  return useMutation<
+    CellOperationResponse,
+    Error,
+    { riskProfile: RiskProfile; horizon: Horizon }
+  >({
+    mutationFn: async ({ riskProfile, horizon }) => {
+      const r = await apiFetch(
+        `/api/v2/model-portfolio/preferred/${riskProfile}/${horizon}/reset-to-default`,
+        { method: 'POST' },
+      )
+      if (!r.ok) throw new Error(`reset cell failed: ${r.status}`)
+      return (await r.json()) as CellOperationResponse
+    },
+    onSuccess: () => invalidateModelPortfolio(qc),
+  })
+}
+
+export function useResetAllPreferred() {
+  const qc = useQueryClient()
+  return useMutation<CellOperationResponse, Error, void>({
+    mutationFn: async () => {
+      const r = await apiFetch(
+        '/api/v2/model-portfolio/preferred/reset-to-default',
+        { method: 'POST' },
+      )
+      if (!r.ok) throw new Error(`reset all failed: ${r.status}`)
+      return (await r.json()) as CellOperationResponse
+    },
+    onSuccess: () => invalidateModelPortfolio(qc),
+  })
+}

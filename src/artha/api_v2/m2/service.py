@@ -25,7 +25,11 @@ from artha.api_v2.d0.instruments.models import Instrument
 from artha.api_v2.m2 import cells
 from artha.api_v2.m2.event_names import (
     INSTRUMENT_TAGS_CHANGED,
+    MODEL_PORTFOLIO_PREFERRED_BULK_RESET,
     MODEL_PORTFOLIO_TAGS_BULK_RESET,
+    PREFERRED_PORTFOLIO_CELL_DUPLICATED,
+    PREFERRED_PORTFOLIO_CELL_REORDERED,
+    PREFERRED_PORTFOLIO_CELL_RESET,
     PREFERRED_PORTFOLIO_ENTRY_CREATED,
     PREFERRED_PORTFOLIO_ENTRY_DELETED,
     PREFERRED_PORTFOLIO_ENTRY_MODIFIED,
@@ -745,6 +749,297 @@ async def delete_preferred_entry(
         payload=payload,
         firm_id=firm_id,
     )
+
+
+# ---------------------------------------------------------------------------
+# Chunk 4.3 cell-level operations
+# ---------------------------------------------------------------------------
+
+
+async def reorder_cell(
+    db: AsyncSession,
+    *,
+    risk_profile: str,
+    horizon: str,
+    items: list[dict[str, Any]],
+    actor_user_id: str,
+    firm_id: str | None = None,
+) -> dict[str, int]:
+    """Atomically apply a new ``(position_role, rank_within_role)`` to every
+    entry in a cell. ``items`` is a list of ``{entry_id, position_role,
+    rank_within_role}`` dicts.
+
+    Caller validates roles + ranks; this helper trusts the input but
+    verifies each entry actually belongs to the target cell (defensive).
+    """
+    affected = 0
+    skipped = 0
+    now = datetime.now(timezone.utc)
+    by_id: dict[str, dict[str, Any]] = {item["entry_id"]: item for item in items}
+    rows = list(
+        (
+            await db.execute(
+                select(PreferredPortfolioEntry).where(
+                    PreferredPortfolioEntry.entry_id.in_(list(by_id.keys()))
+                )
+            )
+        ).scalars()
+    )
+    for entry in rows:
+        if (
+            entry.risk_profile != risk_profile
+            or entry.horizon != horizon
+        ):
+            skipped += 1
+            continue
+        item = by_id[entry.entry_id]
+        new_role = item["position_role"]
+        new_rank = max(0, int(item["rank_within_role"]))
+        if entry.position_role == new_role and entry.rank_within_role == new_rank:
+            skipped += 1
+            continue
+        entry.position_role = new_role
+        entry.rank_within_role = new_rank
+        entry.last_modified_at = now
+        entry.last_modified_by = actor_user_id
+        affected += 1
+
+    if affected:
+        await db.flush()
+        await emit_event(
+            db,
+            event_name=PREFERRED_PORTFOLIO_CELL_REORDERED,
+            payload={
+                "risk_profile": risk_profile,
+                "horizon": horizon,
+                "affected_count": affected,
+                "items": [
+                    {
+                        "entry_id": item["entry_id"],
+                        "position_role": item["position_role"],
+                        "rank_within_role": item["rank_within_role"],
+                    }
+                    for item in items
+                ],
+                "actor": actor_user_id,
+            },
+            firm_id=firm_id,
+        )
+    return {"affected": affected, "skipped": skipped}
+
+
+async def duplicate_cell(
+    db: AsyncSession,
+    *,
+    target_risk_profile: str,
+    target_horizon: str,
+    source_risk_profile: str,
+    source_horizon: str,
+    actor_user_id: str,
+    skip_existing: bool = True,
+    only_matching_tags: bool = True,
+    firm_id: str | None = None,
+) -> dict[str, int]:
+    """Copy entries from one cell to another.
+
+    - ``skip_existing=True`` (default): skip entries whose instrument is
+      already preferred in the target cell.
+    - ``only_matching_tags=True`` (default): skip entries whose instrument
+      isn't tagged for the target cell (avoids creating soft-validation
+      issues on duplicate).
+
+    Returns ``{"affected": N, "skipped": N}``.
+    """
+    target_cell = cells.cell_id(target_risk_profile, target_horizon)
+    source_entries = await list_cell_entries(
+        db,
+        risk_profile=source_risk_profile,
+        horizon=source_horizon,
+    )
+    if not source_entries:
+        return {"affected": 0, "skipped": 0}
+
+    # Existing target instruments to skip.
+    existing_target = {
+        row.instrument_id
+        for row in (
+            await db.execute(
+                select(PreferredPortfolioEntry).where(
+                    PreferredPortfolioEntry.risk_profile == target_risk_profile,
+                    PreferredPortfolioEntry.horizon == target_horizon,
+                )
+            )
+        ).scalars()
+    }
+
+    affected = 0
+    skipped = 0
+    now = datetime.now(timezone.utc)
+
+    for src in source_entries:
+        if skip_existing and src.instrument_id in existing_target:
+            skipped += 1
+            continue
+
+        if only_matching_tags:
+            inst = await get_instrument(db, instrument_id=src.instrument_id)
+            if inst is None or target_cell not in (inst.model_portfolio_tags or []):
+                skipped += 1
+                continue
+
+        new_entry = PreferredPortfolioEntry(
+            entry_id=str(ULID()),
+            risk_profile=target_risk_profile,
+            horizon=target_horizon,
+            instrument_id=src.instrument_id,
+            position_role=src.position_role,
+            rank_within_role=src.rank_within_role,
+            notes=src.notes,
+            created_at=now,
+            created_by=actor_user_id,
+            created_via="admin_ui",
+            last_modified_at=now,
+            last_modified_by=actor_user_id,
+            schema_version=1,
+        )
+        db.add(new_entry)
+        affected += 1
+
+    if affected:
+        await db.flush()
+        await emit_event(
+            db,
+            event_name=PREFERRED_PORTFOLIO_CELL_DUPLICATED,
+            payload={
+                "target_risk_profile": target_risk_profile,
+                "target_horizon": target_horizon,
+                "source_risk_profile": source_risk_profile,
+                "source_horizon": source_horizon,
+                "affected_count": affected,
+                "skipped_count": skipped,
+                "actor": actor_user_id,
+            },
+            firm_id=firm_id,
+        )
+    return {"affected": affected, "skipped": skipped}
+
+
+async def reset_cell_to_default(
+    db: AsyncSession,
+    *,
+    risk_profile: str,
+    horizon: str,
+    fixture_path: Any,
+    actor_user_id: str,
+    firm_id: str | None = None,
+) -> dict[str, int]:
+    """Reset one cell to the default fixture content.
+
+    Deletes all current entries in the cell, then loads the cell's
+    entries from ``data/fixtures/default_model_portfolio.json``. Emits
+    ``preferred_portfolio_cell_reset``.
+    """
+    # Local import to avoid circular dependency (default_loader imports
+    # service indirectly through some modules).
+    from pathlib import Path
+
+    from artha.api_v2.m2 import default_loader
+
+    # Step 1: delete all current entries in the cell.
+    rows = list(
+        (
+            await db.execute(
+                select(PreferredPortfolioEntry).where(
+                    PreferredPortfolioEntry.risk_profile == risk_profile,
+                    PreferredPortfolioEntry.horizon == horizon,
+                )
+            )
+        ).scalars()
+    )
+    for entry in rows:
+        await db.delete(entry)
+    await db.flush()
+
+    # Step 2: re-load default for ALL cells, but the loader is idempotent
+    # so existing (non-target) cells stay unchanged. Only the target cell
+    # was emptied above.
+    summary = await default_loader.load_default_preferred_portfolio(
+        db,
+        fixture_path=Path(str(fixture_path)),
+        actor_user_id=actor_user_id,
+        firm_id=firm_id,
+    )
+
+    # Count how many of the loaded entries belong to the target cell.
+    new_rows = list(
+        (
+            await db.execute(
+                select(PreferredPortfolioEntry).where(
+                    PreferredPortfolioEntry.risk_profile == risk_profile,
+                    PreferredPortfolioEntry.horizon == horizon,
+                )
+            )
+        ).scalars()
+    )
+
+    await emit_event(
+        db,
+        event_name=PREFERRED_PORTFOLIO_CELL_RESET,
+        payload={
+            "risk_profile": risk_profile,
+            "horizon": horizon,
+            "deleted_count": len(rows),
+            "loaded_count": len(new_rows),
+            "actor": actor_user_id,
+        },
+        firm_id=firm_id,
+    )
+    return {
+        "deleted": len(rows),
+        "loaded": len(new_rows),
+        "loader_summary": summary,
+    }
+
+
+async def reset_all_preferred_to_default(
+    db: AsyncSession,
+    *,
+    fixture_path: Any,
+    actor_user_id: str,
+    firm_id: str | None = None,
+) -> dict[str, int]:
+    """Wipe + reload the entire preferred portfolio from the JSON fixture.
+
+    Used by the chunk 4.3 admin tools "reset entire preferred portfolio"
+    affordance with a strong confirmation.
+    """
+    from pathlib import Path
+
+    from artha.api_v2.m2 import default_loader
+
+    rows = list((await db.execute(select(PreferredPortfolioEntry))).scalars())
+    for entry in rows:
+        await db.delete(entry)
+    await db.flush()
+
+    summary = await default_loader.load_default_preferred_portfolio(
+        db,
+        fixture_path=Path(str(fixture_path)),
+        actor_user_id=actor_user_id,
+        firm_id=firm_id,
+    )
+
+    await emit_event(
+        db,
+        event_name=MODEL_PORTFOLIO_PREFERRED_BULK_RESET,
+        payload={
+            "deleted_count": len(rows),
+            "loaded_count": summary["loaded"],
+            "actor": actor_user_id,
+        },
+        firm_id=firm_id,
+    )
+    return {"deleted": len(rows), "loaded": summary["loaded"]}
 
 
 # ---------------------------------------------------------------------------

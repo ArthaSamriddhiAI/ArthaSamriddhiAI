@@ -33,8 +33,12 @@ from artha.api_v2.m2.schemas import (
     BulkTagRemoveRequest,
     BulkTagReplaceRequest,
     CellDetailResponse,
+    CellDuplicateRequest,
+    CellOperationResponse,
+    CellReorderRequest,
     CellRoleSummary,
     CellSummary,
+    CreatePreferredEntryRequest,
     HealthResponse,
     InstrumentInPreferredEntry,
     InstrumentInPreferredResponse,
@@ -44,6 +48,7 @@ from artha.api_v2.m2.schemas import (
     PreferredPortfolioEntryRead,
     TagResetRequest,
     TagSetRequest,
+    UpdatePreferredEntryRequest,
 )
 from artha.api_v2.problem_details import problem_response
 from artha.common.db.session import get_session
@@ -554,4 +559,312 @@ async def reset_tags_to_default_endpoint(
         skipped_count=counts["skipped"],
         failed_count=counts["failed"],
         operation="reset_to_default",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Chunk 4.3: preferred portfolio entry write endpoints (CIO-only)
+# ---------------------------------------------------------------------------
+
+
+def _entry_to_read_with_db_lookup(
+    entry,  # PreferredPortfolioEntry
+    *,
+    instrument,  # Instrument
+) -> PreferredPortfolioEntryRead:
+    return _entry_to_read(entry, instrument=instrument)
+
+
+@router.post(
+    "/preferred",
+    response_model=PreferredPortfolioEntryRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_preferred_entry_endpoint(
+    body: CreatePreferredEntryRequest,
+    actor: Annotated[
+        UserContext,
+        Depends(require_permission(Permission.MODEL_PORTFOLIO_WRITE)),
+    ],
+    db: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Create a new preferred portfolio entry (chunk 4.3)."""
+    async with db.begin():
+        inst = await service.get_instrument(db, instrument_id=body.instrument_id)
+        if inst is None:
+            return problem_response(
+                status=status.HTTP_404_NOT_FOUND,
+                title="Instrument not found",
+                detail=f"No instrument with id={body.instrument_id!r}",
+            )
+        existing = await service.find_entry_by_natural_key(
+            db,
+            risk_profile=body.risk_profile,
+            horizon=body.horizon,
+            instrument_id=body.instrument_id,
+        )
+        if existing is not None:
+            return problem_response(
+                status=status.HTTP_409_CONFLICT,
+                title="Entry already exists",
+                detail=(
+                    f"An entry for {body.instrument_id!r} in "
+                    f"({body.risk_profile}, {body.horizon}) already exists."
+                ),
+            )
+        entry = await service.create_preferred_entry(
+            db,
+            risk_profile=body.risk_profile,
+            horizon=body.horizon,
+            instrument_id=body.instrument_id,
+            position_role=body.position_role,
+            rank_within_role=body.rank_within_role,
+            notes=body.notes,
+            actor_user_id=actor.user_id,
+            firm_id=actor.firm_id,
+        )
+    return _entry_to_read(entry, instrument=inst)
+
+
+@router.put(
+    "/preferred/{entry_id}",
+    response_model=PreferredPortfolioEntryRead,
+)
+async def update_preferred_entry_endpoint(
+    entry_id: str,
+    body: UpdatePreferredEntryRequest,
+    actor: Annotated[
+        UserContext,
+        Depends(require_permission(Permission.MODEL_PORTFOLIO_WRITE)),
+    ],
+    db: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Update an entry's role / rank / notes (chunk 4.3)."""
+    async with db.begin():
+        entry = await service.get_entry(db, entry_id=entry_id)
+        if entry is None:
+            return problem_response(
+                status=status.HTTP_404_NOT_FOUND,
+                title="Entry not found",
+                detail=f"No preferred portfolio entry with id={entry_id!r}",
+            )
+        updated = await service.modify_preferred_entry(
+            db,
+            entry=entry,
+            position_role=body.position_role,
+            rank_within_role=body.rank_within_role,
+            notes=body.notes,
+            actor_user_id=actor.user_id,
+            firm_id=actor.firm_id,
+        )
+        inst = await service.get_instrument(db, instrument_id=updated.instrument_id)
+    if inst is None:
+        return problem_response(
+            status=status.HTTP_404_NOT_FOUND,
+            title="Instrument missing",
+            detail=(
+                f"Entry references instrument {updated.instrument_id!r} "
+                "which is not in the catalogue."
+            ),
+        )
+    return _entry_to_read(updated, instrument=inst)
+
+
+@router.delete(
+    "/preferred/{entry_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_preferred_entry_endpoint(
+    entry_id: str,
+    actor: Annotated[
+        UserContext,
+        Depends(require_permission(Permission.MODEL_PORTFOLIO_WRITE)),
+    ],
+    db: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Remove a preferred portfolio entry (chunk 4.3)."""
+    async with db.begin():
+        entry = await service.get_entry(db, entry_id=entry_id)
+        if entry is None:
+            return problem_response(
+                status=status.HTTP_404_NOT_FOUND,
+                title="Entry not found",
+                detail=f"No preferred portfolio entry with id={entry_id!r}",
+            )
+        await service.delete_preferred_entry(
+            db,
+            entry=entry,
+            actor_user_id=actor.user_id,
+            firm_id=actor.firm_id,
+        )
+    return None
+
+
+@router.post(
+    "/preferred/{risk_profile}/{horizon}/reorder",
+    response_model=CellOperationResponse,
+)
+async def reorder_cell_endpoint(
+    risk_profile: str,
+    horizon: str,
+    body: CellReorderRequest,
+    actor: Annotated[
+        UserContext,
+        Depends(require_permission(Permission.MODEL_PORTFOLIO_WRITE)),
+    ],
+    db: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Atomic role + rank update for every entry in a cell (chunk 4.3)."""
+    if risk_profile not in cells.RISK_PROFILES or horizon not in cells.HORIZONS:
+        return problem_response(
+            status=status.HTTP_404_NOT_FOUND,
+            title="Cell not found",
+            detail=f"No cell at ({risk_profile}, {horizon})",
+        )
+    async with db.begin():
+        counts = await service.reorder_cell(
+            db,
+            risk_profile=risk_profile,
+            horizon=horizon,
+            items=[item.model_dump() for item in body.items],
+            actor_user_id=actor.user_id,
+            firm_id=actor.firm_id,
+        )
+    return CellOperationResponse(
+        risk_profile=risk_profile,
+        horizon=horizon,
+        affected_count=counts["affected"],
+        skipped_count=counts["skipped"],
+        operation="reorder",
+    )
+
+
+@router.post(
+    "/preferred/{risk_profile}/{horizon}/duplicate-from",
+    response_model=CellOperationResponse,
+)
+async def duplicate_cell_endpoint(
+    risk_profile: str,
+    horizon: str,
+    body: CellDuplicateRequest,
+    actor: Annotated[
+        UserContext,
+        Depends(require_permission(Permission.MODEL_PORTFOLIO_WRITE)),
+    ],
+    db: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Duplicate entries from a source cell into the target cell (chunk 4.3)."""
+    if risk_profile not in cells.RISK_PROFILES or horizon not in cells.HORIZONS:
+        return problem_response(
+            status=status.HTTP_404_NOT_FOUND,
+            title="Cell not found",
+            detail=f"No target cell at ({risk_profile}, {horizon})",
+        )
+    if (
+        body.source_risk_profile not in cells.RISK_PROFILES
+        or body.source_horizon not in cells.HORIZONS
+    ):
+        return problem_response(
+            status=status.HTTP_400_BAD_REQUEST,
+            title="Invalid source cell",
+            detail=(
+                f"({body.source_risk_profile}, {body.source_horizon}) is not "
+                "a valid cell."
+            ),
+        )
+    if (body.source_risk_profile, body.source_horizon) == (risk_profile, horizon):
+        return problem_response(
+            status=status.HTTP_400_BAD_REQUEST,
+            title="Source equals target",
+            detail="Source and target cells must differ.",
+        )
+    async with db.begin():
+        counts = await service.duplicate_cell(
+            db,
+            target_risk_profile=risk_profile,
+            target_horizon=horizon,
+            source_risk_profile=body.source_risk_profile,
+            source_horizon=body.source_horizon,
+            actor_user_id=actor.user_id,
+            skip_existing=body.skip_existing,
+            only_matching_tags=body.only_matching_tags,
+            firm_id=actor.firm_id,
+        )
+    return CellOperationResponse(
+        risk_profile=risk_profile,
+        horizon=horizon,
+        affected_count=counts["affected"],
+        skipped_count=counts["skipped"],
+        operation="duplicate",
+    )
+
+
+@router.post(
+    "/preferred/{risk_profile}/{horizon}/reset-to-default",
+    response_model=CellOperationResponse,
+)
+async def reset_cell_endpoint(
+    risk_profile: str,
+    horizon: str,
+    actor: Annotated[
+        UserContext,
+        Depends(require_permission(Permission.MODEL_PORTFOLIO_WRITE)),
+    ],
+    db: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Reset one cell to the default fixture content (chunk 4.3)."""
+    from artha.config import settings
+
+    if risk_profile not in cells.RISK_PROFILES or horizon not in cells.HORIZONS:
+        return problem_response(
+            status=status.HTTP_404_NOT_FOUND,
+            title="Cell not found",
+            detail=f"No cell at ({risk_profile}, {horizon})",
+        )
+    async with db.begin():
+        counts = await service.reset_cell_to_default(
+            db,
+            risk_profile=risk_profile,
+            horizon=horizon,
+            fixture_path=settings.samriddhi_default_model_portfolio_path,
+            actor_user_id=actor.user_id,
+            firm_id=actor.firm_id,
+        )
+    return CellOperationResponse(
+        risk_profile=risk_profile,
+        horizon=horizon,
+        affected_count=counts["loaded"],
+        skipped_count=counts["deleted"],
+        operation="reset_cell",
+    )
+
+
+@router.post(
+    "/preferred/reset-to-default",
+    response_model=CellOperationResponse,
+)
+async def reset_all_preferred_endpoint(
+    actor: Annotated[
+        UserContext,
+        Depends(require_permission(Permission.MODEL_PORTFOLIO_WRITE)),
+    ],
+    db: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Wipe + reload entire preferred portfolio from the default fixture
+    (chunk 4.3 admin tools, requires strong confirmation in the UI)."""
+    from artha.config import settings
+
+    async with db.begin():
+        counts = await service.reset_all_preferred_to_default(
+            db,
+            fixture_path=settings.samriddhi_default_model_portfolio_path,
+            actor_user_id=actor.user_id,
+            firm_id=actor.firm_id,
+        )
+    return CellOperationResponse(
+        risk_profile="aggressive",  # placeholder — operation is firm-wide
+        horizon="long_term",
+        affected_count=counts["loaded"],
+        skipped_count=counts["deleted"],
+        operation="reset_all",
     )
