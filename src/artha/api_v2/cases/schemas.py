@@ -258,6 +258,39 @@ class CaseFilters(BaseModel):
     offset: int = Field(default=0, ge=0)
 
 
+class DecisionRecordRequest(BaseModel):
+    """Request body for ``POST /api/v2/cases/{case_id}/decision``.
+
+    CIO-only; recorded against a case in ``awaiting_decision`` status.
+    The router maps this to ``RecordDecisionRequest`` and calls
+    ``case_decider.record_decision``.
+    """
+
+    decision: str = Field(
+        ...,
+        description="approved | rejected | modified | deferred",
+    )
+    rationale: str = Field(
+        ...,
+        min_length=1,
+        max_length=10000,
+        description="Free-text reasoning the CIO commits with the decision",
+    )
+    modifications: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "When decision=='modified', the structured patch the CIO "
+            "applied vs the proposed action (e.g. reduced size)."
+        ),
+    )
+    conditions: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "Conditions attached to the decision (e.g. 'review in 30 days')."
+        ),
+    )
+
+
 class CaseCreateRequest(BaseModel):
     """Request body for ``POST /api/v2/cases``.
 

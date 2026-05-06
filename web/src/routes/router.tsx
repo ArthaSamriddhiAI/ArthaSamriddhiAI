@@ -18,6 +18,9 @@ import { MacroSnapshotsPage } from '../pages/admin/MacroSnapshotsPage'
 import { SebiCategoriesPage } from '../pages/admin/SebiCategoriesPage'
 import { SnapshotsPage } from '../pages/admin/SnapshotsPage'
 import { StagingPage } from '../pages/admin/StagingPage'
+import { CaseDetailPage } from '../pages/cases/CaseDetailPage'
+import { CaseListPage } from '../pages/cases/CaseListPage'
+import { NewCasePage } from '../pages/cases/NewCasePage'
 import { ConversationalPage } from '../pages/conversational/ConversationalPage'
 import { DevLoginPage } from '../pages/DevLoginPage'
 import { InvestorDetailPage } from '../pages/investors/InvestorDetailPage'
@@ -185,6 +188,28 @@ const advisorModelPortfolioCellRoute = createRoute({
   ),
 })
 
+// Cluster 5 chunk 5.5 — advisor case list / detail / new-case form.
+const advisorCasesListRoute = createRoute({
+  getParentRoute: () => advisorRoute,
+  path: '/cases',
+  component: CaseListPage,
+})
+
+const advisorCasesNewRoute = createRoute({
+  getParentRoute: () => advisorRoute,
+  path: '/cases/new',
+  component: NewCasePage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    investorId: typeof search.investorId === 'string' ? search.investorId : undefined,
+  }),
+})
+
+const advisorCaseDetailRoute = createRoute({
+  getParentRoute: () => advisorRoute,
+  path: '/cases/$caseId',
+  component: CaseDetailPage,
+})
+
 // ----- CIO tree (with nested settings routes from chunk 1.3) -----
 
 const cioRoute = createRoute({
@@ -252,6 +277,29 @@ const cioModelPortfolioCellRoute = createRoute({
       matrixPath="/cio/model-portfolio/preferred"
     />
   ),
+})
+
+// Cluster 5 chunk 5.5 — CIO case list / detail / new-case form.
+// CIO sees firm-wide cases + the decision form when status=awaiting_decision.
+const cioCasesListRoute = createRoute({
+  getParentRoute: () => cioRoute,
+  path: '/cases',
+  component: CaseListPage,
+})
+
+const cioCasesNewRoute = createRoute({
+  getParentRoute: () => cioRoute,
+  path: '/cases/new',
+  component: NewCasePage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    investorId: typeof search.investorId === 'string' ? search.investorId : undefined,
+  }),
+})
+
+const cioCaseDetailRoute = createRoute({
+  getParentRoute: () => cioRoute,
+  path: '/cases/$caseId',
+  component: CaseDetailPage,
 })
 
 // ----- Audit tree (cluster 3 chunk 3.4 admin surface) -----
@@ -352,6 +400,9 @@ const routeTree = rootRoute.addChildren([
     advisorModelPortfolioInstrumentsRoute,
     advisorModelPortfolioPreferredRoute,
     advisorModelPortfolioCellRoute,
+    advisorCasesListRoute,
+    advisorCasesNewRoute,
+    advisorCaseDetailRoute,
   ]),
   cioRoute.addChildren([
     cioIndexRoute,
@@ -361,6 +412,9 @@ const routeTree = rootRoute.addChildren([
     cioModelPortfolioInstrumentsRoute,
     cioModelPortfolioPreferredRoute,
     cioModelPortfolioCellRoute,
+    cioCasesListRoute,
+    cioCasesNewRoute,
+    cioCaseDetailRoute,
   ]),
   complianceRoute,
   auditRoute.addChildren([

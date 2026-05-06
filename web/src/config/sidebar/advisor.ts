@@ -11,7 +11,8 @@ import type { SidebarItem } from './types'
 // 'Conversational' lights up for advisor role"). Future chunks light up
 // the remaining placeholders (Cases, Alerts, Monitoring).
 export const ADVISOR_SIDEBAR: SidebarItem[] = [
-  { label: 'Cases', icon: Briefcase, enabled: false },
+  // Cluster 5 chunk 5.5 lights up Cases for advisor (own_book scope).
+  { label: 'Cases', icon: Briefcase, enabled: true, href: '/advisor/cases' },
   {
     label: 'Investors',
     icon: Users,

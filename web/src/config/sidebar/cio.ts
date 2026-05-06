@@ -1,5 +1,6 @@
 import {
   Activity,
+  Briefcase,
   ClipboardCheck,
   ClipboardList,
   Layers,
@@ -20,6 +21,8 @@ import type { SidebarItem } from './types'
 // (the CIO's mandate-amendment queue + side-by-side diff review surface).
 // Future clusters extend Approvals to other governance queues.
 export const CIO_SIDEBAR: SidebarItem[] = [
+  // Cluster 5 chunk 5.5: Cases firm-wide for the CIO (decision authority).
+  { label: 'Cases', icon: Briefcase, enabled: true, href: '/cio/cases' },
   { label: 'Construction Pipeline', icon: Layers, enabled: false },
   { label: 'Committee Queue', icon: ClipboardList, enabled: false },
   { label: 'Model Portfolio', icon: PieChart, enabled: false },

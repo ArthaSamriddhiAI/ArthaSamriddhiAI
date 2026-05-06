@@ -27,7 +27,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from artha.api_v2.auth.permissions import Permission, require_permission
 from artha.api_v2.auth.user_context import Role, UserContext
-from artha.api_v2.cases import case_opener, repository
+from artha.api_v2.cases import case_decider, case_opener, repository
+from artha.api_v2.cases.case_decider import (
+    CaseNotInAwaitingDecisionError,
+    DecisionRecordingError,
+    NotAuthorisedToDecideError,
+    RecordDecisionRequest,
+)
 from artha.api_v2.cases.case_opener import (
     CaseOpeningError,
     InvalidCaseModeError,
@@ -35,6 +41,10 @@ from artha.api_v2.cases.case_opener import (
     InvestorScopeError,
     OpenCaseDeps,
     OpenCaseRequest,
+)
+from artha.api_v2.cases.repository import (
+    CaseNotFoundError,
+    DecisionAlreadyRecordedError,
 )
 from artha.api_v2.cases.schemas import (
     A1ChallengeRead,
@@ -44,6 +54,7 @@ from artha.api_v2.cases.schemas import (
     CaseListResponse,
     CaseRead,
     DecisionArtifactRead,
+    DecisionRecordRequest,
     EvidenceVerdictRead,
     GovernanceResultRead,
     HealthReportRead,
@@ -352,3 +363,87 @@ async def create_case(
     # gathering_evidence transition committed inside the begin block.
     row = await repository.get_case(db, case_id=result.case.case_id)
     return _to_case_read(row)
+
+
+# ---------------------------------------------------------------------------
+# Decision recording (chunk 5.5)
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/{case_id}/decision",
+    response_model=DecisionArtifactRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def record_decision(
+    case_id: str,
+    body: DecisionRecordRequest,
+    actor: Annotated[
+        UserContext,
+        Depends(require_permission(Permission.CASES_DECIDE_FIRM_SCOPE)),
+    ],
+    db: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Record the CIO's decision on a case (FR 20.4 §3).
+
+    Permission gate: ``cases:decide:firm_scope`` (CIO only). Cluster 5
+    ships CIO-only decision authority per FR 20.4 §7.1; senior-advisor
+    delegation is reserved for production-readiness.
+    """
+    record_request = RecordDecisionRequest(
+        decision=body.decision,
+        rationale=body.rationale,
+        modifications=body.modifications,
+        conditions=body.conditions,
+    )
+
+    try:
+        async with db.begin():
+            result = await case_decider.record_decision(
+                db,
+                case_id=case_id,
+                request=record_request,
+                actor=actor,
+            )
+    except CaseNotFoundError as exc:
+        return problem_response(
+            status=status.HTTP_404_NOT_FOUND,
+            title="Case not found",
+            detail=str(exc),
+        )
+    except NotAuthorisedToDecideError as exc:
+        return problem_response(
+            status=status.HTTP_403_FORBIDDEN,
+            title="Decision recording is CIO-only",
+            detail=str(exc),
+        )
+    except CaseNotInAwaitingDecisionError as exc:
+        return problem_response(
+            status=status.HTTP_409_CONFLICT,
+            title="Case not awaiting decision",
+            detail=str(exc),
+        )
+    except DecisionAlreadyRecordedError as exc:
+        return problem_response(
+            status=status.HTTP_409_CONFLICT,
+            title="Decision already recorded",
+            detail=str(exc),
+        )
+    except ValueError as exc:
+        # Pydantic / DecisionVerdict enum coercion.
+        return problem_response(
+            status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            title="Invalid decision verdict",
+            detail=str(exc),
+        )
+    except DecisionRecordingError as exc:
+        return problem_response(
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            title="Decision recording failed",
+            detail=str(exc),
+        )
+
+    return DecisionArtifactRead.model_validate(
+        result.artifact,
+        from_attributes=True,
+    )

@@ -4,6 +4,7 @@ import { ArrowLeft, Plus } from 'lucide-react'
 import { useInvestor } from '../../api/investors'
 import { useActiveMandate } from '../../api/mandates'
 import { cn } from '../../lib/cn'
+import { InvestorCasesCard } from '../cases/components/InvestorCasesCard'
 import { MandateSummaryCard } from '../mandates/components/MandateSummaryCard'
 import { InvestorCellLinkageCard } from '../model-portfolio/components/InvestorCellLinkageCard'
 
@@ -60,6 +61,11 @@ export function InvestorDetailPage() {
               timeHorizon={data.time_horizon}
               cellPathPrefix="/advisor/model-portfolio/preferred"
             />
+          </section>
+
+          {/* Cluster 5 chunk 5.5 — case-linkage card. */}
+          <section className="mt-8">
+            <InvestorCasesCard investorId={data.investor_id} />
           </section>
 
           {/* Mandate section — chunk 2.1 §scope_in */}

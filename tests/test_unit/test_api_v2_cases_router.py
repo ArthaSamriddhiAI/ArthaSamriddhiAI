@@ -437,6 +437,129 @@ class TestRead:
         assert resp.status_code == 403
 
     @pytest.mark.asyncio
+    async def test_cio_records_decision_then_case_decided(
+        self, http, seeded_book,
+    ):
+        cio_token = await _login(http, "cio1")
+        # Open a proposed_action case so the pipeline stops at awaiting_decision.
+        resp = await http.post(
+            "/api/v2/cases",
+            headers=_h(cio_token),
+            json={
+                "investor_id": seeded_book["advisor1_investor"],
+                "case_mode": "proposed_action",
+                "case_intent": "rebalance_proposal",
+                "proposed_action": "Shift 5% equity to debt",
+                "proposed_action_amount_inr": "100000",
+            },
+        )
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["status"] == "awaiting_decision"
+        case_id = body["case_id"]
+
+        # CIO records decision.
+        resp = await http.post(
+            f"/api/v2/cases/{case_id}/decision",
+            headers=_h(cio_token),
+            json={
+                "decision": "approved",
+                "rationale": "Concentration within firm cap; macro supportive.",
+                "conditions": {"items": ["review_in_30_days"]},
+            },
+        )
+        assert resp.status_code == 201, resp.text
+        artifact = resp.json()
+        assert artifact["decision"] == "approved"
+        assert artifact["decided_by"] == "cio1"
+        assert artifact["evidence_packet_hash"]
+        assert artifact["synthesis_hash"]
+        assert artifact["governance_packet_hash"]
+        assert artifact["a1_hash"]
+
+        # Case is now decided.
+        resp = await http.get(f"/api/v2/cases/{case_id}", headers=_h(cio_token))
+        assert resp.json()["status"] == "decided"
+        assert resp.json()["closed_reason"] == "decided"
+
+    @pytest.mark.asyncio
+    async def test_advisor_blocked_from_decision(self, http, seeded_book):
+        cio_token = await _login(http, "cio1")
+        advisor_token = await _login(http, "advisor1")
+        resp = await http.post(
+            "/api/v2/cases",
+            headers=_h(cio_token),
+            json={
+                "investor_id": seeded_book["advisor1_investor"],
+                "case_mode": "proposed_action",
+                "case_intent": "rebalance_proposal",
+                "proposed_action_amount_inr": "100000",
+            },
+        )
+        case_id = resp.json()["case_id"]
+
+        resp = await http.post(
+            f"/api/v2/cases/{case_id}/decision",
+            headers=_h(advisor_token),
+            json={"decision": "approved", "rationale": "x"},
+        )
+        assert resp.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_decision_on_decided_case_returns_409(
+        self, http, seeded_book,
+    ):
+        cio_token = await _login(http, "cio1")
+        resp = await http.post(
+            "/api/v2/cases",
+            headers=_h(cio_token),
+            json={
+                "investor_id": seeded_book["advisor1_investor"],
+                "case_mode": "proposed_action",
+                "case_intent": "rebalance_proposal",
+                "proposed_action_amount_inr": "100000",
+            },
+        )
+        case_id = resp.json()["case_id"]
+        # Record once.
+        await http.post(
+            f"/api/v2/cases/{case_id}/decision",
+            headers=_h(cio_token),
+            json={"decision": "approved", "rationale": "x"},
+        )
+        # Try to record a second decision.
+        resp = await http.post(
+            f"/api/v2/cases/{case_id}/decision",
+            headers=_h(cio_token),
+            json={"decision": "modified", "rationale": "y"},
+        )
+        assert resp.status_code == 409
+        assert "awaiting decision" in resp.text.lower() or "decided" in resp.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_decision_on_diagnostic_case_returns_409(
+        self, http, seeded_book,
+    ):
+        cio_token = await _login(http, "cio1")
+        # Diagnostic auto-decides; recording another decision is invalid.
+        resp = await http.post(
+            "/api/v2/cases",
+            headers=_h(cio_token),
+            json={
+                "investor_id": seeded_book["advisor1_investor"],
+                "case_mode": "diagnostic",
+                "case_intent": "portfolio_health",
+            },
+        )
+        case_id = resp.json()["case_id"]
+        resp = await http.post(
+            f"/api/v2/cases/{case_id}/decision",
+            headers=_h(cio_token),
+            json={"decision": "approved", "rationale": "x"},
+        )
+        assert resp.status_code == 409
+
+    @pytest.mark.asyncio
     async def test_get_case_detail_includes_pipeline_stage_rows(
         self, http, seeded_book,
     ):
