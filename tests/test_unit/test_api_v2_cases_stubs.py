@@ -21,13 +21,13 @@ from artha.api_v2.cases.stubs import (
     StubContext,
     stub_a1_challenge,
     stub_briefing_note,
-    stub_evidence_alternatives,
-    stub_evidence_behavioural,
-    stub_evidence_debt,
-    stub_evidence_equity,
-    stub_evidence_macro,
-    stub_evidence_sentiment,
-    stub_evidence_tax,
+    stub_evidence_e1_listed_fundamental_equity,
+    stub_evidence_e2_industry_business,
+    stub_evidence_e3_macro_policy_news,
+    stub_evidence_e4_behavioural_historical,
+    stub_evidence_e5_unlisted_equity,
+    stub_evidence_e6_pms_aif_sif,
+    stub_evidence_e7_mutual_fund,
     stub_governance_g1_mandate,
     stub_governance_g2_sebi,
     stub_governance_g3_action_filter,
@@ -111,13 +111,13 @@ class TestEvidence:
     @pytest.mark.parametrize(
         "fn,agent_id",
         [
-            (stub_evidence_equity, "e1_equity_evidence"),
-            (stub_evidence_debt, "e1_debt_evidence"),
-            (stub_evidence_alternatives, "e1_alternatives_evidence"),
-            (stub_evidence_macro, "e1_macro_evidence"),
-            (stub_evidence_sentiment, "e1_sentiment_evidence"),
-            (stub_evidence_behavioural, "e1_behavioural_evidence"),
-            (stub_evidence_tax, "e1_tax_evidence"),
+            (stub_evidence_e1_listed_fundamental_equity, "e1_listed_fundamental_equity"),
+            (stub_evidence_e2_industry_business, "e2_industry_business"),
+            (stub_evidence_e3_macro_policy_news, "e3_macro_policy_news"),
+            (stub_evidence_e4_behavioural_historical, "e4_behavioural_historical"),
+            (stub_evidence_e5_unlisted_equity, "e5_unlisted_equity"),
+            (stub_evidence_e6_pms_aif_sif, "e6_pms_aif_sif"),
+            (stub_evidence_e7_mutual_fund, "e7_mutual_fund"),
         ],
     )
     def test_evidence_schema(self, fn, agent_id: str) -> None:
@@ -130,14 +130,15 @@ class TestEvidence:
         assert "reasoning_summary" in out
 
     def test_seed_short_circuit(self) -> None:
-        seed = {"evidence.e1_equity_evidence": {"agent_id": "X", "risk_level": "critical"}}
-        out = stub_evidence_equity(_ctx(seed_payload=seed))
-        assert out == seed["evidence.e1_equity_evidence"]
+        key = "evidence.e1_listed_fundamental_equity"
+        seed = {key: {"agent_id": "X", "risk_level": "critical"}}
+        out = stub_evidence_e1_listed_fundamental_equity(_ctx(seed_payload=seed))
+        assert out == seed[key]
 
     def test_deterministic_per_case(self) -> None:
-        a = stub_evidence_equity(_ctx(case_id="01CASEA"))
-        b = stub_evidence_equity(_ctx(case_id="01CASEA"))
-        c = stub_evidence_equity(_ctx(case_id="01CASEB"))
+        a = stub_evidence_e1_listed_fundamental_equity(_ctx(case_id="01CASEA"))
+        b = stub_evidence_e1_listed_fundamental_equity(_ctx(case_id="01CASEA"))
+        c = stub_evidence_e1_listed_fundamental_equity(_ctx(case_id="01CASEB"))
         assert a == b
         # Different case → different confidence number.
         assert a["confidence"] != c["confidence"]

@@ -180,94 +180,135 @@ def _evidence_verdict_template(
     }
 
 
-def stub_evidence_equity(ctx: StubContext) -> dict[str, Any]:
+def stub_evidence_e1_listed_fundamental_equity(ctx: StubContext) -> dict[str, Any]:
+    """E1 — per-stock listed equity fundamental analysis (cluster 6 reframe).
+
+    Per principles §3.1: portfolio-level financial risk is now M0
+    PortfolioRiskAnalytics; E1 is per-stock fundamental analysis only.
+    """
     return _evidence_verdict_template(
         ctx=ctx,
-        agent_id="e1_equity_evidence",
+        agent_id="e1_listed_fundamental_equity",
         verdict_summary=(
-            "Equity sleeve broadly supports the proposed action; valuations "
-            "above 10y mean for large-cap, neutral for mid-cap."
+            "Per-stock fundamentals across the equity sleeve: leverage / "
+            "liquidity / cashflow stability / capital efficiency / valuation "
+            "all within healthy thresholds; one mid-cap holding flagged for "
+            "valuation premium watch."
         ),
         drivers=[
-            "valuation_premium_large_cap",
-            "earnings_quality_consumer",
-            "mid_cap_breadth",
+            "leverage_in_range",
+            "cashflow_stability_strong",
+            "valuation_premium_mid_cap_watch",
         ],
     )
 
 
-def stub_evidence_debt(ctx: StubContext) -> dict[str, Any]:
+def stub_evidence_e2_industry_business(ctx: StubContext) -> dict[str, Any]:
+    """E2 — industry & business model analysis."""
     return _evidence_verdict_template(
         ctx=ctx,
-        agent_id="e1_debt_evidence",
+        agent_id="e2_industry_business",
         verdict_summary=(
-            "Duration risk neutral; credit-quality mix biased to AAA. RBI "
-            "repo-cycle posture suggests modest tactical shift."
+            "Sectoral concentration reasonable; moat profile strong on top-3 "
+            "holdings (consumer + IT + financials); industry-lifecycle "
+            "positioning balanced; quality aggregation passes."
         ),
-        drivers=["duration_neutral", "aaa_dominant", "rbi_pause_priced_in"],
+        drivers=["moat_strong_top_3", "lifecycle_balanced", "sector_diversified"],
+    )
+
+
+def stub_evidence_e3_macro_policy_news(ctx: StubContext) -> dict[str, Any]:
+    """E3 — macro / policy / news (mandatory unconditional activation)."""
+    return _evidence_verdict_template(
+        ctx=ctx,
+        agent_id="e3_macro_policy_news",
+        verdict_summary=(
+            "Rate environment supportive; CPI in target band; INR stable; "
+            "FII flows positive QTD; no material policy shocks pending."
+        ),
+        drivers=[
+            "rate_env_supportive",
+            "cpi_in_band",
+            "inr_stable",
+            "fii_positive_qtd",
+        ],
+    )
+
+
+def stub_evidence_e4_behavioural_historical(ctx: StubContext) -> dict[str, Any]:
+    """E4 — behavioural & historical pattern analysis."""
+    return _evidence_verdict_template(
+        ctx=ctx,
+        agent_id="e4_behavioural_historical",
+        verdict_summary=(
+            "Stated vs revealed risk tolerance aligned; decision-pattern "
+            "stability strong; no panic/chasing flags; mandate amendment "
+            "cadence normal."
+        ),
+        drivers=[
+            "stated_revealed_aligned",
+            "decision_stability_strong",
+            "no_override_anomaly",
+        ],
         risk=RiskLevel.LOW,
     )
 
 
-def stub_evidence_alternatives(ctx: StubContext) -> dict[str, Any]:
+def stub_evidence_e5_unlisted_equity(ctx: StubContext) -> dict[str, Any]:
+    """E5 — unlisted equity (founder shares, pre-IPO, family business equity)."""
     return _evidence_verdict_template(
         ctx=ctx,
-        agent_id="e1_alternatives_evidence",
+        agent_id="e5_unlisted_equity",
         verdict_summary=(
-            "PMS minimum-ticket compliance verified. AIF Cat-II exposure "
-            "well within firm prudence cap."
+            "Unlisted holdings within firm prudence cap; valuation freshness "
+            "OK (last round within 18 months); exit-pathway probability "
+            "moderate; illiquidity premium appropriate for vintage."
         ),
-        drivers=["pms_min_ticket_ok", "aif_cat_ii_below_cap"],
-        risk=RiskLevel.LOW,
+        drivers=[
+            "valuation_freshness_ok",
+            "exit_pathway_moderate",
+            "illiquidity_premium_appropriate",
+        ],
+        risk=RiskLevel.MEDIUM,
     )
 
 
-def stub_evidence_macro(ctx: StubContext) -> dict[str, Any]:
+def stub_evidence_e6_pms_aif_sif(ctx: StubContext) -> dict[str, Any]:
+    """E6 — PMS / AIF Cat-I/II/III / SIF analysis (8-sub-agent consolidated)."""
     return _evidence_verdict_template(
         ctx=ctx,
-        agent_id="e1_macro_evidence",
+        agent_id="e6_pms_aif_sif",
         verdict_summary=(
-            "Macro backdrop neutral-to-supportive: CPI in target band, INR "
-            "stable, FII flows positive QTD."
+            "Gate pass: minimum tickets cleared; manager track record on "
+            "prior vintages strong; capacity-appropriate sizing; 7y lock-in "
+            "horizon-matched. Fee normalisation within bucket cap."
         ),
-        drivers=["cpi_in_band", "inr_stable", "fii_positive_qtd"],
+        drivers=[
+            "gate_pass_minimum_ticket",
+            "manager_track_record_strong",
+            "capacity_appropriate",
+            "fee_within_cap",
+        ],
+        risk=RiskLevel.MEDIUM,
     )
 
 
-def stub_evidence_sentiment(ctx: StubContext) -> dict[str, Any]:
+def stub_evidence_e7_mutual_fund(ctx: StubContext) -> dict[str, Any]:
+    """E7 — mutual fund analysis (5 pipelines: active equity, passive, debt,
+    hybrid, solution/FoF)."""
     return _evidence_verdict_template(
         ctx=ctx,
-        agent_id="e1_sentiment_evidence",
+        agent_id="e7_mutual_fund",
         verdict_summary=(
-            "Market sentiment mildly positive; news-flow on relevant sectors "
-            "balanced."
+            "SEBI category compliance verified; category-relative performance "
+            "sound; look-through analysis passes; tax classification "
+            "(equity-oriented hybrid threshold) OK post-Jul-2024."
         ),
-        drivers=["news_balanced", "fii_dii_neutral"],
-    )
-
-
-def stub_evidence_behavioural(ctx: StubContext) -> dict[str, Any]:
-    return _evidence_verdict_template(
-        ctx=ctx,
-        agent_id="e1_behavioural_evidence",
-        verdict_summary=(
-            "No recent panic-selling or performance-chasing patterns. "
-            "Mandate amendment cadence is normal."
-        ),
-        drivers=["no_panic_pattern", "mandate_cadence_normal"],
-        risk=RiskLevel.LOW,
-    )
-
-
-def stub_evidence_tax(ctx: StubContext) -> dict[str, Any]:
-    return _evidence_verdict_template(
-        ctx=ctx,
-        agent_id="e1_tax_evidence",
-        verdict_summary=(
-            "Action is broadly tax-efficient: STCG impact minimal; LTCG "
-            "exemption headroom ~₹50K remaining FY."
-        ),
-        drivers=["stcg_minimal", "ltcg_headroom_50k"],
+        drivers=[
+            "sebi_category_compliant",
+            "category_relative_sound",
+            "look_through_pass",
+        ],
     )
 
 
@@ -583,13 +624,13 @@ __all__ = [
     "StubContext",
     "stub_a1_challenge",
     "stub_briefing_note",
-    "stub_evidence_alternatives",
-    "stub_evidence_behavioural",
-    "stub_evidence_debt",
-    "stub_evidence_equity",
-    "stub_evidence_macro",
-    "stub_evidence_sentiment",
-    "stub_evidence_tax",
+    "stub_evidence_e1_listed_fundamental_equity",
+    "stub_evidence_e2_industry_business",
+    "stub_evidence_e3_macro_policy_news",
+    "stub_evidence_e4_behavioural_historical",
+    "stub_evidence_e5_unlisted_equity",
+    "stub_evidence_e6_pms_aif_sif",
+    "stub_evidence_e7_mutual_fund",
     "stub_governance_g1_mandate",
     "stub_governance_g2_sebi",
     "stub_governance_g3_action_filter",

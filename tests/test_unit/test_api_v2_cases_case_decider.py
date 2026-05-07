@@ -139,7 +139,7 @@ async def case_in_awaiting_decision(db):
         proposed_action_products=[],
         materiality_manual_flag=False,
         created_via="api",
-        applicable_evidence_agents=["e1_equity_evidence", "e1_macro_evidence"],
+        applicable_evidence_agents=["e1_listed_fundamental_equity", "e3_macro_policy_news"],
     )
     case.snapshot_bundle_id = "fake-snapshot"
     await db.flush()

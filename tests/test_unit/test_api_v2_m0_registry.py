@@ -15,16 +15,18 @@ from artha.api_v2.m0 import registry
 
 
 class TestCanonicalInventory:
-    def test_total_agent_count_is_24(self) -> None:
+    def test_total_agent_count_cluster6(self) -> None:
+        # Cluster 6 inventory: 5 M0 LLM + 7 evidence + 3 synthesis +
+        # 8 deliberation (5 IC1 + 3 governance gates) + 1 challenge = 24.
         assert len(registry.CANONICAL_AGENTS) == 24
 
     @pytest.mark.parametrize(
         "tier,expected_count",
         [
-            (registry.AgentTier.M0, 8),
+            (registry.AgentTier.M0, 5),  # cluster 6 LLM-using only
             (registry.AgentTier.EVIDENCE, 7),
             (registry.AgentTier.SYNTHESIS, 3),
-            (registry.AgentTier.DELIBERATION, 5),
+            (registry.AgentTier.DELIBERATION, 8),  # 5 IC1 + 3 governance
             (registry.AgentTier.CHALLENGE, 1),
         ],
     )
@@ -40,13 +42,20 @@ class TestCanonicalInventory:
         ids = [a.agent_id for a in registry.CANONICAL_AGENTS]
         assert len(ids) == len(set(ids)), "duplicate agent_id in registry"
 
-    def test_deferred_agents(self) -> None:
+    def test_deferred_agents_cluster6(self) -> None:
+        # Cluster 6: governance gates are deterministic Python checks
+        # without skill.md drafts; flagged ``deferred=True`` so the
+        # inventory validator doesn't expect on-disk files.
         deferred = {a.agent_id for a in registry.CANONICAL_AGENTS if a.deferred}
-        assert deferred == {"m0_briefer", "m0_librarian"}
+        assert deferred == {
+            "g1_mandate_gate",
+            "g2_sebi_regulatory_gate",
+            "g3_action_filter_gate",
+        }
 
     def test_list_active_excludes_deferred(self) -> None:
         active = registry.list_active_agents()
-        deferred_ids = {"m0_briefer", "m0_librarian"}
+        deferred_ids = {a.agent_id for a in registry.CANONICAL_AGENTS if a.deferred}
         assert not any(a.agent_id in deferred_ids for a in active)
         assert len(active) == len(registry.CANONICAL_AGENTS) - len(deferred_ids)
 
@@ -81,7 +90,9 @@ class TestLoadAgentSkill:
         skill_md_mod.reset_cache()
         skill = registry.load_agent_skill("m0_router")
         assert skill.agent_id == "m0_router"
-        assert skill.llm_model == "deterministic"
+        # Cluster 6 enriched skill.md uses ``claude-haiku-4-5-20251001``
+        # as the LLM-fallback target for the router.
+        assert "claude" in skill.llm_model
 
     def test_load_unknown_agent_raises_keyerror(self) -> None:
         with pytest.raises(KeyError):

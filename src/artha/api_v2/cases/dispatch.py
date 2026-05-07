@@ -53,7 +53,7 @@ def load_seed_fixture() -> dict[str, dict[str, Any]]:
 
     Shape: ``{archetype_id: {stage_key: payload, ...}, ...}``. Stage
     keys match the seed-payload conventions in :mod:`.stubs` (e.g.
-    ``"evidence.e1_equity_evidence"``, ``"synthesis.case_mode"``).
+    ``"evidence.e1_listed_fundamental_equity"``, ``"synthesis.case_mode"``).
     """
     global _seed_cache
     if _seed_cache is not None:
@@ -127,46 +127,50 @@ class DispatchEntry:
 #: The 16 canonical stub entries, keyed by ``agent_id``. The pipeline
 #: uses this both to walk the case mode's stage list and to answer
 #: ``"which agent produces this stage row?"``.
+#:
+#: Cluster 6 reframe (FR 20.3 cluster 6 revision §3): evidence agents
+#: renumbered to E1-E7 with corrected per-domain framing. Cluster 5's
+#: ``e1_equity_evidence`` etc. family is superseded.
 STUB_DISPATCH: dict[str, DispatchEntry] = {
     "m0_portfolio_risk_analytics": DispatchEntry(
         agent_id="m0_portfolio_risk_analytics",
         stage_kind=StageKind.PORTFOLIO_RISK,
         stub_fn=stubs.stub_portfolio_risk_analytics,
     ),
-    "e1_equity_evidence": DispatchEntry(
-        agent_id="e1_equity_evidence",
+    "e1_listed_fundamental_equity": DispatchEntry(
+        agent_id="e1_listed_fundamental_equity",
         stage_kind=StageKind.EVIDENCE,
-        stub_fn=stubs.stub_evidence_equity,
+        stub_fn=stubs.stub_evidence_e1_listed_fundamental_equity,
     ),
-    "e1_debt_evidence": DispatchEntry(
-        agent_id="e1_debt_evidence",
+    "e2_industry_business": DispatchEntry(
+        agent_id="e2_industry_business",
         stage_kind=StageKind.EVIDENCE,
-        stub_fn=stubs.stub_evidence_debt,
+        stub_fn=stubs.stub_evidence_e2_industry_business,
     ),
-    "e1_alternatives_evidence": DispatchEntry(
-        agent_id="e1_alternatives_evidence",
+    "e3_macro_policy_news": DispatchEntry(
+        agent_id="e3_macro_policy_news",
         stage_kind=StageKind.EVIDENCE,
-        stub_fn=stubs.stub_evidence_alternatives,
+        stub_fn=stubs.stub_evidence_e3_macro_policy_news,
     ),
-    "e1_macro_evidence": DispatchEntry(
-        agent_id="e1_macro_evidence",
+    "e4_behavioural_historical": DispatchEntry(
+        agent_id="e4_behavioural_historical",
         stage_kind=StageKind.EVIDENCE,
-        stub_fn=stubs.stub_evidence_macro,
+        stub_fn=stubs.stub_evidence_e4_behavioural_historical,
     ),
-    "e1_sentiment_evidence": DispatchEntry(
-        agent_id="e1_sentiment_evidence",
+    "e5_unlisted_equity": DispatchEntry(
+        agent_id="e5_unlisted_equity",
         stage_kind=StageKind.EVIDENCE,
-        stub_fn=stubs.stub_evidence_sentiment,
+        stub_fn=stubs.stub_evidence_e5_unlisted_equity,
     ),
-    "e1_behavioural_evidence": DispatchEntry(
-        agent_id="e1_behavioural_evidence",
+    "e6_pms_aif_sif": DispatchEntry(
+        agent_id="e6_pms_aif_sif",
         stage_kind=StageKind.EVIDENCE,
-        stub_fn=stubs.stub_evidence_behavioural,
+        stub_fn=stubs.stub_evidence_e6_pms_aif_sif,
     ),
-    "e1_tax_evidence": DispatchEntry(
-        agent_id="e1_tax_evidence",
+    "e7_mutual_fund": DispatchEntry(
+        agent_id="e7_mutual_fund",
         stage_kind=StageKind.EVIDENCE,
-        stub_fn=stubs.stub_evidence_tax,
+        stub_fn=stubs.stub_evidence_e7_mutual_fund,
     ),
     "s1_case_mode": DispatchEntry(
         agent_id="s1_case_mode",

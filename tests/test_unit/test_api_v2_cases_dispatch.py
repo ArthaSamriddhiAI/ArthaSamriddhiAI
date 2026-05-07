@@ -54,13 +54,13 @@ class TestInventory:
         "agent_id,stage_kind",
         [
             ("m0_portfolio_risk_analytics", StageKind.PORTFOLIO_RISK),
-            ("e1_equity_evidence", StageKind.EVIDENCE),
-            ("e1_debt_evidence", StageKind.EVIDENCE),
-            ("e1_alternatives_evidence", StageKind.EVIDENCE),
-            ("e1_macro_evidence", StageKind.EVIDENCE),
-            ("e1_sentiment_evidence", StageKind.EVIDENCE),
-            ("e1_behavioural_evidence", StageKind.EVIDENCE),
-            ("e1_tax_evidence", StageKind.EVIDENCE),
+            ("e1_listed_fundamental_equity", StageKind.EVIDENCE),
+            ("e2_industry_business", StageKind.EVIDENCE),
+            ("e3_macro_policy_news", StageKind.EVIDENCE),
+            ("e4_behavioural_historical", StageKind.EVIDENCE),
+            ("e5_unlisted_equity", StageKind.EVIDENCE),
+            ("e6_pms_aif_sif", StageKind.EVIDENCE),
+            ("e7_mutual_fund", StageKind.EVIDENCE),
             ("s1_case_mode", StageKind.SYNTHESIS),
             ("s1_diagnostic_mode", StageKind.SYNTHESIS),
             ("s1_briefing_mode", StageKind.SYNTHESIS),
@@ -92,16 +92,16 @@ class TestDispatch:
 
     def test_dispatch_returns_stub_result(self) -> None:
         result = dispatch_stub(
-            case=_FakeCase(), agent_id="e1_equity_evidence",
+            case=_FakeCase(), agent_id="e1_listed_fundamental_equity",
         )
         assert isinstance(result, StubResult)
-        assert result.agent_id == "e1_equity_evidence"
+        assert result.agent_id == "e1_listed_fundamental_equity"
         assert result.stage_kind == StageKind.EVIDENCE
         assert result.produced_via == ProducedVia.LOOKUP_STUB_PLACEHOLDER
 
     def test_seed_case_marks_produced_via_seed(self) -> None:
         case = _FakeCase(is_seed_data=True, seed_archetype_id="aarav_sharma")
-        result = dispatch_stub(case=case, agent_id="e1_equity_evidence")
+        result = dispatch_stub(case=case, agent_id="e1_listed_fundamental_equity")
         assert result.produced_via == ProducedVia.LOOKUP_STUB_SEED
 
     def test_list_dispatchable_returns_sixteen(self) -> None:
@@ -150,8 +150,8 @@ class TestSeedFixture:
         path = tmp_path / "seed.json"
         payload = {
             "aarav_sharma": {
-                "evidence.e1_equity_evidence": {
-                    "agent_id": "e1_equity_evidence",
+                "evidence.e1_listed_fundamental_equity": {
+                    "agent_id": "e1_listed_fundamental_equity",
                     "risk_level": "low",
                     "confidence": 0.9,
                     "drivers": {},
@@ -166,10 +166,10 @@ class TestSeedFixture:
         try:
             case = _FakeCase(is_seed_data=True, seed_archetype_id="aarav_sharma")
             seed = dispatch.get_seed_payload_for(case)
-            assert "evidence.e1_equity_evidence" in seed
+            assert "evidence.e1_listed_fundamental_equity" in seed
             # Dispatch picks up the seed payload (not the placeholder).
             result = dispatch.dispatch_stub(
-                case=case, agent_id="e1_equity_evidence",
+                case=case, agent_id="e1_listed_fundamental_equity",
             )
             assert (
                 result.payload["structured_output"]["verdict_summary"]

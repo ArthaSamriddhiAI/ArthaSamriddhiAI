@@ -21,49 +21,61 @@ from artha.api_v2.cases.state_machine import CaseIntent, CaseMode, DominantLens
 # Routing table
 # ---------------------------------------------------------------------------
 
-#: Default evidence-agent set per case mode. The order here is the
-#: order returned to the synthesizer. Diagnostic + briefing modes
-#: skip the alternatives + tax slices because they don't run the
-#: full materiality pipeline (FR 20.1 §6).
+#: Default evidence-agent set per case mode (FR 20.3 cluster 6 revision).
+#: Activation rules per principles §3.1:
+#:
+#: - E1 (listed/fundamental equity) — case involves listed equity
+#: - E2 (industry/business) — case involves listed equity with sector tags
+#: - E3 (macro/policy/news) — mandatory unconditional activation
+#: - E4 (behavioural/historical) — always on case_mode + scenario;
+#:   selective on diagnostic
+#: - E5 (unlisted equity) — case involves unlisted equity
+#: - E6 (PMS/AIF/SIF) — case involves PMS / AIF / SIF
+#: - E7 (mutual fund) — case involves MF specifically
+#:
+#: The router's *default* per mode is the maximal common set; the
+#: dispatcher prunes via per-case applicability flags. Briefing skips
+#: the heavier evidence layer.
 _BY_MODE: dict[CaseMode, tuple[str, ...]] = {
     CaseMode.PROPOSED_ACTION: (
-        "e1_equity_evidence",
-        "e1_debt_evidence",
-        "e1_alternatives_evidence",
-        "e1_macro_evidence",
-        "e1_sentiment_evidence",
-        "e1_behavioural_evidence",
-        "e1_tax_evidence",
+        "e1_listed_fundamental_equity",
+        "e2_industry_business",
+        "e3_macro_policy_news",
+        "e4_behavioural_historical",
+        "e5_unlisted_equity",
+        "e6_pms_aif_sif",
+        "e7_mutual_fund",
     ),
     CaseMode.SCENARIO: (
-        "e1_equity_evidence",
-        "e1_debt_evidence",
-        "e1_alternatives_evidence",
-        "e1_macro_evidence",
-        "e1_sentiment_evidence",
+        "e1_listed_fundamental_equity",
+        "e2_industry_business",
+        "e3_macro_policy_news",
+        "e4_behavioural_historical",
+        "e6_pms_aif_sif",
     ),
     CaseMode.DIAGNOSTIC: (
-        "e1_equity_evidence",
-        "e1_debt_evidence",
-        "e1_macro_evidence",
-        "e1_behavioural_evidence",
+        "e1_listed_fundamental_equity",
+        "e2_industry_business",
+        "e3_macro_policy_news",
+        "e4_behavioural_historical",
     ),
     CaseMode.BRIEFING: (
-        "e1_equity_evidence",
-        "e1_debt_evidence",
-        "e1_macro_evidence",
+        "e3_macro_policy_news",
+        "e4_behavioural_historical",
     ),
 }
 
 #: Intent-specific overlays added on top of the mode default.
 _INTENT_ADDS: dict[CaseIntent, tuple[str, ...]] = {
-    CaseIntent.TAX_LOSS_HARVESTING: ("e1_tax_evidence",),
-    CaseIntent.LIQUIDITY_MOBILISATION: ("e1_tax_evidence",),
+    # Tax-related intents pull in MF analysis (E7) which surfaces
+    # category-specific tax treatment.
+    CaseIntent.TAX_LOSS_HARVESTING: ("e7_mutual_fund",),
+    CaseIntent.LIQUIDITY_MOBILISATION: ("e7_mutual_fund",),
 }
 
 #: Lens-specific overlays.
 _LENS_ADDS: dict[DominantLens, tuple[str, ...]] = {
-    DominantLens.PORTFOLIO_SHIFT: ("e1_behavioural_evidence",),
+    DominantLens.PORTFOLIO_SHIFT: ("e4_behavioural_historical",),
 }
 
 

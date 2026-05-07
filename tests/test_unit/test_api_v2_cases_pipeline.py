@@ -125,8 +125,8 @@ async def _make_case_in_gathering(
         materiality_manual_flag=materiality_manual_flag,
         created_via="api",
         applicable_evidence_agents=applicable_evidence_agents or [
-            "e1_equity_evidence",
-            "e1_macro_evidence",
+            "e1_listed_fundamental_equity",
+            "e3_macro_policy_news",
         ],
         is_seed_data=is_seed_data,
     )

@@ -33,9 +33,13 @@ class TestM0Boss:
         assert spec.tier == AgentTier.CHALLENGE
 
     def test_list_agents_by_tier(self) -> None:
+        # Cluster 6 M0 LLM-using inventory: boss + router +
+        # indian_context + stitcher + portfolio_risk_analytics.
         m0_agents = boss_mod.boss.list_agents_by_tier(AgentTier.M0)
         ids = {a.agent_id for a in m0_agents}
-        assert "m0_router" in ids and "m0_briefer" in ids
+        assert "m0_router" in ids and "m0_boss" in ids
+        assert "m0_indian_context" in ids
+        assert "m0_portfolio_risk_analytics" in ids
 
     def test_route_evidence_agents(self) -> None:
         decision = boss_mod.boss.route_evidence_agents(

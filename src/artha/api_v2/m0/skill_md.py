@@ -112,11 +112,25 @@ class SkillMdValidationError(SkillMdError):
 
 @dataclass(frozen=True)
 class SkillMd:
-    """Parsed skill.md file: front-matter + body."""
+    """Parsed skill.md file: front-matter + body.
+
+    Cluster 6 enrichment (FR Entry 20.3 §4.3) added two optional fields:
+
+    - ``enriched_in_cluster`` — int | None; the cluster that bumped this
+      file from cluster-5 placeholder to cluster-6 production-equivalent
+      depth. ``None`` for files that haven't been enriched yet.
+    - ``source_files`` — tuple[str, ...]; the source files (project-context
+      docs + consolidation-v1 sections + FR entries) that informed the
+      enrichment. Empty tuple if not declared.
+
+    ``draft_version`` accepts ints (cluster-5 era) or strings
+    (``"provisional"`` / ``"production"`` per FR 20.3 §4.1) — coerced to
+    a string for consistent downstream comparison.
+    """
 
     agent_id: str
     skill_md_version: str
-    draft_version: int
+    draft_version: str
     authored_in_cluster: int
     finalised_in_cluster: int | None
     llm_model: str
@@ -125,6 +139,8 @@ class SkillMd:
     output_schema_ref: str
     body: str
     source_path: Path
+    enriched_in_cluster: int | None = None
+    source_files: tuple[str, ...] = ()
     front_matter_raw: dict[str, Any] = field(default_factory=dict)
 
 
@@ -175,7 +191,9 @@ def _parse_text(text: str, *, source_path: Path) -> SkillMd:
     try:
         agent_id = str(fm["agent_id"])
         skill_md_version = str(fm["skill_md_version"])
-        draft_version = int(fm["draft_version"])
+        # ``draft_version`` accepts int (cluster 5) or string
+        # (``provisional`` / ``production`` per FR 20.3 §4.1).
+        draft_version = str(fm["draft_version"])
         authored_in_cluster = int(fm["authored_in_cluster"])
         finalised_raw = fm["finalised_in_cluster"]
         finalised_in_cluster = (
@@ -185,6 +203,21 @@ def _parse_text(text: str, *, source_path: Path) -> SkillMd:
         max_tokens = int(fm["max_tokens"])
         temperature = float(fm["temperature"])
         output_schema_ref = str(fm["output_schema_ref"])
+        # Cluster 6 additions (optional).
+        enriched_raw = fm.get("enriched_in_cluster")
+        enriched_in_cluster = (
+            None if enriched_raw is None else int(enriched_raw)
+        )
+        sf_raw = fm.get("source_files") or ()
+        if isinstance(sf_raw, str):
+            source_files: tuple[str, ...] = (sf_raw,)
+        elif isinstance(sf_raw, list | tuple):
+            source_files = tuple(str(s) for s in sf_raw)
+        else:
+            raise SkillMdValidationError(
+                f"skill.md at {source_path} has invalid source_files "
+                f"(expected list, got {type(sf_raw).__name__}).",
+            )
     except (TypeError, ValueError) as exc:
         raise SkillMdValidationError(
             f"skill.md at {source_path} has a non-coercible field: {exc}",
@@ -205,10 +238,11 @@ def _parse_text(text: str, *, source_path: Path) -> SkillMd:
             f"skill.md at {source_path} has out-of-range temperature "
             f"({temperature}); expected 0.0..2.0.",
         )
-    if draft_version < 0:
+    if draft_version not in {"provisional", "production"} and not draft_version.isdigit():
         raise SkillMdValidationError(
-            f"skill.md at {source_path} has negative draft_version "
-            f"({draft_version}).",
+            f"skill.md at {source_path} has invalid draft_version "
+            f"{draft_version!r} (expected 'provisional', 'production', or a "
+            f"positive integer).",
         )
 
     return SkillMd(
@@ -223,6 +257,8 @@ def _parse_text(text: str, *, source_path: Path) -> SkillMd:
         output_schema_ref=output_schema_ref,
         body=body.strip(),
         source_path=source_path,
+        enriched_in_cluster=enriched_in_cluster,
+        source_files=source_files,
         front_matter_raw=fm,
     )
 

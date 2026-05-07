@@ -62,7 +62,9 @@ class TestHappyPath:
         skill = skill_md.load_skill("t1_happy")
         assert skill.agent_id == "t1_happy"
         assert skill.skill_md_version == "v0.1"
-        assert skill.draft_version == 1
+        # ``draft_version`` is now a string per FR 20.3 §4.1; a numeric
+        # int in the YAML coerces to its string form.
+        assert skill.draft_version == "1"
         assert skill.authored_in_cluster == 5
         assert skill.finalised_in_cluster is None
         assert skill.llm_model == "claude-sonnet-4-5"
@@ -229,7 +231,7 @@ class TestHotReload:
         monkeypatch.setenv("ARTHA_SKILL_MD_HOT_RELOAD", "1")
         _write_skill(tmp_skill_dir, agent_id="t_reload2")
         skill = skill_md.load_skill("t_reload2")
-        assert skill.draft_version == 1
+        assert skill.draft_version == "1"
 
         # Edit the file: bump draft_version.
         fm = (
@@ -247,11 +249,11 @@ class TestHotReload:
 
         # Without reload, cache returns the stale row.
         cached = skill_md.load_skill("t_reload2")
-        assert cached.draft_version == 1
+        assert cached.draft_version == "1"
 
         # After reload, the new row appears.
         reloaded = skill_md.reload_skill("t_reload2")
-        assert reloaded.draft_version == 2
+        assert reloaded.draft_version == "2"
         assert reloaded.skill_md_version == "v0.2"
 
     @pytest.mark.parametrize(
@@ -308,11 +310,18 @@ class TestRepoSkillMdSet:
         skill_md.reset_cache()
         try:
             agents = skill_md.list_available_agent_ids()
-            assert len(agents) == 24, f"expected 24 skill.md files, got {len(agents)}: {agents}"
+            # Cluster 6 inventory: 21 skill.md files on disk (governance
+            # gates G1/G2/G3 are deterministic Python checks without
+            # skill.md; m0_briefer / m0_librarian / m0_portfolio_state /
+            # m0_portfolio_analytics / ic1_member_quant retired).
+            assert len(agents) == 21, f"expected 21 skill.md files, got {len(agents)}: {agents}"
             for agent_id in agents:
                 skill = skill_md.load_skill(agent_id)
                 assert skill.agent_id == agent_id
                 assert skill.authored_in_cluster == 5
-                assert skill.draft_version >= 1
+                # Cluster 6 enriched files mark draft_version="provisional";
+                # cluster 5 placeholders used numeric strings ("1").
+                dv = skill.draft_version
+                assert dv in {"provisional", "production"} or dv.isdigit()
         finally:
             skill_md.reset_cache()

@@ -67,8 +67,8 @@ class _StubBoss:
     def __init__(
         self,
         applicable_evidence_agents: tuple[str, ...] = (
-            "e1_equity_evidence",
-            "e1_macro_evidence",
+            "e1_listed_fundamental_equity",
+            "e3_macro_policy_news",
         ),
     ) -> None:
         self._applicable_evidence_agents = applicable_evidence_agents
@@ -194,8 +194,8 @@ class TestHappyPath:
         assert case.status == CaseStatus.GATHERING_EVIDENCE.value
         assert case.snapshot_bundle_id is not None
         assert case.applicable_evidence_agents == [
-            "e1_equity_evidence",
-            "e1_macro_evidence",
+            "e1_listed_fundamental_equity",
+            "e3_macro_policy_news",
         ]
         assert case.opened_by == "advisor1"
         assert case.assigned_to == "advisor1"
@@ -409,8 +409,8 @@ class TestManualOverride:
                 case_mode=CaseMode.PROPOSED_ACTION,
                 case_intent="rebalance_proposal",
                 manual_override_evidence_agents=(
-                    "e1_equity_evidence",
-                    "e1_tax_evidence",
+                    "e1_listed_fundamental_equity",
+                    "e7_mutual_fund",
                 ),
                 skip_pipeline=True,
             ),
@@ -422,8 +422,8 @@ class TestManualOverride:
         # but the input payload's manual_override is recorded on the boss
         # invocation.
         assert boss.calls[0].manual_override == (
-            "e1_equity_evidence",
-            "e1_tax_evidence",
+            "e1_listed_fundamental_equity",
+            "e7_mutual_fund",
         )
         # The stub didn't honor manual override (it always returns the same
         # tuple); verify the orchestrator still passed it through to boss.

@@ -29,22 +29,24 @@ from artha.api_v2.m0.sub_agents import (
 class TestRouter:
     def test_proposed_action_default(self) -> None:
         decision = router.route(case_mode=CaseMode.PROPOSED_ACTION)
-        assert decision.applicable_evidence_agents[0] == "e1_equity_evidence"
+        assert decision.applicable_evidence_agents[0] == "e1_listed_fundamental_equity"
         # All 7 evidence agents in proposed_action mode.
         assert len(decision.applicable_evidence_agents) == 7
         assert decision.reason == "mode=proposed_action"
 
     def test_diagnostic_drops_alternatives_and_tax(self) -> None:
         decision = router.route(case_mode=CaseMode.DIAGNOSTIC)
-        assert "e1_alternatives_evidence" not in decision.applicable_evidence_agents
-        assert "e1_tax_evidence" not in decision.applicable_evidence_agents
+        assert "e6_pms_aif_sif" not in decision.applicable_evidence_agents
+        assert "e7_mutual_fund" not in decision.applicable_evidence_agents
 
     def test_briefing_minimal_set(self) -> None:
+        # Cluster 6 reframe: briefing runs the lightest evidence layer
+        # (E3 macro/policy/news + E4 behavioural/historical) per FR 20.3
+        # cluster 6 revision; briefing is operational meeting prep.
         decision = router.route(case_mode=CaseMode.BRIEFING)
         assert decision.applicable_evidence_agents == (
-            "e1_equity_evidence",
-            "e1_debt_evidence",
-            "e1_macro_evidence",
+            "e3_macro_policy_news",
+            "e4_behavioural_historical",
         )
 
     def test_intent_overlay_adds_tax(self) -> None:
@@ -52,7 +54,7 @@ class TestRouter:
             case_mode=CaseMode.DIAGNOSTIC,
             case_intent=CaseIntent.TAX_LOSS_HARVESTING,
         )
-        assert "e1_tax_evidence" in decision.applicable_evidence_agents
+        assert "e7_mutual_fund" in decision.applicable_evidence_agents
         assert "intent=tax_loss_harvesting" in decision.reason
 
     def test_lens_overlay_dedupes(self) -> None:
@@ -61,17 +63,17 @@ class TestRouter:
             dominant_lens=DominantLens.PORTFOLIO_SHIFT,
         )
         # behavioural already in proposed_action default, must not duplicate.
-        count = decision.applicable_evidence_agents.count("e1_behavioural_evidence")
+        count = decision.applicable_evidence_agents.count("e4_behavioural_historical")
         assert count == 1
 
     def test_manual_override(self) -> None:
         decision = router.route(
             case_mode=CaseMode.PROPOSED_ACTION,
-            manual_override=("e1_equity_evidence", "e1_tax_evidence"),
+            manual_override=("e1_listed_fundamental_equity", "e7_mutual_fund"),
         )
         assert decision.applicable_evidence_agents == (
-            "e1_equity_evidence",
-            "e1_tax_evidence",
+            "e1_listed_fundamental_equity",
+            "e7_mutual_fund",
         )
         assert decision.reason == "manual_override"
 
@@ -80,7 +82,7 @@ class TestRouter:
             case_mode="proposed_action",
             case_intent="tax_loss_harvesting",
         )
-        assert "e1_tax_evidence" in decision.applicable_evidence_agents
+        assert "e7_mutual_fund" in decision.applicable_evidence_agents
 
 
 # ---------------------------------------------------------------------------

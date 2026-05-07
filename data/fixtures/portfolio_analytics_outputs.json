@@ -1,0 +1,1208 @@
+{
+  "_metadata": {
+    "version": "1.0",
+    "introduced_in_cluster": "6",
+    "chunk": "6.1",
+    "as_of_date": "2026-05-01"
+  },
+  "outputs_by_investor": {
+    "investor_archetype_01": {
+      "investor_id": "investor_archetype_01",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 34100000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 0.2006,
+        "hhi_at_asset_class": 0.5421,
+        "hhi_at_sector_listed_only": 0,
+        "top_1_concentration_pct": 27.27,
+        "top_5_concentration_pct": 90.32,
+        "by_asset_class_pct": {
+          "debt": 64.52,
+          "equity": 35.48
+        },
+        "by_sub_category_inr": {
+          "bank_fd": 18500000,
+          "mf_active_large_cap": 4000000,
+          "mf_passive_index": 4800000,
+          "mf_hybrid_dynamic_aa": 3300000,
+          "mf_corporate_debt": 3500000
+        },
+        "by_listed_sector_inr": {}
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 0,
+          "T+30": 15600000,
+          "T+90_to_365": 18500000,
+          "T+365_plus_or_locked": 0
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 0.0,
+          "T+30": 45.75,
+          "T+90_to_365": 54.25,
+          "T+365_plus_or_locked": 0.0
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 7370000,
+        "unrealised_stcg_inr": 500000,
+        "total_unrealised_gain_inr": 7870000,
+        "total_unrealised_gain_pct": 30.0,
+        "total_cost_basis_inr": 26230000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [],
+        "count": 0
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 30.0
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    },
+    "investor_archetype_02": {
+      "investor_id": "investor_archetype_02",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 14200000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 0.2057,
+        "hhi_at_asset_class": 0.3966,
+        "hhi_at_sector_listed_only": 0,
+        "top_1_concentration_pct": 24.65,
+        "top_5_concentration_pct": 97.18,
+        "by_asset_class_pct": {
+          "cash": 2.82,
+          "equity": 44.37,
+          "debt": 43.66,
+          "alternatives": 9.15
+        },
+        "by_sub_category_inr": {
+          "savings": 400000,
+          "mf_active_large_cap": 3500000,
+          "mf_active_flexi_cap": 2800000,
+          "mf_corporate_debt": 2700000,
+          "bank_fd": 3500000,
+          "physical_gold": 1300000
+        },
+        "by_listed_sector_inr": {}
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 400000,
+          "T+30": 9000000,
+          "T+90_to_365": 4800000,
+          "T+365_plus_or_locked": 0
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 2.82,
+          "T+30": 63.38,
+          "T+90_to_365": 33.8,
+          "T+365_plus_or_locked": 0.0
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 5750000,
+        "unrealised_stcg_inr": 200000,
+        "total_unrealised_gain_inr": 5950000,
+        "total_unrealised_gain_pct": 72.12,
+        "total_cost_basis_inr": 8250000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [],
+        "count": 0
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 72.12
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    },
+    "investor_archetype_03": {
+      "investor_id": "investor_archetype_03",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 118500000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 0.1334,
+        "hhi_at_asset_class": 0.4344,
+        "hhi_at_sector_listed_only": 0,
+        "top_1_concentration_pct": 18.14,
+        "top_5_concentration_pct": 72.83,
+        "by_asset_class_pct": {
+          "equity": 52.15,
+          "debt": 39.41,
+          "alternatives": 8.44
+        },
+        "by_sub_category_inr": {
+          "mf_active_large_cap": 32500000,
+          "mf_active_flexi_cap": 16800000,
+          "mf_active_mid_cap": 12500000,
+          "tax_free_bond": 31200000,
+          "bank_fd": 15500000,
+          "physical_gold": 10000000
+        },
+        "by_listed_sector_inr": {}
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 0,
+          "T+30": 93000000,
+          "T+90_to_365": 25500000,
+          "T+365_plus_or_locked": 0
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 0.0,
+          "T+30": 78.48,
+          "T+90_to_365": 21.52,
+          "T+365_plus_or_locked": 0.0
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 49190000,
+        "unrealised_stcg_inr": 500000,
+        "total_unrealised_gain_inr": 49690000,
+        "total_unrealised_gain_pct": 72.21,
+        "total_cost_basis_inr": 68810000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [],
+        "count": 0
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 72.21
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    },
+    "investor_archetype_04": {
+      "investor_id": "investor_archetype_04",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 727000000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 0.12,
+        "hhi_at_asset_class": 0.6807,
+        "hhi_at_sector_listed_only": 0.3389,
+        "top_1_concentration_pct": 15.13,
+        "top_5_concentration_pct": 67.4,
+        "by_asset_class_pct": {
+          "debt": 18.16,
+          "equity": 80.47,
+          "alternatives": 1.38
+        },
+        "by_sub_category_inr": {
+          "mf_short_term_debt": 110000000,
+          "mf_arbitrage": 22000000,
+          "mf_active_large_cap": 165000000,
+          "mf_active_mid_cap": 70000000,
+          "mf_active_flexi_cap": 60000000,
+          "listed_large_cap": 290000000,
+          "aif_cat_ii_pe": 10000000
+        },
+        "by_listed_sector_inr": {
+          "Conglomerate": 110000000,
+          "IT Services": 100000000,
+          "Banking": 80000000
+        }
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 22000000,
+          "T+30": 695000000,
+          "T+90_to_365": 0,
+          "T+365_plus_or_locked": 10000000
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 3.03,
+          "T+30": 95.6,
+          "T+90_to_365": 0.0,
+          "T+365_plus_or_locked": 1.38
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 393100000,
+        "unrealised_stcg_inr": 12000000,
+        "total_unrealised_gain_inr": 405100000,
+        "total_unrealised_gain_pct": 125.85,
+        "total_cost_basis_inr": 321900000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [
+          {
+            "instrument_id": "instr_aif_iifl_special_opp_iv",
+            "current_value_inr": 10000000,
+            "vintage_year": 2020,
+            "j_curve_stage": "tail"
+          }
+        ],
+        "count": 1
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 125.85
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    },
+    "investor_archetype_05": {
+      "investor_id": "investor_archetype_05",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 606500000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 0.7583,
+        "hhi_at_asset_class": 0.7583,
+        "hhi_at_sector_listed_only": 0,
+        "top_1_concentration_pct": 86.56,
+        "top_5_concentration_pct": 100.0,
+        "by_asset_class_pct": {
+          "cash": 86.56,
+          "debt": 6.84,
+          "equity": 6.6
+        },
+        "by_sub_category_inr": {
+          "savings": 525000000,
+          "bank_fd": 41500000,
+          "intl_us_individual": 40000000
+        },
+        "by_listed_sector_inr": {}
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 525000000,
+          "T+30": 40000000,
+          "T+90_to_365": 41500000,
+          "T+365_plus_or_locked": 0
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 86.56,
+          "T+30": 6.6,
+          "T+90_to_365": 6.84,
+          "T+365_plus_or_locked": 0.0
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 2500000,
+        "unrealised_stcg_inr": 6500000,
+        "total_unrealised_gain_inr": 9000000,
+        "total_unrealised_gain_pct": 1.51,
+        "total_cost_basis_inr": 597500000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [],
+        "count": 0
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 1.51
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    },
+    "investor_archetype_06": {
+      "investor_id": "investor_archetype_06",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 92200000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 0.1755,
+        "hhi_at_asset_class": 0.5044,
+        "hhi_at_sector_listed_only": 0.3722,
+        "top_1_concentration_pct": 28.31,
+        "top_5_concentration_pct": 86.01,
+        "by_asset_class_pct": {
+          "debt": 45.34,
+          "equity": 54.66
+        },
+        "by_sub_category_inr": {
+          "bank_fd": 41800000,
+          "mf_active_large_cap": 26500000,
+          "listed_large_cap": 23900000
+        },
+        "by_listed_sector_inr": {
+          "FMCG": 4400000,
+          "Banking": 8500000,
+          "Conglomerate": 11000000
+        }
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 0,
+          "T+30": 50400000,
+          "T+90_to_365": 41800000,
+          "T+365_plus_or_locked": 0
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 0.0,
+          "T+30": 54.66,
+          "T+90_to_365": 45.34,
+          "T+365_plus_or_locked": 0.0
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 36000000,
+        "unrealised_stcg_inr": 1800000,
+        "total_unrealised_gain_inr": 37800000,
+        "total_unrealised_gain_pct": 69.49,
+        "total_cost_basis_inr": 54400000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [],
+        "count": 0
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 69.49
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    },
+    "investor_archetype_07": {
+      "investor_id": "investor_archetype_07",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 232000000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 0.4084,
+        "hhi_at_asset_class": 0.8128,
+        "hhi_at_sector_listed_only": 1.0,
+        "top_1_concentration_pct": 61.94,
+        "top_5_concentration_pct": 87.72,
+        "by_asset_class_pct": {
+          "cash": 2.16,
+          "equity": 89.96,
+          "alternatives": 3.45,
+          "debt": 4.44
+        },
+        "by_sub_category_inr": {
+          "savings": 5000000,
+          "mf_active_large_cap": 20500000,
+          "mf_active_flexi_cap": 9500000,
+          "mf_active_mid_cap": 7000000,
+          "listed_large_cap": 28000000,
+          "physical_gold": 8000000,
+          "bank_fd": 10300000,
+          "unlisted_family_business": 143700000
+        },
+        "by_listed_sector_inr": {
+          "Pharma": 28000000
+        }
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 5000000,
+          "T+30": 65000000,
+          "T+90_to_365": 18300000,
+          "T+365_plus_or_locked": 143700000
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 2.16,
+          "T+30": 28.02,
+          "T+90_to_365": 7.89,
+          "T+365_plus_or_locked": 61.94
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 29000000,
+        "unrealised_stcg_inr": 300000,
+        "total_unrealised_gain_inr": 173000000,
+        "total_unrealised_gain_pct": 293.22,
+        "total_cost_basis_inr": 59000000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [],
+        "count": 0
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 293.22
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    },
+    "investor_archetype_08": {
+      "investor_id": "investor_archetype_08",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 221000000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 0.0988,
+        "hhi_at_asset_class": 0.5596,
+        "hhi_at_sector_listed_only": 0.3716,
+        "top_1_concentration_pct": 13.57,
+        "top_5_concentration_pct": 58.37,
+        "by_asset_class_pct": {
+          "equity": 72.17,
+          "alternatives": 13.57,
+          "debt": 14.25
+        },
+        "by_sub_category_inr": {
+          "pms_concentrated_quality": 25000000,
+          "pms_value": 21000000,
+          "pms_growth_quality": 22000000,
+          "pms_focused_midcap": 19000000,
+          "aif_cat_iii_long_short": 30000000,
+          "listed_large_cap": 63000000,
+          "mf_active_large_cap": 5000000,
+          "mf_active_flexi_cap": 4500000,
+          "bank_fd": 15500000,
+          "mf_arbitrage": 16000000
+        },
+        "by_listed_sector_inr": {
+          "FMCG": 11000000,
+          "Banking": 25000000,
+          "Conglomerate": 27000000
+        }
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 16000000,
+          "T+30": 72500000,
+          "T+90_to_365": 15500000,
+          "T+365_plus_or_locked": 117000000
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 7.24,
+          "T+30": 32.81,
+          "T+90_to_365": 7.01,
+          "T+365_plus_or_locked": 52.94
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 45160000,
+        "unrealised_stcg_inr": 1500000,
+        "total_unrealised_gain_inr": 46660000,
+        "total_unrealised_gain_pct": 26.76,
+        "total_cost_basis_inr": 174340000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [
+          {
+            "instrument_id": "instr_pms_marcellus_consistent",
+            "current_value_inr": 25000000,
+            "pms_inception": "2019-06-15"
+          },
+          {
+            "instrument_id": "instr_pms_motilal_focused25",
+            "current_value_inr": 21000000,
+            "pms_inception": "2020-09-10"
+          },
+          {
+            "instrument_id": "instr_pms_white_oak_quality",
+            "current_value_inr": 22000000,
+            "pms_inception": "2021-04-20"
+          },
+          {
+            "instrument_id": "instr_pms_alchemy_smartalpha",
+            "current_value_inr": 19000000,
+            "pms_inception": "2022-11-15"
+          },
+          {
+            "instrument_id": "instr_aif_avendus_absolute_return",
+            "current_value_inr": 30000000,
+            "vintage_year": 2018,
+            "j_curve_stage": "wind_down"
+          }
+        ],
+        "count": 5
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 26.76
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    },
+    "investor_archetype_09": {
+      "investor_id": "investor_archetype_09",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 345000000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 0.1097,
+        "hhi_at_asset_class": 0.8126,
+        "hhi_at_sector_listed_only": 0.6543,
+        "top_1_concentration_pct": 20.29,
+        "top_5_concentration_pct": 60.29,
+        "by_asset_class_pct": {
+          "equity": 89.86,
+          "alternatives": 5.8,
+          "cash": 4.35
+        },
+        "by_sub_category_inr": {
+          "mf_active_large_cap": 68000000,
+          "mf_active_flexi_cap": 40000000,
+          "mf_active_mid_cap": 30000000,
+          "mf_active_small_cap": 22000000,
+          "pms_growth_quality": 30000000,
+          "listed_large_cap": 90000000,
+          "intl_us_etf": 30000000,
+          "physical_gold": 20000000,
+          "savings": 15000000
+        },
+        "by_listed_sector_inr": {
+          "Conglomerate": 70000000,
+          "Banking": 20000000
+        }
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 15000000,
+          "T+30": 280000000,
+          "T+90_to_365": 20000000,
+          "T+365_plus_or_locked": 30000000
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 4.35,
+          "T+30": 81.16,
+          "T+90_to_365": 5.8,
+          "T+365_plus_or_locked": 8.7
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 196200000,
+        "unrealised_stcg_inr": 0,
+        "total_unrealised_gain_inr": 196200000,
+        "total_unrealised_gain_pct": 131.85,
+        "total_cost_basis_inr": 148800000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [
+          {
+            "instrument_id": "instr_pms_white_oak_quality",
+            "current_value_inr": 30000000,
+            "pms_inception": "2021-04-15"
+          }
+        ],
+        "count": 1
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 131.85
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    },
+    "investor_archetype_10": {
+      "investor_id": "investor_archetype_10",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 22430000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 0.1762,
+        "hhi_at_asset_class": 0.4338,
+        "hhi_at_sector_listed_only": 0,
+        "top_1_concentration_pct": 23.85,
+        "top_5_concentration_pct": 90.64,
+        "by_asset_class_pct": {
+          "cash": 4.46,
+          "debt": 54.97,
+          "equity": 35.67,
+          "alternatives": 4.9
+        },
+        "by_sub_category_inr": {
+          "savings": 1000000,
+          "bank_fd": 9530000,
+          "mf_active_large_cap": 8000000,
+          "mf_corporate_debt": 2800000,
+          "physical_gold": 1100000
+        },
+        "by_listed_sector_inr": {}
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 1000000,
+          "T+30": 10800000,
+          "T+90_to_365": 10630000,
+          "T+365_plus_or_locked": 0
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 4.46,
+          "T+30": 48.15,
+          "T+90_to_365": 47.39,
+          "T+365_plus_or_locked": 0.0
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 6980000,
+        "unrealised_stcg_inr": 530000,
+        "total_unrealised_gain_inr": 7510000,
+        "total_unrealised_gain_pct": 50.34,
+        "total_cost_basis_inr": 14920000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [],
+        "count": 0
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 50.34
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    },
+    "investor_archetype_11": {
+      "investor_id": "investor_archetype_11",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 426000000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 0.0829,
+        "hhi_at_asset_class": 0.5903,
+        "hhi_at_sector_listed_only": 0.4036,
+        "top_1_concentration_pct": 14.08,
+        "top_5_concentration_pct": 50.94,
+        "by_asset_class_pct": {
+          "equity": 71.24,
+          "debt": 28.76
+        },
+        "by_sub_category_inr": {
+          "mf_active_large_cap": 72000000,
+          "mf_active_flexi_cap": 42000000,
+          "mf_corporate_debt": 22000000,
+          "listed_large_cap": 118000000,
+          "bank_fd": 61500000,
+          "tax_free_bond": 39000000,
+          "pms_concentrated_quality": 30000000,
+          "pms_value": 23000000,
+          "pms_growth_quality": 18500000
+        },
+        "by_listed_sector_inr": {
+          "FMCG": 16000000,
+          "Banking": 42000000,
+          "Conglomerate": 60000000
+        }
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 0,
+          "T+30": 293000000,
+          "T+90_to_365": 61500000,
+          "T+365_plus_or_locked": 71500000
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 0.0,
+          "T+30": 68.78,
+          "T+90_to_365": 14.44,
+          "T+365_plus_or_locked": 16.78
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 183000000,
+        "unrealised_stcg_inr": 1500000,
+        "total_unrealised_gain_inr": 184500000,
+        "total_unrealised_gain_pct": 76.4,
+        "total_cost_basis_inr": 241500000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [
+          {
+            "instrument_id": "instr_pms_marcellus_consistent",
+            "current_value_inr": 30000000,
+            "pms_inception": "2019-04-15"
+          },
+          {
+            "instrument_id": "instr_pms_motilal_focused25",
+            "current_value_inr": 23000000,
+            "pms_inception": "2020-08-15"
+          },
+          {
+            "instrument_id": "instr_pms_white_oak_quality",
+            "current_value_inr": 18500000,
+            "pms_inception": "2022-06-10"
+          }
+        ],
+        "count": 3
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 76.4
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    },
+    "investor_archetype_12": {
+      "investor_id": "investor_archetype_12",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 47000000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 1.0,
+        "hhi_at_asset_class": 1.0,
+        "hhi_at_sector_listed_only": 0,
+        "top_1_concentration_pct": 100.0,
+        "top_5_concentration_pct": 100.0,
+        "by_asset_class_pct": {
+          "cash": 100.0
+        },
+        "by_sub_category_inr": {
+          "savings": 47000000
+        },
+        "by_listed_sector_inr": {}
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 47000000,
+          "T+30": 0,
+          "T+90_to_365": 0,
+          "T+365_plus_or_locked": 0
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 100.0,
+          "T+30": 0.0,
+          "T+90_to_365": 0.0,
+          "T+365_plus_or_locked": 0.0
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 0,
+        "unrealised_stcg_inr": 0,
+        "total_unrealised_gain_inr": 0,
+        "total_unrealised_gain_pct": 0.0,
+        "total_cost_basis_inr": 47000000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [],
+        "count": 0
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 0.0
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    },
+    "investor_archetype_13": {
+      "investor_id": "investor_archetype_13",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 4830000000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 0.0699,
+        "hhi_at_asset_class": 0.336,
+        "hhi_at_sector_listed_only": 0.3611,
+        "top_1_concentration_pct": 11.39,
+        "top_5_concentration_pct": 46.58,
+        "by_asset_class_pct": {
+          "equity": 42.03,
+          "debt": 26.5,
+          "alternatives": 29.81,
+          "cash": 1.66
+        },
+        "by_sub_category_inr": {
+          "mf_active_large_cap": 570000000,
+          "mf_active_mid_cap": 200000000,
+          "listed_large_cap": 850000000,
+          "mf_short_term_debt": 530000000,
+          "tax_free_bond": 440000000,
+          "reit": 550000000,
+          "intl_us_etf": 410000000,
+          "aif_cat_ii_pe": 90000000,
+          "aif_cat_iii_long_short": 90000000,
+          "aif_cat_ii_real_estate": 82000000,
+          "aif_cat_ii_private_credit": 88000000,
+          "physical_gold": 380000000,
+          "sovereign_gold_bond": 160000000,
+          "mf_arbitrage": 310000000,
+          "savings": 80000000
+        },
+        "by_listed_sector_inr": {
+          "Conglomerate": 380000000,
+          "IT Services": 290000000,
+          "Banking": 180000000
+        }
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 390000000,
+          "T+30": 3000000000,
+          "T+90_to_365": 1090000000,
+          "T+365_plus_or_locked": 350000000
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 8.07,
+          "T+30": 62.11,
+          "T+90_to_365": 22.57,
+          "T+365_plus_or_locked": 7.25
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 1198000000,
+        "unrealised_stcg_inr": 20000000,
+        "total_unrealised_gain_inr": 1218000000,
+        "total_unrealised_gain_pct": 33.72,
+        "total_cost_basis_inr": 3612000000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [
+          {
+            "instrument_id": "instr_aif_iifl_special_opp_iv",
+            "current_value_inr": 90000000,
+            "vintage_year": 2018,
+            "j_curve_stage": "harvesting"
+          },
+          {
+            "instrument_id": "instr_aif_avendus_absolute_return",
+            "current_value_inr": 90000000,
+            "vintage_year": 2020
+          },
+          {
+            "instrument_id": "instr_aif_kotak_realestate_iv",
+            "current_value_inr": 82000000,
+            "vintage_year": 2021,
+            "j_curve_stage": "investment_period"
+          },
+          {
+            "instrument_id": "instr_aif_edelweiss_cat2_pcredit",
+            "current_value_inr": 88000000,
+            "vintage_year": 2023,
+            "j_curve_stage": "investment_period"
+          }
+        ],
+        "count": 4
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 33.72
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    },
+    "investor_archetype_14": {
+      "investor_id": "investor_archetype_14",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 37500000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 0.251,
+        "hhi_at_asset_class": 0.7611,
+        "hhi_at_sector_listed_only": 1.0,
+        "top_1_concentration_pct": 33.33,
+        "top_5_concentration_pct": 100.0,
+        "by_asset_class_pct": {
+          "equity": 86.13,
+          "debt": 13.87
+        },
+        "by_sub_category_inr": {
+          "mf_active_large_cap": 12500000,
+          "mf_active_flexi_cap": 10800000,
+          "mf_active_mid_cap": 7000000,
+          "bank_fd": 5200000,
+          "listed_large_cap": 2000000
+        },
+        "by_listed_sector_inr": {
+          "IT Services": 2000000
+        }
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 0,
+          "T+30": 32300000,
+          "T+90_to_365": 5200000,
+          "T+365_plus_or_locked": 0
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 0.0,
+          "T+30": 86.13,
+          "T+90_to_365": 13.87,
+          "T+365_plus_or_locked": 0.0
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 22800000,
+        "unrealised_stcg_inr": 200000,
+        "total_unrealised_gain_inr": 23000000,
+        "total_unrealised_gain_pct": 158.62,
+        "total_cost_basis_inr": 14500000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [],
+        "count": 0
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 158.62
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    },
+    "investor_archetype_15": {
+      "investor_id": "investor_archetype_15",
+      "as_of_date": "2026-05-01",
+      "deployment": {
+        "total_aum_inr": 158900000,
+        "deployment_ratio_pct": 100.0,
+        "undeployed_inr": 0,
+        "notes": "Cluster 6 synthetic Holdings; deployment fully reflects archetype profile narrative."
+      },
+      "concentration": {
+        "hhi_at_holding": 0.1078,
+        "hhi_at_asset_class": 0.501,
+        "hhi_at_sector_listed_only": 0.3424,
+        "top_1_concentration_pct": 13.85,
+        "top_5_concentration_pct": 61.36,
+        "by_asset_class_pct": {
+          "equity": 62.62,
+          "debt": 32.66,
+          "alternatives": 4.72
+        },
+        "by_sub_category_inr": {
+          "mf_active_large_cap": 41000000,
+          "mf_active_flexi_cap": 17500000,
+          "mf_corporate_debt": 17000000,
+          "mf_short_term_debt": 22000000,
+          "listed_large_cap": 41000000,
+          "tax_free_bond": 12900000,
+          "physical_gold": 7500000
+        },
+        "by_listed_sector_inr": {
+          "FMCG": 11000000,
+          "Banking": 13500000,
+          "Conglomerate": 16500000
+        }
+      },
+      "liquidity": {
+        "buckets_inr": {
+          "T+0_to_T+3": 0,
+          "T+30": 151400000,
+          "T+90_to_365": 7500000,
+          "T+365_plus_or_locked": 0
+        },
+        "buckets_pct": {
+          "T+0_to_T+3": 0.0,
+          "T+30": 95.28,
+          "T+90_to_365": 4.72,
+          "T+365_plus_or_locked": 0.0
+        }
+      },
+      "tax": {
+        "unrealised_ltcg_inr": 18300000,
+        "unrealised_stcg_inr": 0,
+        "total_unrealised_gain_inr": 18300000,
+        "total_unrealised_gain_pct": 13.02,
+        "total_cost_basis_inr": 140600000,
+        "tax_loss_harvesting_candidates": []
+      },
+      "pms_aif_vintage": {
+        "vintages": [],
+        "count": 0
+      },
+      "returns_normalised": {
+        "note": "TWR/XIRR computation requires NAV history beyond Cluster 6 synthesis scope. Stub aggregation reported as net unrealised CAGR estimate.",
+        "estimated_unrealised_cagr_pct": 13.02
+      },
+      "profitability_look_through": {
+        "note": "Per-stock fundamentals look-through requires E1 input integration with cluster 3 fundamental data; cluster 7 ships real E1.",
+        "data_unavailable_in_cluster_6": true
+      },
+      "cost_fees": {
+        "note": "Per-vehicle TER/fee aggregation requires Cluster 3 fee fixture extension; estimate based on category averages",
+        "estimated_blended_basis_points": null,
+        "data_partially_available_in_cluster_6": true
+      },
+      "schema_version": 1,
+      "is_seed_data": true
+    }
+  }
+}

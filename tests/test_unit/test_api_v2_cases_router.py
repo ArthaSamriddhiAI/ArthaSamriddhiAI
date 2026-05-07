@@ -206,7 +206,7 @@ class TestCreate:
         assert body["created_via"] == "api"
         assert body["assigned_to"] == "advisor1"
         # M0 router decision persisted on the row.
-        assert "e1_equity_evidence" in body["applicable_evidence_agents"]
+        assert "e1_listed_fundamental_equity" in body["applicable_evidence_agents"]
 
     @pytest.mark.asyncio
     async def test_advisor_blocked_outside_book(self, http, seeded_book):
@@ -264,7 +264,7 @@ class TestCreate:
                 "investor_id": seeded_book["advisor1_investor"],
                 "case_mode": "proposed_action",
                 "case_intent": "rebalance_proposal",
-                "manual_override_evidence_agents": ["e1_equity_evidence"],
+                "manual_override_evidence_agents": ["e1_listed_fundamental_equity"],
             },
         )
         assert resp.status_code == 403
@@ -281,16 +281,16 @@ class TestCreate:
                 "case_mode": "proposed_action",
                 "case_intent": "rebalance_proposal",
                 "manual_override_evidence_agents": [
-                    "e1_equity_evidence",
-                    "e1_tax_evidence",
+                    "e1_listed_fundamental_equity",
+                    "e7_mutual_fund",
                 ],
             },
         )
         assert resp.status_code == 201, resp.text
         body = resp.json()
         assert body["applicable_evidence_agents"] == [
-            "e1_equity_evidence",
-            "e1_tax_evidence",
+            "e1_listed_fundamental_equity",
+            "e7_mutual_fund",
         ]
         # proposed_action stops at awaiting_decision (CIO records decision in 5.5).
         assert body["status"] == "awaiting_decision"
