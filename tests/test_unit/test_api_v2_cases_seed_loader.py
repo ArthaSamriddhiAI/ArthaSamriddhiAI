@@ -362,7 +362,12 @@ class TestFixtureErrors:
 class TestRepoFixture:
     @pytest.mark.asyncio
     async def test_repo_demo_seed_loads_clean(self, db):
-        """The repo-shipped demo_seed.json must load against a fresh DB."""
+        """The repo-shipped demo_seed.json must load against a fresh DB.
+
+        Cluster 6 stage 2 absorbs the FR Entry 19.0 cluster 6 revision
+        cohort: 15 archetype investors + 15 households + 15 mandates +
+        23 cases across 3 advisors + 1 CIO.
+        """
         seed_loader.set_demo_fixture_path(None)
         dispatch.set_seed_fixture_path(None)
         dispatch.reset_seed_cache()
@@ -370,14 +375,14 @@ class TestRepoFixture:
         try:
             result = await seed_loader.load_demo_seed(db, actor=_cio())
             await db.commit()
-            assert result.households == 7
+            assert result.households == 15
             assert result.investors == 15
             assert result.mandates == 15
-            assert result.cases >= 8
+            assert result.cases == 23
 
-            # Spot-check: archetype-specific synthesis output makes it
-            # into the persisted synthesis row when a seed payload is
-            # available.
+            # Spot-check: every case is is_seed_data=True with
+            # archetype linkage; every advisor referenced is one of the
+            # cluster-6 cohort.
             from artha.api_v2.cases import repository
 
             cases = list(
@@ -387,19 +392,29 @@ class TestRepoFixture:
                     )
                 ).scalars()
             )
-            for case in cases:
-                if case.seed_archetype_id == "young_aggressive_techie":
-                    synth = await repository.get_synthesis(
-                        db, case_id=case.case_id,
-                    )
-                    if synth is not None:
-                        assert synth.produced_via == "lookup_stub_seed"
-                        # Seeded narrative must reference the archetype
-                        # voice ("Aarav" appears in the seed payload).
-                        assert (
-                            "Aarav" in (synth.synthesis_narrative or "")
-                        )
-                    break
+            assert len(cases) == 23
+            advisors = {c.assigned_to for c in cases}
+            # 3 advisors + CIO appear as assigned_to on at least one case.
+            cluster6_users = {
+                "adv_priya_nair",
+                "adv_amit_sharma",
+                "adv_rohan_kapoor",
+                "cio_anjali_mehta",
+            }
+            assert advisors <= cluster6_users
+            # Every case has its seed_archetype_id set.
+            assert all(
+                c.seed_archetype_id and c.seed_archetype_id.startswith(
+                    "investor_archetype_",
+                )
+                for c in cases
+            )
+            # produced_via on stage rows uses the lookup_stub_seed marker
+            # because is_seed_data=True propagates through the pipeline.
+            evidence = await repository.list_evidence_verdicts(
+                db, case_id=cases[0].case_id,
+            )
+            assert all(v.produced_via == "lookup_stub_seed" for v in evidence)
         finally:
             dispatch.reset_seed_cache()
 

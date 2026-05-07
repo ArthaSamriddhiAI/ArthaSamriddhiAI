@@ -255,11 +255,15 @@ class TestUserContext:
 
 
 class TestDevUsers:
-    def test_catalogue_loads_demo_firm_and_four_users(self):
+    def test_catalogue_loads_demo_firm_and_users(self):
+        # Cluster 6 stage 2 expanded the dev users catalogue from 4
+        # (cluster 0 baseline) to 8: + 3 cluster-6 advisors + 1 CIO
+        # referenced by the demo seed fixture (Priya Nair, Amit Sharma,
+        # Rohan Kapoor, Anjali Mehta CIO).
         cat = get_catalogue()
         assert cat.firm.firm_id == "demo-firm-001"
         assert cat.firm.regulatory_jurisdiction == "IN"
-        assert len(cat.users) == 4
+        assert len(cat.users) == 8
         roles = {u.role for u in cat.users}
         assert roles == {Role.ADVISOR, Role.CIO, Role.COMPLIANCE, Role.AUDIT}
 
@@ -503,11 +507,13 @@ class TestT1Emit:
 
 class TestDevUsersEndpoint:
     @pytest.mark.asyncio
-    async def test_returns_four_users_without_email(self, http):
+    async def test_returns_users_without_email(self, http):
+        # Cluster 6 stage 2: 8 dev users (4 cluster-0 baseline + 4
+        # cluster-6 demo seed cohort users).
         resp = await http.get("/api/v2/auth/dev-users")
         assert resp.status_code == 200
         body = resp.json()
-        assert len(body["users"]) == 4
+        assert len(body["users"]) == 8
         for u in body["users"]:
             assert set(u.keys()) == {"user_id", "name", "role"}
             assert "email" not in u  # sensitive field omitted

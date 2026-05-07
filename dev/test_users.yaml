@@ -17,6 +17,7 @@ firm:
   regulatory_jurisdiction: "IN"
 
 users:
+  # Cluster 0/1 baseline test users.
   - user_id: "advisor1"
     email: "advisor1@demo.test"
     name: "Anjali Mehta"
@@ -33,3 +34,22 @@ users:
     email: "audit1@demo.test"
     name: "Vikram Desai"
     role: "audit"
+
+  # Cluster 6 stage 2 — 3-advisor cohort + 1 CIO referenced by the
+  # cluster-6 demo seed fixture (FR Entry 19.0 cluster 6 revision §3.2).
+  - user_id: "adv_priya_nair"
+    email: "priya.nair@demo.test"
+    name: "Priya Nair"
+    role: "advisor"
+  - user_id: "adv_amit_sharma"
+    email: "amit.sharma@demo.test"
+    name: "Amit Sharma"
+    role: "advisor"
+  - user_id: "adv_rohan_kapoor"
+    email: "rohan.kapoor@demo.test"
+    name: "Rohan Kapoor"
+    role: "advisor"
+  - user_id: "cio_anjali_mehta"
+    email: "anjali.mehta@demo.test"
+    name: "Anjali Mehta"
+    role: "cio"

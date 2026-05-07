@@ -132,7 +132,10 @@ class TestV2ApiPreserved:
         assert response.status_code == 200
         body = response.json()
         assert "users" in body
-        assert len(body["users"]) == 4
+        # Cluster 6 stage 2 expanded the test users yaml from 4 to 8
+        # to seat the demo-seed advisor cohort (Priya Nair, Amit Sharma,
+        # Rohan Kapoor + Anjali Mehta CIO).
+        assert len(body["users"]) == 8
 
     @pytest.mark.asyncio
     async def test_v2_oidc_login_stub_returns_501(self, http):
