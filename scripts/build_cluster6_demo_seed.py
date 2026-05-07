@@ -291,6 +291,9 @@ def build() -> dict[str, Any]:
     cases: list[dict[str, Any]] = []
     for c in case_rows:
         cases.append({
+            # Stable case_id (e.g. case_arch01_a) so the dispatcher's
+            # case_id-keyed seed-payload lookup matches; cluster 6 stage 3.
+            "case_id": c["case_id"],
             "investor_id": c["investor_id"],
             "case_mode": c["case_mode"],
             "case_intent": c.get("case_intent"),

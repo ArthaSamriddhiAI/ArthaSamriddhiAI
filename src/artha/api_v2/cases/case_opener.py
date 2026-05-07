@@ -104,6 +104,12 @@ class OpenCaseRequest:
     #: the pipeline; chunk 5.3 unit tests (orchestrator-only assertions)
     #: opt out via this flag.
     skip_pipeline: bool = False
+    #: Optional explicit case_id. Production callers leave this ``None``
+    #: and let the repository generate a ULID. The cluster-6 seed loader
+    #: passes the fixture's stable case_id (e.g. ``case_arch01_a``) so
+    #: the dispatcher's case_id-keyed seed-payload lookup finds the
+    #: right curated content. Must be unique; collides at INSERT time.
+    case_id_override: str | None = None
 
 
 @dataclass(frozen=True)
@@ -300,6 +306,7 @@ async def open_case(
         proposed_action_amount_inr=request.proposed_action_amount_inr,
         proposed_action_products=list(request.proposed_action_products),
         materiality_manual_flag=request.materiality_manual_flag,
+        case_id=request.case_id_override,
         created_via=request.created_via,
         applicable_evidence_agents=list(applicable),
         is_seed_data=request.is_seed_data,

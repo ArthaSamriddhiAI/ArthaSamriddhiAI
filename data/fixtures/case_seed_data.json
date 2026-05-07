@@ -1,196 +1,530 @@
 {
-  "young_aggressive_techie": {
+  "case_arch01_a": {
     "synthesis.case_mode": {
       "output_mode": "case_mode",
-      "consensus": {"summary": "Equity rebalance is on-thesis for an aggressive long-horizon investor."},
-      "agreement_areas": {"areas": ["valuation_neutral_midcap", "macro_supportive"]},
-      "conflict_areas": {"areas": []},
+      "synthesis_narrative": "The proposed redirect from FD to a debt-MF + arbitrage-MF mix resolves the existing Conservative-bucket liquidity floor proximity and modestly improves concentration profile. The portfolio_shift dominance reflects the action's primary character: maturity-driven rebalance preserving capital while adding optionality. E3's macro context supports moving from FD to short-duration debt MF given the late-cutting / early-pause rate environment. E4's behavioural alignment is clear: the proposal is preservation-coherent and matches Lalitha's revealed conservative pattern. M0.PortfolioRiskAnalytics confirms post-action improvement on liquidity dimension with marginal fee drag impact.",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "overall risk_level low (post-action); confidence 0"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
       "uncertainty_flag": false,
       "amplification": null,
-      "mode_dominance": "balanced",
+      "mode_dominance": "portfolio_shift",
       "escalation_recommended": false,
-      "synthesis_narrative": "Aarav's equity sleeve is consistent with an aggressive 80/15/5 mandate. The proposed mid-cap shift takes advantage of relative-valuation breadth without breaching the single-position cap. Macro and sentiment support the action. No materiality flag.",
-      "recommendation": "proceed",
+      "counterfactual_framing": {
+        "description": "Reinvest the Rs 90 L FD maturity into another 24-month FD ladder at current 6.9-7.0 pct rate. Trade-off: simpler operation but maintains liquidity floor proximity and lower optionality if medical needs accelerate."
+      },
       "flags": {},
-      "reasoning_summary": "Seeded synthesis for archetype young_aggressive_techie."
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    },
+    "decision_artifact": {
+      "decision": "approved",
+      "rationale": "Approved as proposed. Lalitha's medical trajectory and conservative profile justify maintaining liquidity-tier focus; the proposed mix preserves capital while reducing reinvestment risk."
     }
   },
-  "single_high_earner": {
-    "synthesis.case_mode": {
-      "output_mode": "case_mode",
-      "synthesis_narrative": "₹1.2 Cr Cat-II AIF subscription crosses the materiality threshold (PMS/AIF/SIF rule + ticket-size rule). IC1 deliberation expected. AIF cap-headroom adequate; lock-in matches the over_5_year horizon.",
-      "amplification": {"flag": true, "drivers": ["product_classification_aif", "ticket_size_above_threshold"]},
-      "escalation_recommended": true,
-      "escalation_reason": "Material AIF subscription; IC1 review per FR 20.1 §6.",
-      "recommendation": "support_with_conditions",
-      "consensus": {"summary": "Material AIF subscription; supports with size + lock-in caveats."},
-      "agreement_areas": {"areas": ["mandate_compliance", "horizon_match"]},
-      "conflict_areas": {"areas": []},
-      "uncertainty_flag": false,
-      "mode_dominance": "balanced",
-      "flags": {},
-      "reasoning_summary": "Seeded synthesis for archetype single_high_earner."
-    }
-  },
-  "midcareer_business_owner": {
-    "synthesis.case_mode": {
-      "output_mode": "case_mode",
-      "synthesis_narrative": "Tax-loss harvesting from underperforming sectoral fund is appropriate timing — losses bookable, redirect to broad-market index preserves equity allocation. STT impact minimal.",
-      "recommendation": "proceed",
-      "consensus": {"summary": "Routine tax-loss harvesting; clean."},
-      "agreement_areas": {"areas": ["tax_efficiency", "allocation_preserved"]},
-      "conflict_areas": {"areas": []},
-      "uncertainty_flag": false,
-      "amplification": null,
-      "mode_dominance": "balanced",
-      "escalation_recommended": false,
-      "flags": {},
-      "reasoning_summary": "Seeded synthesis for archetype midcareer_business_owner."
-    }
-  },
-  "hni_business_concentrated": {
-    "synthesis.case_mode": {
-      "output_mode": "case_mode",
-      "synthesis_narrative": "₹2.5 Cr PMS subscription firmly material (ticket size + product classification). Diversification benefit vs current concentrated business holding is meaningful. IC1 expected to support with conditions.",
-      "amplification": {"flag": true, "drivers": ["large_ticket", "concentrated_book", "pms_classification"]},
-      "escalation_recommended": true,
-      "escalation_reason": "HNI material subscription with concentrated baseline; IC1 escalation.",
-      "recommendation": "support_with_conditions",
-      "consensus": {"summary": "Material PMS subscription; supports with size + manager-quality caveats."},
-      "agreement_areas": {"areas": ["diversification_benefit", "horizon_match"]},
-      "conflict_areas": {"areas": []},
-      "uncertainty_flag": false,
-      "mode_dominance": "balanced",
-      "flags": {},
-      "reasoning_summary": "Seeded synthesis for archetype hni_business_concentrated."
-    }
-  },
-  "spouse_moderate_planner": {
+  "case_arch01_b": {
     "synthesis.diagnostic": {
       "output_mode": "diagnostic",
-      "synthesis_narrative": "Diya's portfolio is in healthy operating range — equity drift +1.2% within mandate, debt allocation comfortable, no concentration breach. Cash buffer aligned with liquidity tier.",
-      "recommendation": "no_action_required",
-      "consensus": {"summary": "Healthy."},
-      "agreement_areas": {"areas": ["mandate_compliance", "performance_in_range"]},
-      "conflict_areas": {"areas": []},
+      "synthesis_narrative": "1. **Liquidity floor restoration (high priority; immediate / next quarter):** Current T+0_to_T+30 at 23 pct vs Conservative bucket floor 30 pct. Recommend redirect from upcoming FD maturity (Rs 90 L due June 2026) to debt MF + arbitrage MF mix. Rationale: medical contingency requires preserved optionality; rate environment favourable for short-duration debt MF; arbitrage MF maintains tax-efficient profile. *Note: this recommendation directly informed case_arch01_a, which Priya opened immediately following this diagnostic.",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "1. **Liquidity floor restoration (high priority; immediate / next quarter):** Current T+0_to_T+30 at 23 pct vs Conservative bucket floor 30 pct. Recommend redir"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
       "uncertainty_flag": false,
       "amplification": null,
       "mode_dominance": "balanced",
       "escalation_recommended": false,
+      "counterfactual_framing": null,
       "flags": {},
-      "reasoning_summary": "Seeded synthesis for archetype spouse_moderate_planner."
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
     }
   },
-  "retiree_income_focused": {
+  "case_arch02": {
     "synthesis.diagnostic": {
       "output_mode": "diagnostic",
-      "synthesis_narrative": "Retiree portfolio favouring debt is functioning as designed. SCSS quarterly payouts on schedule; equity sleeve performing in line with peers. Recommend liquidity buffer review at next meeting given recent inflation print.",
-      "recommendation": "no_action_required",
-      "consensus": {"summary": "Healthy with attention-cue on liquidity buffer."},
-      "agreement_areas": {"areas": ["mandate_compliance", "income_continuity"]},
-      "conflict_areas": {"areas": []},
+      "synthesis_narrative": "1. **Wedding fund laddering (high priority; immediate):** Ladder Rs 40 L into liquid funds (HDFC Liquid Fund, ICICI Pru Money Market) over next 4 months to fund Q4 2026 wedding outflow without disturbing legacy equity MFs. Source: combine current Rs 4 L cash with Rs 36 L from a new SIP-into-liquid-MF arrangement starting June 2026 leveraging Rohan's salary inflow + the maturing FD.",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "1. **Wedding fund laddering (high priority; immediate):** Ladder Rs 40 L into liquid funds (HDFC Liquid Fund, ICICI Pru Money Market) over next 4 months to fund"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
       "uncertainty_flag": false,
       "amplification": null,
       "mode_dominance": "balanced",
       "escalation_recommended": false,
+      "counterfactual_framing": null,
       "flags": {},
-      "reasoning_summary": "Seeded synthesis for archetype retiree_income_focused."
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
     }
   },
-  "midcareer_salaried_doubleincome": {
-    "synthesis.briefing": {
-      "output_mode": "briefing",
-      "synthesis_narrative": "Ravi's quarterly review: portfolio outperforming benchmark by 80 bps; mandate compliance clean; FY-end tax planning agenda includes ELSS top-up + 80C deductions sweep.",
-      "recommendation": "discuss_with_client",
-      "consensus": {"summary": "Briefing on track."},
-      "agreement_areas": {"areas": ["performance_above_benchmark", "tax_planning_window"]},
-      "conflict_areas": {"areas": []},
-      "uncertainty_flag": false,
-      "amplification": null,
-      "mode_dominance": "balanced",
-      "escalation_recommended": false,
-      "flags": {},
-      "reasoning_summary": "Seeded synthesis for archetype midcareer_salaried_doubleincome."
-    }
-  },
-  "spouse_conservative_pragmatist": {
-    "synthesis.briefing": {
-      "output_mode": "briefing",
-      "synthesis_narrative": "Meera's annual review prep: conservative posture validated by recent equity volatility; debt sleeve carrying weight nicely; conversation should anchor on FY tax + nominee verification.",
-      "recommendation": "discuss_with_client",
-      "consensus": {"summary": "Conservative briefing — reaffirm posture."},
-      "agreement_areas": {"areas": ["volatility_management", "income_stability"]},
-      "conflict_areas": {"areas": []},
-      "uncertainty_flag": false,
-      "amplification": null,
-      "mode_dominance": "balanced",
-      "escalation_recommended": false,
-      "flags": {},
-      "reasoning_summary": "Seeded synthesis for archetype spouse_conservative_pragmatist."
-    }
-  },
-  "young_professional_starter": {
+  "case_arch03_a": {
     "synthesis.case_mode": {
       "output_mode": "case_mode",
-      "synthesis_narrative": "Scenario simulation: 10% large-to-midcap shift over 12 months. Expected drawdown +1.5% in stressed regimes; expected return premium +180 bps based on long-term breadth. Aligns with mandate band and time horizon.",
+      "synthesis_narrative": "Proposal is consistent with the household's 12-year SIP discipline. Vikram's bonus deployment pattern reflects peak-accumulation phase and Aggressive bucket alignment. ICICI BAF's recent sub-benchmark performance warrants A1 scrutiny on selection rationale; alternatives include continuing pure equity SIPs or selecting a different multi-asset fund.",
       "recommendation": "proceed",
-      "consensus": {"summary": "Scenario supports the rebalance — modest risk uplift, meaningful return premium."},
-      "agreement_areas": {"areas": ["horizon_alignment", "breadth_premium"]},
-      "conflict_areas": {"areas": []},
+      "consensus": {
+        "summary": "low risk; confidence 0"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
       "uncertainty_flag": false,
       "amplification": null,
-      "mode_dominance": "balanced",
+      "mode_dominance": "portfolio_shift",
       "escalation_recommended": false,
+      "counterfactual_framing": {
+        "description": "Deploy Rs 1.2 Cr entirely as Kotak Emerging Equity topup (consolidating mid-cap conviction) rather than splitting between mid-cap and multi-asset."
+      },
       "flags": {},
-      "reasoning_summary": "Seeded synthesis for archetype young_professional_starter."
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    },
+    "decision_artifact": {
+      "decision": "approved",
+      "rationale": "Approved with note. The mid-cap topup is consistent with the household's existing 4-fund strategy and 12-year SIP discipline. The multi-asset allocation is additive without disrupting existing positions. Conditions: ensure tax planning for the ICICI fund vis-a-vis hybrid taxation rules."
     }
   },
-  "spouse_doubleincome_realestate": {
+  "case_arch03_b": {
     "synthesis.case_mode": {
       "output_mode": "case_mode",
-      "synthesis_narrative": "Exiting thematic infra fund and rotating to flexicap is sensible — the fund's narrow mandate has underperformed broad-market by 240 bps trailing 12m; flexicap retains equity exposure with manager flexibility. STCG impact minor.",
+      "synthesis_narrative": "Marcellus PMS is structurally sound with strong manager quality and consistent strategy. However, the proposed Rs 2 Cr ticket breaches the Aggressive bucket's 12 pct PMS ceiling. Resolution paths: reduce ticket to Rs 1.4 Cr; propose mandate amendment; substitute lower-fee alternative; defer entirely. The household's family dynamic (Shruti-driven sophistication interest; Vikram's peer-network signal) warrants deliberative consideration of trade-offs.",
       "recommendation": "proceed",
-      "consensus": {"summary": "Clean rotation."},
-      "agreement_areas": {"areas": ["theme_underperformance", "flexicap_breadth"]},
-      "conflict_areas": {"areas": []},
+      "consensus": {
+        "summary": "moderate risk; confidence 0"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "proposal_evaluation",
+      "escalation_recommended": false,
+      "counterfactual_framing": {
+        "description": "Continue with current 4-fund SIP discipline; do not introduce PMS at this stage; reassess in 12-18 months once revealed pattern with sophistication-tier products develops."
+      },
+      "flags": {},
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    }
+  },
+  "case_arch04_a": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "synthesis_narrative": "The Rs 5 Cr Cat II 2026 vintage allocation operates at the mandate's defined boundary rather than through it. Family office governance discipline (Vijay's 2024 Cat III veto; multi-vintage practice; trustee approval cadence) supports boundary-positioning. Q3 2026 capital call concentration is real but bounded by reserved liquidity. Manager diversification across IIFL/Avendus/Kotak/Edelweiss is healthy.",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "moderate risk; confidence 0"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "portfolio_shift",
+      "escalation_recommended": false,
+      "counterfactual_framing": {
+        "description": "Continue with current 4-vintage stack without 2026 vintage; preserve Cat II at 8 pct rather than 12 pct ceiling; accept reduced vintage-diversification benefit."
+      },
+      "flags": {},
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    },
+    "decision_artifact": {
+      "decision": "approved",
+      "rationale": "Approved. Family office mandate explicitly supports private market alternatives at 8 percent allocation. The Rs 5 Cr addition keeps total Cat II exposure within the 12 percent ceiling. Conditions: capital call schedule to be reviewed quarterly; trustee approval recorded for the multi-year commitment."
+    }
+  },
+  "case_arch04_b": {
+    "synthesis.briefing": {
+      "output_mode": "briefing",
+      "synthesis_narrative": "The board meeting brings together quarterly governance discipline with three substantive discussion items: Cat III manager review (analytical), REIT yield re-evaluation (cyclical), and Q3 capital call concentration (operational). Vandana's sustainability framing and Karan's rising involvement suggest impact-investment evolution discussion is brewing. The current state is healthy; mandate compliance clean; one operational pinch point (Q3 capital call concentration) requires explicit acknowledgement.",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "The board meeting brings together quarterly governance discipline with three substantive discussion items: Cat III manager review (analytical), REIT yield re-ev"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
       "uncertainty_flag": false,
       "amplification": null,
       "mode_dominance": "balanced",
       "escalation_recommended": false,
+      "counterfactual_framing": null,
       "flags": {},
-      "reasoning_summary": "Seeded synthesis for archetype spouse_doubleincome_realestate."
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
     }
   },
-  "preretiree_pivot": {
+  "case_arch05_a": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "synthesis_narrative": "Proposed deployment is structurally well-conceived for Aggressive bucket establishment. Single tension: Rs 8 Cr Cat II ticket exceeds 12 pct ceiling marginally; modification to Rs 6-7 Cr resolves. Speed preference (Arjun's revealed pattern) is calibrated against 60-day deployment window. RNOR-to-Resident transition complexity flagged; structured CA engagement parallel to deployment.",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "moderate risk; confidence 0"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "portfolio_shift",
+      "escalation_recommended": false,
+      "counterfactual_framing": {
+        "description": "Stagger deployment over 12 months rather than 60 days; or reduce Cat II to fit ceiling cleanly."
+      },
+      "flags": {},
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    },
+    "decision_artifact": {
+      "decision": "modified",
+      "rationale": "Approved with modification. Reduced Cat II allocation from Rs 8 Cr to Rs 6 Cr (12 percent of total) to keep first-year illiquid exposure conservative; rebalance possible at 12-month review. Increased debt allocation correspondingly. Conditions: 60-day deployment window; staggered entries for direct equity to manage market timing risk."
+    }
+  },
+  "case_arch06": {
     "synthesis.diagnostic": {
       "output_mode": "diagnostic",
-      "synthesis_narrative": "Kavitha is 4-7 years from retirement — current 50% equity is at the upper end of the appropriate range. Transition to liquidity-tier-aligned mix should begin in next mandate review window.",
-      "recommendation": "no_action_required",
-      "consensus": {"summary": "Healthy with pre-retirement glide-path attention."},
-      "agreement_areas": {"areas": ["mandate_compliance", "horizon_glidepath"]},
-      "conflict_areas": {"areas": []},
+      "synthesis_narrative": "1. **Tax-loss harvesting consideration on FD positions if rate cycle continues to soften (medium priority; review with each FD maturity):** Current FD at 6.9 pct; potential softening to 6.5-6.7 pct on reinvestment. Realised tax-loss can be banked against future unrealised LTCG when grandchildren turn 18 and corpus partially distributes. Advisor structured tax-CA engagement.",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "1. **Tax-loss harvesting consideration on FD positions if rate cycle continues to soften (medium priority; review with each FD maturity):** Current FD at 6.9 pc"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
       "uncertainty_flag": false,
       "amplification": null,
       "mode_dominance": "balanced",
       "escalation_recommended": false,
+      "counterfactual_framing": null,
       "flags": {},
-      "reasoning_summary": "Seeded synthesis for archetype preretiree_pivot."
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
     }
   },
-  "graduate_first_portfolio": {
+  "case_arch07_a": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "synthesis_narrative": "Proposal aligns with the household's 18-24 month diversification framework agreed Q3 2024. Sun Pharma fundamentals are strong but premium-valued; staged exit is concentration-management driven, not fundamentals-driven. FY26-27 boundary staging optimises tax efficiency.",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "moderate risk; confidence 0"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "portfolio_shift",
+      "escalation_recommended": false,
+      "counterfactual_framing": {
+        "description": "Hold Sun Pharma residual indefinitely; accept 25 pct concentration. Trade-off: ongoing concentration risk vs preserved cost-basis-step-up at potential succession scenarios."
+      },
+      "flags": {},
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    },
+    "decision_artifact": {
+      "decision": "approved",
+      "rationale": "Approved as proposed. The diversification rationale is sound; concentration reduction below 20 percent is appropriate given the household's continued employer relationship with Sun Pharma. Tax planning is staged across FY26-27 boundary to spread LTCG impact. Conditions: track residual ESOP stake; remaining Rs 14 Cr paper continues to require periodic diversification consideration."
+    }
+  },
+  "case_arch07_b": {
+    "decision_artifact": {
+      "decision": "approved",
+      "rationale": "Scenario analysis complete; sign-off recorded. The full liquidation path is viable but with material tax cost and market timing risk concentrated in 18 months. Recommendation captured for follow-up: stage liquidations at FY-end boundaries; consider holding 30-40 percent residual indefinitely given continued employer relationship. Promote to proposed_action when commitment is reached."
+    }
+  },
+  "case_arch08_a": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "synthesis_narrative": "Cleanup is the inflection point in Shailesh's pattern. Daughter-driven catalyst is structural; advisor's role is structural support not push. Retention of Marcellus + White Oak as best-in-class is sound; exits of Motilal + Alchemy are warranted by performance + style drift signals. Tax cost reasonable given multi-year holds + LTCG-eligible.",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "moderate risk; confidence 0"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "portfolio_shift",
+      "escalation_recommended": false,
+      "counterfactual_framing": {
+        "description": "Hold all 4 PMS positions; allow them to grow naturally; redirect new flows toward Marcellus topup. Trade-off: avoids tax cost; doesn't address governance concern."
+      },
+      "flags": {},
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    },
+    "decision_artifact": {
+      "decision": "approved",
+      "rationale": "Approved with note. The consolidation rationale is sound; reducing four PMS relationships to two-three is a meaningful simplification. Tax cost on the exits is reasonable given long holding periods. Conditions: the new fifth PMS strategy decision deferred to a separate case for discrete evaluation; the daughter's involvement is recorded as continuing factor in advisor-client engagement."
+    }
+  },
+  "case_arch09_a": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "synthesis_narrative": "",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "low risk; confidence 0"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "portfolio_shift",
+      "escalation_recommended": false,
+      "counterfactual_framing": {
+        "description": "Hold Parag Parikh; wait one more quarter to confirm signal vs noise."
+      },
+      "flags": {},
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    },
+    "decision_artifact": {
+      "decision": "approved",
+      "rationale": "Approved. The momentum analysis is reasonable; 4-quarter underperformance with style consistency questions warrants the partial reallocation. The PMS topup keeps total PMS exposure within the 12 percent ceiling for the corpus. Surana's analytical engagement is noted; this is the kind of measured reallocation his fee-only advisory relationship is designed for."
+    }
+  },
+  "case_arch09_b": {
     "synthesis.briefing": {
       "output_mode": "briefing",
-      "synthesis_narrative": "Harsh's first review since onboarding: ELSS + index fund foundation laid; behavioural pattern healthy (no panic / chase signals); discuss SIP top-up cadence + emergency fund target.",
-      "recommendation": "discuss_with_client",
-      "consensus": {"summary": "Onboarding briefing — momentum positive."},
-      "agreement_areas": {"areas": ["sip_consistency", "behavioural_clean"]},
-      "conflict_areas": {"areas": []},
+      "synthesis_narrative": "Surana's portfolio is in a structurally stable phase. No urgent decisions; Q2 meeting is operational continuity check-in. Angel portfolio and US ETF allocation are likely conversation topics; sustainability framing may resurface.",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "Surana's portfolio is in a structurally stable phase. No urgent decisions; Q2 meeting is operational continuity check-in. Angel portfolio and US ETF allocation "
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
       "uncertainty_flag": false,
       "amplification": null,
       "mode_dominance": "balanced",
       "escalation_recommended": false,
+      "counterfactual_framing": null,
       "flags": {},
-      "reasoning_summary": "Seeded synthesis for archetype graduate_first_portfolio."
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    }
+  },
+  "case_arch10": {
+    "synthesis.diagnostic": {
+      "output_mode": "diagnostic",
+      "synthesis_narrative": "Recommendations (3):** 1. **FD laddering refinement (medium priority; next quarter):** Given declining rate environment, consider laddering FDs further to capture higher current rates before reinvestment compression. 2. **Will and estate plan review (medium priority; annual review):** 2019 will should be reviewed against Budget 2025 succession-tax updates; family lawyer engagement recommended. 3. **Equity portion topup consideration (low priority; deferred):** The Rs 22 L equity portion may benefit from minor topup given long horizon Col. Singh maintains; not urgent.",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "Recommendations (3):** 1. **FD laddering refinement (medium priority; next quarter):** Given declining rate environment, consider laddering FDs further to captu"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "balanced",
+      "escalation_recommended": false,
+      "counterfactual_framing": null,
+      "flags": {},
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    }
+  },
+  "case_arch11": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "synthesis_narrative": "",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "moderate risk; confidence 0"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "portfolio_shift",
+      "escalation_recommended": false,
+      "counterfactual_framing": {
+        "description": "Hold all three PMS positions; passive correction over years; preserves cost-basis-step-up at inheritance. Trade-off: doesn't address governance concern (Sushila's primary motivation)."
+      },
+      "flags": {},
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    },
+    "decision_artifact": {
+      "decision": "approved",
+      "rationale": "Approved as proposed. The behavioural rationale is sound; consolidating around the self-selected position eliminates an identifiable conflict-of-interest signal. Tax cost on exits is reasonable. Conditions: brother-in-law relationship to be acknowledged in the family conversation Sushila plans separately; this is governance discipline beyond the corpus question."
+    }
+  },
+  "case_arch12": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "synthesis_narrative": "First-deployment for vulnerable first-time decision-maker. Conservative-Moderate bucket is appropriate calibration for first 12-18 months; recalibration trigger at 6-month mark conditional on revealed pattern signal allows future growth-tier scaling without locking conservative under-allocation indefinitely.",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "low-moderate risk; confidence 0"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "portfolio_shift",
+      "escalation_recommended": false,
+      "counterfactual_framing": {
+        "description": "More aggressive allocation (60-65 pct equity rather than 41 pct) given Aanya's age and 15-20 year horizon. Trade-off: limited_history flag warrants conservatism; opportunity cost over 20 years material if Conservative-Moderate maintained indefinitely."
+      },
+      "flags": {},
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    }
+  },
+  "case_arch13_a": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "synthesis_narrative": "",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "moderate risk; confidence 0"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "proposal_evaluation",
+      "escalation_recommended": false,
+      "counterfactual_framing": {
+        "description": "Rs 19 Cr fitting ceiling; or trustee-approved mandate amendment to lift Cat II ceiling to 14 pct given multi-vintage discipline maturity."
+      },
+      "flags": {},
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    },
+    "decision_artifact": {
+      "decision": "approved",
+      "rationale": "Approved as proposed. Family office mandate supports vintage diversification across private credit. Manager track record on 2018 and 2023 vintages provides confidence. Conditions: capital call schedule integrated into family office liquidity planning; commitment-period overlap with 2023 vintage to be monitored."
+    }
+  },
+  "case_arch13_b": {
+    "synthesis.briefing": {
+      "output_mode": "briefing",
+      "synthesis_narrative": "Prep questions:** 1. **Cat III long-short manager review:** Vandana likely raises ESG-themed alternative. 2. **REIT yield re-evaluation:** Hold-vs-rotate analysis with Embassy yield trajectory. 3. **Q3 capital call coordination:** Family office liquidity planning sync. 4. **Karan Gen 3 sustainability discussion:** impact-investment carve-out potential expansion. 5. **Mandate amendment consideration (deferred from case_arch13_a):** Q4 2026 board topic.",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "Prep questions:** 1. **Cat III long-short manager review:** Vandana likely raises ESG-themed alternative. 2. **REIT yield re-evaluation:** Hold-vs-rotate analys"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "balanced",
+      "escalation_recommended": false,
+      "counterfactual_framing": null,
+      "flags": {},
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    }
+  },
+  "case_arch14": {
+    "synthesis.case_mode": {
+      "output_mode": "case_mode",
+      "synthesis_narrative": "",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "low risk; confidence 0"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "portfolio_shift",
+      "escalation_recommended": false,
+      "counterfactual_framing": null,
+      "flags": {},
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
+    },
+    "decision_artifact": {
+      "decision": "approved",
+      "rationale": "Approved with conditions. Concentration reduction in employer stock is appropriate given continued RSU vesting from same parent company. Debt allocation increase is consistent with the household's emerging sandwich-generation responsibilities. Conditions: review insurance coverage as separate exercise (life and health gaps flagged but not addressed in this case); home loan EMI ratio remains within mandate."
+    }
+  },
+  "case_arch15": {
+    "synthesis.diagnostic": {
+      "output_mode": "diagnostic",
+      "synthesis_narrative": "Recommendations (3):** 1. **Will and estate plan review (HIGH priority; immediate):** 2019 will should be updated against Budget 2025 succession-tax updates; family lawyer engagement needed. 2. **Spouse financial independence (HIGH priority; ongoing):** Establish spouse independent banking and basic financial literacy given progressive illness; advisor support recommended. 3. **Listed equity LTCG-eligibility preservation (medium priority; structural):** Cost-basis-step-up at inheritance is structurally tax-efficient; preserve current positions; no urgent rebalance.",
+      "recommendation": "proceed",
+      "consensus": {
+        "summary": "Recommendations (3):** 1. **Will and estate plan review (HIGH priority; immediate):** 2019 will should be updated against Budget 2025 succession-tax updates; fa"
+      },
+      "agreement_areas": {
+        "areas": []
+      },
+      "conflict_areas": {
+        "areas": []
+      },
+      "uncertainty_flag": false,
+      "amplification": null,
+      "mode_dominance": "balanced",
+      "escalation_recommended": false,
+      "counterfactual_framing": null,
+      "flags": {},
+      "reasoning_summary": "Cluster 6 enriched synthesis (per case_arch pipeline). Source: case_arch markdown."
     }
   }
 }

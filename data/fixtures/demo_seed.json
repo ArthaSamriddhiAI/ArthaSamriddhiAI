@@ -601,6 +601,7 @@
   ],
   "cases": [
     {
+      "case_id": "case_arch01_a",
       "investor_id": "investor_archetype_01",
       "case_mode": "proposed_action",
       "case_intent": "liquidity_mobilisation",
@@ -613,6 +614,7 @@
       "seed_archetype_id": "investor_archetype_01"
     },
     {
+      "case_id": "case_arch01_b",
       "investor_id": "investor_archetype_01",
       "case_mode": "diagnostic",
       "case_intent": "portfolio_health",
@@ -625,6 +627,7 @@
       "seed_archetype_id": "investor_archetype_01"
     },
     {
+      "case_id": "case_arch03_a",
       "investor_id": "investor_archetype_03",
       "case_mode": "proposed_action",
       "case_intent": "new_investment",
@@ -637,6 +640,7 @@
       "seed_archetype_id": "investor_archetype_03"
     },
     {
+      "case_id": "case_arch03_b",
       "investor_id": "investor_archetype_03",
       "case_mode": "scenario",
       "case_intent": "product_evaluation",
@@ -649,6 +653,7 @@
       "seed_archetype_id": "investor_archetype_03"
     },
     {
+      "case_id": "case_arch04_a",
       "investor_id": "investor_archetype_04",
       "case_mode": "proposed_action",
       "case_intent": "new_investment",
@@ -661,6 +666,7 @@
       "seed_archetype_id": "investor_archetype_04"
     },
     {
+      "case_id": "case_arch04_b",
       "investor_id": "investor_archetype_04",
       "case_mode": "briefing",
       "case_intent": "meeting_prep",
@@ -673,6 +679,7 @@
       "seed_archetype_id": "investor_archetype_04"
     },
     {
+      "case_id": "case_arch05_a",
       "investor_id": "investor_archetype_05",
       "case_mode": "proposed_action",
       "case_intent": "new_investment",
@@ -685,6 +692,7 @@
       "seed_archetype_id": "investor_archetype_05"
     },
     {
+      "case_id": "case_arch05_b",
       "investor_id": "investor_archetype_05",
       "case_mode": "scenario",
       "case_intent": "asset_allocation_change",
@@ -697,6 +705,7 @@
       "seed_archetype_id": "investor_archetype_05"
     },
     {
+      "case_id": "case_arch07_a",
       "investor_id": "investor_archetype_07",
       "case_mode": "proposed_action",
       "case_intent": "asset_allocation_change",
@@ -709,6 +718,7 @@
       "seed_archetype_id": "investor_archetype_07"
     },
     {
+      "case_id": "case_arch07_b",
       "investor_id": "investor_archetype_07",
       "case_mode": "scenario",
       "case_intent": "asset_allocation_change",
@@ -721,6 +731,7 @@
       "seed_archetype_id": "investor_archetype_07"
     },
     {
+      "case_id": "case_arch08_a",
       "investor_id": "investor_archetype_08",
       "case_mode": "proposed_action",
       "case_intent": "exit_position",
@@ -733,6 +744,7 @@
       "seed_archetype_id": "investor_archetype_08"
     },
     {
+      "case_id": "case_arch08_b",
       "investor_id": "investor_archetype_08",
       "case_mode": "scenario",
       "case_intent": "product_evaluation",
@@ -745,6 +757,7 @@
       "seed_archetype_id": "investor_archetype_08"
     },
     {
+      "case_id": "case_arch09_a",
       "investor_id": "investor_archetype_09",
       "case_mode": "proposed_action",
       "case_intent": "rebalance_proposal",
@@ -757,6 +770,7 @@
       "seed_archetype_id": "investor_archetype_09"
     },
     {
+      "case_id": "case_arch09_b",
       "investor_id": "investor_archetype_09",
       "case_mode": "briefing",
       "case_intent": "meeting_prep",
@@ -769,6 +783,7 @@
       "seed_archetype_id": "investor_archetype_09"
     },
     {
+      "case_id": "case_arch13_a",
       "investor_id": "investor_archetype_13",
       "case_mode": "proposed_action",
       "case_intent": "new_investment",
@@ -781,6 +796,7 @@
       "seed_archetype_id": "investor_archetype_13"
     },
     {
+      "case_id": "case_arch13_b",
       "investor_id": "investor_archetype_13",
       "case_mode": "briefing",
       "case_intent": "meeting_prep",
@@ -793,6 +809,7 @@
       "seed_archetype_id": "investor_archetype_13"
     },
     {
+      "case_id": "case_arch02",
       "investor_id": "investor_archetype_02",
       "case_mode": "diagnostic",
       "case_intent": "portfolio_health",
@@ -805,6 +822,7 @@
       "seed_archetype_id": "investor_archetype_02"
     },
     {
+      "case_id": "case_arch06",
       "investor_id": "investor_archetype_06",
       "case_mode": "diagnostic",
       "case_intent": "portfolio_health",
@@ -817,6 +835,7 @@
       "seed_archetype_id": "investor_archetype_06"
     },
     {
+      "case_id": "case_arch10",
       "investor_id": "investor_archetype_10",
       "case_mode": "diagnostic",
       "case_intent": "portfolio_health",
@@ -829,6 +848,7 @@
       "seed_archetype_id": "investor_archetype_10"
     },
     {
+      "case_id": "case_arch11",
       "investor_id": "investor_archetype_11",
       "case_mode": "proposed_action",
       "case_intent": "exit_position",
@@ -841,6 +861,7 @@
       "seed_archetype_id": "investor_archetype_11"
     },
     {
+      "case_id": "case_arch12",
       "investor_id": "investor_archetype_12",
       "case_mode": "proposed_action",
       "case_intent": "new_investment",
@@ -853,6 +874,7 @@
       "seed_archetype_id": "investor_archetype_12"
     },
     {
+      "case_id": "case_arch14",
       "investor_id": "investor_archetype_14",
       "case_mode": "proposed_action",
       "case_intent": "rebalance_proposal",
@@ -865,6 +887,7 @@
       "seed_archetype_id": "investor_archetype_14"
     },
     {
+      "case_id": "case_arch15",
       "investor_id": "investor_archetype_15",
       "case_mode": "diagnostic",
       "case_intent": "portfolio_health",

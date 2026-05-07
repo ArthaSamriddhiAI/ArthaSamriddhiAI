@@ -72,13 +72,25 @@ def load_seed_fixture() -> dict[str, dict[str, Any]]:
 
 def get_seed_payload_for(case: Case) -> dict[str, Any]:
     """Return the seed payload dict for a case, or ``{}`` if non-seeded."""
-    if not case.is_seed_data or not case.seed_archetype_id:
+    if not case.is_seed_data:
         return {}
     fixture = load_seed_fixture()
-    archetype = fixture.get(case.seed_archetype_id, {})
-    if not isinstance(archetype, dict):
-        return {}
-    return archetype
+
+    # Cluster 6 stage 3: per-case payloads override per-archetype
+    # payloads. Each archetype has 1-2 distinct cases (e.g. Lalitha's
+    # PA + DIAG) with materially different synthesis narratives, so the
+    # primary lookup key is ``case_id``. Fall back to ``seed_archetype_id``
+    # for archetype-shared payloads (cluster 5 model).
+    case_payload = fixture.get(case.case_id)
+    if isinstance(case_payload, dict) and case_payload:
+        return case_payload
+
+    if case.seed_archetype_id:
+        archetype = fixture.get(case.seed_archetype_id, {})
+        if isinstance(archetype, dict):
+            return archetype
+
+    return {}
 
 
 def produced_via_for(case: Case) -> ProducedVia:

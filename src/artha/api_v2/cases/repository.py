@@ -143,15 +143,20 @@ async def create_case(
     seed_archetype_id: str | None = None,
     supersedes_case_id: str | None = None,
     firm_id: str | None = None,
+    case_id: str | None = None,
 ) -> Case:
     """Insert a new Case row in ``opening`` status.
 
     Snapshot pinning happens via :func:`update_snapshot_bundle` after
     the SnapshotAssembler returns. T1 emits ``case_created``.
+
+    ``case_id`` defaults to a fresh ULID. Cluster 6 stage 3 passes a
+    stable string (e.g. ``case_arch01_a``) for seeded cases so the
+    dispatcher's case_id-keyed seed-payload lookup matches.
     """
     now = datetime.now(timezone.utc)
     row = Case(
-        case_id=str(ULID()),
+        case_id=case_id or str(ULID()),
         investor_id=investor_id,
         household_id=household_id,
         opened_by=opened_by,

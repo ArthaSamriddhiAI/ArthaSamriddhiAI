@@ -421,11 +421,88 @@ async def _load_cases(
             is_seed_data=True,
             seed_archetype_id=c.get("seed_archetype_id"),
             created_via="seed_loader",
+            # Cluster 6 stage 3: stable fixture case_id (e.g.
+            # ``case_arch01_a``) so the dispatcher's case_id-keyed
+            # seed-payload lookup finds the curated content. Without
+            # this the loader generates a fresh ULID and the seed-
+            # payload short-circuit misses, falling back to placeholders.
+            case_id_override=c.get("case_id"),
         )
-        await case_opener.open_case(
+        result = await case_opener.open_case(
             db, request, actor=case_actor, deps=deps,
         )
+
+        # Cluster 6 stage 3: when the per-case seed payload includes a
+        # ``decision_artifact`` entry AND the pipeline parked the case at
+        # ``awaiting_decision``, record the seed-provided decision so
+        # decided cases land at ``decided`` (not ``awaiting_decision``).
+        # This wires the cluster-6 _decision_artifact_preview content
+        # through to the actual DecisionArtifact row.
+        await _maybe_record_seed_decision(
+            db, case=result.case, case_actor=case_actor, actor=actor,
+        )
     return len(rows)
+
+
+async def _maybe_record_seed_decision(
+    db: AsyncSession,
+    *,
+    case: Case,
+    case_actor: UserContext,
+    actor: UserContext,
+) -> None:
+    """If ``case_seed_data.json`` carries a ``decision_artifact`` payload
+    for this case_id, record the decision via case_decider so the case
+    reaches ``decided`` status with proper hashes.
+
+    No-op for cases the dispatcher's seed payload doesn't have a
+    ``decision_artifact`` entry for, or for cases not in
+    ``awaiting_decision``.
+    """
+    from artha.api_v2.cases import case_decider
+    from artha.api_v2.cases.case_decider import RecordDecisionRequest
+    from artha.api_v2.cases.state_machine import CaseStatus
+
+    if case.status != CaseStatus.AWAITING_DECISION.value:
+        return
+
+    seed_payload = dispatch.get_seed_payload_for(case)
+    decision_payload = seed_payload.get("decision_artifact")
+    if not isinstance(decision_payload, dict):
+        return
+
+    # Use the CIO actor (not the per-case opened_by user) since
+    # case_decider enforces ``actor.role == CIO``. The case carries
+    # opened_by + assigned_to from the fixture; the decision is
+    # recorded under the CIO that triggered the seed load.
+    cio_actor = UserContext(
+        user_id="cio_anjali_mehta",
+        firm_id=actor.firm_id,
+        role=Role.CIO,
+        email=actor.email,
+        name=actor.name,
+        session_id=actor.session_id,
+    )
+    try:
+        await case_decider.record_decision(
+            db,
+            case_id=case.case_id,
+            request=RecordDecisionRequest(
+                decision=decision_payload.get("decision", "approved"),
+                rationale=decision_payload.get("rationale", ""),
+                modifications=decision_payload.get("modifications"),
+                conditions=decision_payload.get("conditions"),
+            ),
+            actor=cio_actor,
+        )
+    except Exception:  # noqa: BLE001 — non-critical; case stays at awaiting_decision
+        # Decision recording is a value-add for the demo; if it fails
+        # (e.g. a synthesis row didn't materialize), the case still
+        # parks at awaiting_decision in a coherent state.
+        pass
+    # Touch ``case_actor`` so linters don't complain about unused arg
+    # (kept for symmetry with the surrounding function signatures).
+    _ = case_actor
 
 
 # ---------------------------------------------------------------------------
