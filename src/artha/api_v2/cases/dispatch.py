@@ -20,8 +20,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from artha.api_v2.agents import config as agents_config
 from artha.api_v2.agents import runtime as agents_runtime
+from artha.api_v2.agents.cache.backend import (
+    CacheBackend,
+    DBCacheBackend,
+    NullCacheBackend,
+)
 from artha.api_v2.agents.registry import get_shim as get_real_shim
 from artha.api_v2.agents.shim import AgentDispatchError
 from artha.api_v2.cases import stubs
@@ -314,11 +321,13 @@ class RealAgentTelemetry:
     prompt_version: str
 
 
-def dispatch_agent(
+async def dispatch_agent(
     *,
     case: Case,
     agent_id: str,
     upstream: dict[str, Any] | None = None,
+    db: AsyncSession | None = None,
+    cache: CacheBackend | None = None,
 ) -> tuple[StubResult, RealAgentTelemetry | None]:
     """Route the dispatch to either the real shim or the legacy stub.
 
@@ -328,19 +337,31 @@ def dispatch_agent(
     config says ``real`` — this keeps the demo flow safe when a partial
     rollout flips the env var ahead of the implementation.
 
+    Cluster 7.2: when ``db`` is supplied, the runtime constructs a
+    :class:`DBCacheBackend` for E1 verdict caching unless an explicit
+    ``cache`` is provided. Pass :class:`NullCacheBackend` to opt out.
+
     Returns ``(StubResult, telemetry)``; ``telemetry`` is ``None`` for
     stub-served calls.
     """
     if agents_config.is_real(agent_id) and get_real_shim(agent_id) is not None:
-        return _dispatch_real_path(case=case, agent_id=agent_id, upstream=upstream)
+        return await _dispatch_real_path(
+            case=case,
+            agent_id=agent_id,
+            upstream=upstream,
+            db=db,
+            cache=cache,
+        )
     return dispatch_stub(case=case, agent_id=agent_id, upstream=upstream), None
 
 
-def _dispatch_real_path(
+async def _dispatch_real_path(
     *,
     case: Case,
     agent_id: str,
     upstream: dict[str, Any] | None,
+    db: AsyncSession | None,
+    cache: CacheBackend | None,
 ) -> tuple[StubResult, RealAgentTelemetry]:
     """Translate the real-shim verdict into the pipeline's
     :class:`StubResult` shape so the existing inserter switch keeps
@@ -353,12 +374,22 @@ def _dispatch_real_path(
     entry = STUB_DISPATCH[agent_id]
     seed_payload = get_seed_payload_for(case)
 
+    backend: CacheBackend
+    if cache is not None:
+        backend = cache
+    elif db is not None:
+        backend = DBCacheBackend(db)
+    else:
+        backend = NullCacheBackend()
+
     try:
-        out = agents_runtime.dispatch_real_agent(
+        out = await agents_runtime.dispatch_real_agent(
             case=case,
             agent_id=agent_id,
             upstream=upstream or {},
             seed_payload=seed_payload,
+            cache=backend,
+            db=db,
         )
     except AgentDispatchError:
         # Caller (pipeline orchestrator) catches this and routes the

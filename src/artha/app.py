@@ -14,11 +14,12 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import Scope
 
 # Cluster 0 (api_v2): register ORM tables + auth/events/system routers.
+import artha.api_v2.agents.cache.models  # noqa: F401 — register v2_e1_verdict_cache + v2_e1_manual_flags (cluster 7 chunk 7.2)
 import artha.api_v2.auth.models  # noqa: F401 — register sessions table
-import artha.api_v2.cases.models  # noqa: F401 — register v2_cases + 10 stage tables (cluster 5 chunk 5.1)
 
 # Cluster 1 (api_v2): investor + household tables (v2_ prefix to avoid v1 collision).
 import artha.api_v2.c0.models  # noqa: F401 — register v2_c0_conversations + v2_c0_messages (chunk 1.2)
+import artha.api_v2.cases.models  # noqa: F401 — register v2_cases + 10 stage tables (cluster 5 chunk 5.1)
 import artha.api_v2.d0.industry.models  # noqa: F401 — register v2_industry_reports (chunk 3.3)
 import artha.api_v2.d0.instruments.models  # noqa: F401 — register v2_instruments (chunk 3.2)
 import artha.api_v2.d0.macro.models  # noqa: F401 — register v2_macro_snapshots (chunk 3.3)

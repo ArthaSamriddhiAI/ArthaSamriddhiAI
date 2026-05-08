@@ -763,10 +763,11 @@ class TestAgentRuntime:
         agents_runtime.reset_runtime()
         agents_config.set_agent_impl_overrides(None)
 
-    def test_dispatch_real_agent_e1_happy_path(self) -> None:
+    @pytest.mark.asyncio
+    async def test_dispatch_real_agent_e1_happy_path(self) -> None:
         body = json.dumps(_e1_valid_payload(ticker="RELIANCE"))
         agents_runtime.set_llm_client(MockLLMClient(responses=[body]))
-        out = agents_runtime.dispatch_real_agent(
+        out = await agents_runtime.dispatch_real_agent(
             case=_FakeCase(),
             agent_id="e1_listed_fundamental_equity",
             upstream={},
@@ -779,32 +780,35 @@ class TestAgentRuntime:
         assert out.parsed.structured["ticker"] == "RELIANCE"
         assert out.prompt_version == "e1_listed_fundamental_equity@1.1"
 
-    def test_dispatch_real_agent_no_llm_client_raises(self) -> None:
+    @pytest.mark.asyncio
+    async def test_dispatch_real_agent_no_llm_client_raises(self) -> None:
         agents_runtime.set_llm_client(None)
         with pytest.raises(agents_runtime.RealAgentRuntimeError):
-            agents_runtime.dispatch_real_agent(
+            await agents_runtime.dispatch_real_agent(
                 case=_FakeCase(),
                 agent_id="e1_listed_fundamental_equity",
                 skill_template_override=_skill_template(),
             )
 
-    def test_dispatch_real_agent_unknown_shim(self) -> None:
+    @pytest.mark.asyncio
+    async def test_dispatch_real_agent_unknown_shim(self) -> None:
         agents_runtime.set_llm_client(MockLLMClient(responses=["x"]))
         with pytest.raises(agents_runtime.RealAgentRuntimeError):
-            agents_runtime.dispatch_real_agent(
+            await agents_runtime.dispatch_real_agent(
                 case=_FakeCase(),
                 agent_id="not_a_real_shim",
                 skill_template_override=_skill_template(),
             )
 
-    def test_input_builder_e1_extracts_ticker(self) -> None:
+    @pytest.mark.asyncio
+    async def test_input_builder_e1_extracts_ticker(self) -> None:
         # The builder is private; exercise via dispatch_real_agent and
         # peek at the call_log.
         client = MockLLMClient(
             responses=[json.dumps(_e1_valid_payload(ticker="HDFCBANK"))],
         )
         agents_runtime.set_llm_client(client)
-        agents_runtime.dispatch_real_agent(
+        await agents_runtime.dispatch_real_agent(
             case=_FakeCase(proposed_action_products=["HDFCBANK"]),
             agent_id="e1_listed_fundamental_equity",
             skill_template_override=_skill_template(
@@ -820,17 +824,19 @@ class TestDispatchAgentRouting:
         agents_runtime.reset_runtime()
         agents_config.set_agent_impl_overrides(None)
 
-    def test_stub_path_when_config_says_stub(self) -> None:
+    @pytest.mark.asyncio
+    async def test_stub_path_when_config_says_stub(self) -> None:
         agents_config.set_agent_impl_overrides(None)
         case = _FakeCase()
-        result, telemetry = cases_dispatch.dispatch_agent(
+        result, telemetry = await cases_dispatch.dispatch_agent(
             case=case,
             agent_id="e1_listed_fundamental_equity",
         )
         assert telemetry is None
         assert result.produced_via != ProducedVia.REAL_AGENT
 
-    def test_real_path_when_config_says_real(self) -> None:
+    @pytest.mark.asyncio
+    async def test_real_path_when_config_says_real(self) -> None:
         body = json.dumps(_e1_valid_payload())
         agents_runtime.set_llm_client(MockLLMClient(responses=[body]))
         agents_config.set_agent_impl_overrides(
@@ -848,7 +854,7 @@ class TestDispatchAgentRouting:
         # Also patch the symbol that runtime.py imported at module load.
         agents_runtime.load_prompt_template = _fake_loader  # type: ignore[attr-defined]
         try:
-            result, telemetry = cases_dispatch.dispatch_agent(
+            result, telemetry = await cases_dispatch.dispatch_agent(
                 case=_FakeCase(),
                 agent_id="e1_listed_fundamental_equity",
             )
@@ -863,13 +869,14 @@ class TestDispatchAgentRouting:
         assert "structured_output" in result.payload
         assert "reasoning_summary" in result.payload
 
-    def test_real_path_falls_back_when_no_shim(self) -> None:
+    @pytest.mark.asyncio
+    async def test_real_path_falls_back_when_no_shim(self) -> None:
         # Config says real but no shim registered → dispatch_agent
         # must fall through to the stub path (safe-rollout guard).
         agents_config.set_agent_impl_overrides(
             {"e2_industry_business": "real"},
         )
-        result, telemetry = cases_dispatch.dispatch_agent(
+        result, telemetry = await cases_dispatch.dispatch_agent(
             case=_FakeCase(),
             agent_id="e2_industry_business",
         )

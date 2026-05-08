@@ -115,10 +115,11 @@ async def _run_stub_and_persist(
     ``real_agent_dispatched`` (cluster 7+) accordingly.
     """
     try:
-        result, telemetry = dispatch.dispatch_agent(
+        result, telemetry = await dispatch.dispatch_agent(
             case=state.case,
             agent_id=agent_id,
             upstream=state.upstream,
+            db=db,
         )
     except AgentDispatchError as exc:
         await emit_event(
