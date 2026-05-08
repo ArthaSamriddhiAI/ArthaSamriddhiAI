@@ -362,10 +362,14 @@ async def _dispatch_real_path(
     upstream: dict[str, Any] | None,
     db: AsyncSession | None,
     cache: CacheBackend | None,
-) -> tuple[StubResult, RealAgentTelemetry]:
+) -> tuple[StubResult, RealAgentTelemetry | None]:
     """Translate the real-shim verdict into the pipeline's
     :class:`StubResult` shape so the existing inserter switch keeps
-    working."""
+    working.
+
+    Returns ``(StubResult, telemetry)``; ``telemetry`` is ``None`` when
+    the real path's input validation fails and the runtime falls back
+    to the stub layer (see safety branch below)."""
     if agent_id not in STUB_DISPATCH:
         raise KeyError(
             f"Real-shim agent_id {agent_id!r} has no STUB_DISPATCH entry "
@@ -391,9 +395,23 @@ async def _dispatch_real_path(
             cache=backend,
             db=db,
         )
-    except AgentDispatchError:
-        # Caller (pipeline orchestrator) catches this and routes the
-        # case to ``failed`` per the case_arch08_b pattern.
+    except AgentDispatchError as exc:
+        # Cluster 7 safety fallback: when the case doesn't carry the
+        # inputs the real shim requires (e.g. diagnostic / briefing
+        # mode runs without ``proposed_action_products`` so E1 has no
+        # ticker), pre-LLM input-validation fails. Treat that as
+        # "real path not applicable for this case" and fall through
+        # to the stub layer rather than failing the case. Cluster 7.4
+        # / cluster 8+ wires M0 portfolio_state outputs upstream so
+        # this branch becomes vestigial.
+        if exc.retry_count == 0 and "input_validation_failed" in exc.last_error:
+            return (
+                dispatch_stub(case=case, agent_id=agent_id, upstream=upstream),
+                None,
+            )
+        # Otherwise (retries exhausted on a real LLM failure), the
+        # pipeline orchestrator catches this and routes the case to
+        # ``failed`` per the case_arch08_b pattern.
         raise
 
     stub_result = StubResult(
