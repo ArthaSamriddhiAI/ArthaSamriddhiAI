@@ -32,6 +32,8 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from artha.api_v2.agents import event_names as agent_event_names
+from artha.api_v2.agents.shim import AgentDispatchError
 from artha.api_v2.cases import dispatch, event_names, repository
 from artha.api_v2.cases.dispatch import StageKind, StubResult
 from artha.api_v2.cases.materiality import (
@@ -104,24 +106,68 @@ async def _run_stub_and_persist(
     *,
     agent_id: str,
 ) -> StubResult:
-    """Run one stub + write its stage row + emit T1 events."""
-    result = dispatch.dispatch_stub(
-        case=state.case,
-        agent_id=agent_id,
-        upstream=state.upstream,
-    )
+    """Run one agent + write its stage row + emit T1 events.
 
-    await emit_event(
-        db,
-        event_name=event_names.STUB_DISPATCHED,
-        payload={
-            "case_id": state.case.case_id,
-            "agent_id": agent_id,
-            "stage_kind": result.stage_kind,
-            "produced_via": result.produced_via.value,
-        },
-        firm_id=state.firm_id,
-    )
+    Cluster 7 chunk 7.1 §3 routing: when the per-agent config flips an
+    agent from ``stub`` to ``real``, the call drops into the real-shim
+    runtime; otherwise the legacy lookup-stub path runs. Telemetry is
+    emitted via either ``stub_dispatched`` (legacy) or
+    ``real_agent_dispatched`` (cluster 7+) accordingly.
+    """
+    try:
+        result, telemetry = dispatch.dispatch_agent(
+            case=state.case,
+            agent_id=agent_id,
+            upstream=state.upstream,
+        )
+    except AgentDispatchError as exc:
+        await emit_event(
+            db,
+            event_name=agent_event_names.AGENT_UNAVAILABLE_PERSISTENT,
+            payload={
+                "case_id": state.case.case_id,
+                "agent_id": agent_id,
+                "retry_count": exc.retry_count,
+                "last_error": exc.last_error,
+            },
+            firm_id=state.firm_id,
+        )
+        raise PipelineError(
+            f"Agent {agent_id!r} unavailable for case "
+            f"{state.case.case_id!r} after {exc.retry_count} retries: "
+            f"{exc.last_error}",
+        ) from exc
+
+    if telemetry is None:
+        await emit_event(
+            db,
+            event_name=event_names.STUB_DISPATCHED,
+            payload={
+                "case_id": state.case.case_id,
+                "agent_id": agent_id,
+                "stage_kind": result.stage_kind,
+                "produced_via": result.produced_via.value,
+            },
+            firm_id=state.firm_id,
+        )
+    else:
+        await emit_event(
+            db,
+            event_name=agent_event_names.REAL_AGENT_DISPATCHED,
+            payload={
+                "case_id": state.case.case_id,
+                "agent_id": agent_id,
+                "stage_kind": result.stage_kind,
+                "produced_via": result.produced_via.value,
+                "retry_count": telemetry.retry_count,
+                "cache_hit": telemetry.cache_hit,
+                "input_tokens": telemetry.input_tokens,
+                "output_tokens": telemetry.output_tokens,
+                "model": telemetry.model,
+                "prompt_version": telemetry.prompt_version,
+            },
+            firm_id=state.firm_id,
+        )
 
     if result.stage_kind == StageKind.PORTFOLIO_RISK:
         row = await repository.insert_portfolio_risk_analytics(

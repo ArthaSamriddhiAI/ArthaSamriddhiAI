@@ -20,6 +20,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from artha.api_v2.agents import config as agents_config
+from artha.api_v2.agents import runtime as agents_runtime
+from artha.api_v2.agents.registry import get_shim as get_real_shim
+from artha.api_v2.agents.shim import AgentDispatchError
 from artha.api_v2.cases import stubs
 from artha.api_v2.cases.models import Case
 from artha.api_v2.cases.state_machine import ProducedVia
@@ -290,6 +294,96 @@ def list_dispatchable_agent_ids() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Real-vs-stub routing (cluster 7 chunk 7.1 §3 + §12.3)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class RealAgentTelemetry:
+    """LLM telemetry surfaced from a real-shim dispatch.
+
+    Only populated when :func:`dispatch_agent` routed through the real
+    shim path; the stub path leaves this ``None``.
+    """
+
+    retry_count: int
+    cache_hit: bool
+    input_tokens: int
+    output_tokens: int
+    model: str
+    prompt_version: str
+
+
+def dispatch_agent(
+    *,
+    case: Case,
+    agent_id: str,
+    upstream: dict[str, Any] | None = None,
+) -> tuple[StubResult, RealAgentTelemetry | None]:
+    """Route the dispatch to either the real shim or the legacy stub.
+
+    Decision is governed by :func:`agents.config.is_real`. When the
+    agent has no real shim registered (i.e. :func:`agents.registry.get_shim`
+    returns ``None``) the call falls through to the stub path even if
+    config says ``real`` — this keeps the demo flow safe when a partial
+    rollout flips the env var ahead of the implementation.
+
+    Returns ``(StubResult, telemetry)``; ``telemetry`` is ``None`` for
+    stub-served calls.
+    """
+    if agents_config.is_real(agent_id) and get_real_shim(agent_id) is not None:
+        return _dispatch_real_path(case=case, agent_id=agent_id, upstream=upstream)
+    return dispatch_stub(case=case, agent_id=agent_id, upstream=upstream), None
+
+
+def _dispatch_real_path(
+    *,
+    case: Case,
+    agent_id: str,
+    upstream: dict[str, Any] | None,
+) -> tuple[StubResult, RealAgentTelemetry]:
+    """Translate the real-shim verdict into the pipeline's
+    :class:`StubResult` shape so the existing inserter switch keeps
+    working."""
+    if agent_id not in STUB_DISPATCH:
+        raise KeyError(
+            f"Real-shim agent_id {agent_id!r} has no STUB_DISPATCH entry "
+            f"(needed for stage_kind / stage_arg metadata).",
+        )
+    entry = STUB_DISPATCH[agent_id]
+    seed_payload = get_seed_payload_for(case)
+
+    try:
+        out = agents_runtime.dispatch_real_agent(
+            case=case,
+            agent_id=agent_id,
+            upstream=upstream or {},
+            seed_payload=seed_payload,
+        )
+    except AgentDispatchError:
+        # Caller (pipeline orchestrator) catches this and routes the
+        # case to ``failed`` per the case_arch08_b pattern.
+        raise
+
+    stub_result = StubResult(
+        agent_id=agent_id,
+        stage_kind=entry.stage_kind,
+        stage_arg=entry.stage_arg,
+        payload=out.parsed.stage_payload,
+        produced_via=ProducedVia.REAL_AGENT,
+    )
+    telemetry = RealAgentTelemetry(
+        retry_count=out.retry_count,
+        cache_hit=out.cache_hit,
+        input_tokens=out.input_tokens,
+        output_tokens=out.output_tokens,
+        model=out.model,
+        prompt_version=out.prompt_version,
+    )
+    return stub_result, telemetry
+
+
+# ---------------------------------------------------------------------------
 # Reset helpers (tests + dev hot-reload)
 # ---------------------------------------------------------------------------
 
@@ -313,8 +407,10 @@ def _hot_reload_enabled() -> bool:
 __all__ = [
     "STUB_DISPATCH",
     "DispatchEntry",
+    "RealAgentTelemetry",
     "StageKind",
     "StubResult",
+    "dispatch_agent",
     "dispatch_stub",
     "get_seed_fixture_path",
     "get_seed_payload_for",
