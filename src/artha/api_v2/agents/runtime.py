@@ -31,8 +31,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from artha.api_v2.agents.cache import fund_manual_flag as fund_flag_svc
 from artha.api_v2.agents.cache import manual_flag as manual_flag_service
-from artha.api_v2.agents.cache.backend import CacheBackend, NullCacheBackend
+from artha.api_v2.agents.cache import repository_cluster8 as c8repo
+from artha.api_v2.agents.cache import sector_manual_flag as sector_flag_svc
+from artha.api_v2.agents.cache.backend import CacheBackend, CacheLookupResult, NullCacheBackend
 from artha.api_v2.agents.llm_client import LLMClient, LLMResponse
 from artha.api_v2.agents.prompt_loader import (
     PromptTemplate,
@@ -191,6 +194,137 @@ async def _build_agent_inputs(
         payload["dominant_lens"] = case.dominant_lens
         payload["evidence_summaries"] = upstream.get("evidence_verdicts", []) or []
 
+    # ------------------------------------------------------------------
+    # Cluster 8 agents — inputs primarily come from upstream / seed.
+    # In production these are built by phases.py and passed as overrides;
+    # these branches cover the rare direct-dispatch path.
+    # ------------------------------------------------------------------
+    elif agent_id == "e3_macro_view":
+        firm_id = upstream.get("firm_id") or "default_firm"
+        seed = seed_payload.get("evidence.e3_macro_view") or {}
+        payload["macro_regime_id"] = (
+            seed.get("macro_regime_id")
+            or upstream.get("macro_regime_id")
+            or "no_regime_seeded"
+        )
+        payload["macro_regime_name"] = (
+            seed.get("macro_regime_name")
+            or upstream.get("macro_regime_name")
+            or "Unknown Regime"
+        )
+        payload["regime_category"] = (
+            seed.get("regime_category")
+            or upstream.get("regime_category")
+            or "unknown"
+        )
+        payload["latest_material_event_id"] = (
+            seed.get("latest_material_event_id")
+            or upstream.get("latest_material_event_id")
+        )
+        payload["macro_snapshot"] = seed.get("macro_snapshot") or {}
+        payload["firm_id"] = firm_id
+
+    elif agent_id == "e2_sector_view":
+        firm_id = upstream.get("firm_id") or "default_firm"
+        seed = seed_payload.get("evidence.e2_sector_view") or {}
+        sector_code: str = (
+            seed.get("sector_code") or upstream.get("sector_code") or ""
+        )
+        payload["sector_code"] = sector_code
+        payload["macro_regime_id"] = (
+            upstream.get("macro_regime_id") or "no_regime_seeded"
+        )
+        flag_id: str | None = None
+        if db is not None and sector_code:
+            flag_id = await sector_flag_svc.get_active_sector_flag_id(
+                db, firm_id=firm_id, sector_code=sector_code,
+            )
+        payload["sector_manual_flag_id"] = flag_id or "null"
+        payload["e3_macro_view_output"] = (
+            upstream.get("e3_macro_view_output")
+            or seed.get("e3_macro_view_output")
+            or {}
+        )
+        payload["firm_id"] = firm_id
+
+    elif agent_id == "e2_stock_in_sector":
+        firm_id = upstream.get("firm_id") or "default_firm"
+        seed = seed_payload.get("evidence.e2_stock_in_sector") or {}
+        products = list(case.proposed_action_products or [])
+        ticker_e2sis: str = (
+            seed.get("ticker") or upstream.get("ticker")
+            or (products[0] if products else "")
+        )
+        payload["ticker"] = ticker_e2sis
+        payload["sector_code"] = (
+            seed.get("sector_code") or upstream.get("sector_code") or ""
+        )
+        payload["latest_earnings_id"] = (
+            seed.get("latest_earnings_id") or "no_earnings_seeded"
+        )
+        e2sis_flag_snap = None
+        if db is not None and ticker_e2sis:
+            e2sis_flag_snap = (
+                await manual_flag_service.get_active_manual_flag_for_ticker(
+                    db, ticker=ticker_e2sis,
+                )
+            )
+        payload["stock_manual_flag_id"] = (
+            e2sis_flag_snap.manual_flag_id if e2sis_flag_snap else "null"
+        )
+        payload["sector_view_output"] = (
+            upstream.get("e2_sector_view_output")
+            or seed.get("sector_view_output")
+            or {}
+        )
+        payload["e3_macro_view_output"] = (
+            upstream.get("e3_macro_view_output") or {}
+        )
+        payload["firm_id"] = firm_id
+
+    elif agent_id == "e7_mutual_fund":
+        firm_id = upstream.get("firm_id") or "default_firm"
+        seed = seed_payload.get("evidence.e7_mutual_fund") or {}
+        fund_id_str: str = (
+            seed.get("fund_id") or upstream.get("fund_id") or ""
+        )
+        payload["fund_id"] = fund_id_str
+        payload["fund_name"] = seed.get("fund_name") or fund_id_str
+        payload["fund_category"] = (
+            seed.get("fund_category") or upstream.get("fund_category") or ""
+        )
+        payload["current_manager_name"] = seed.get("current_manager_name")
+        payload["alpha_5y_bps_input"] = seed.get("alpha_5y_bps_input")
+        payload["current_aum_inr_cr"] = seed.get("current_aum_inr_cr")
+        payload["ter_pct_current"] = seed.get("ter_pct_current")
+        payload["latest_quarterly_disclosure_id"] = (
+            seed.get("latest_quarterly_disclosure_id") or "no_disclosure_seeded"
+        )
+        e7_flag_id: str | None = None
+        if db is not None and fund_id_str:
+            e7_flag_id = await fund_flag_svc.get_active_fund_flag_id(
+                db, firm_id=firm_id, fund_id=fund_id_str,
+            )
+        payload["fund_manual_flag_id"] = e7_flag_id or "null"
+        payload["e3_macro_view_output"] = (
+            upstream.get("e3_macro_view_output") or {}
+        )
+        payload["firm_id"] = firm_id
+
+    elif agent_id == "e3_news_scanner":
+        seed = seed_payload.get("evidence.e3_news_scanner") or {}
+        products = list(case.proposed_action_products or [])
+        tickers_ns: list[str] = (
+            seed.get("tickers") or upstream.get("tickers") or products
+        )
+        recent_events = seed.get("recent_news_events") or []
+        payload["case_id"] = case.case_id
+        payload["tickers"] = tickers_ns
+        payload["recent_news_events"] = recent_events
+        payload["available_news_ids"] = seed.get("available_news_ids") or [
+            e.get("news_id") for e in recent_events if e.get("news_id")
+        ]
+
     return AgentInputs(
         case_id=case.case_id,
         case_mode=case.case_mode,
@@ -247,10 +381,10 @@ async def dispatch_real_agent(
     """
     shim = get_shim(agent_id)
     if shim is None:
+        from artha.api_v2.agents.registry import list_real_agent_ids
         raise RealAgentRuntimeError(
-            f"No real shim registered for agent_id={agent_id!r}; expected "
-            f"one of e1_listed_fundamental_equity, "
-            f"m0_portfolio_risk_analytics.",
+            f"No real shim registered for agent_id={agent_id!r}. "
+            f"Registered: {list_real_agent_ids()}",
         )
 
     llm = _LLM_CLIENT
@@ -281,7 +415,12 @@ async def dispatch_real_agent(
 
     # ---- Cache lookup -------------------------------------------------
     if cache_key:
-        lookup = await backend.get(cache_key=cache_key)
+        if agent_id == "e1_listed_fundamental_equity":
+            lookup = await backend.get(cache_key=cache_key)
+        else:
+            lookup = await _get_c8_cached_verdict(
+                db=db, agent_id=agent_id, cache_key=cache_key,
+            )
         if lookup.hit:
             cached_verdict = ParsedVerdict(
                 agent_id=agent_id,
@@ -313,28 +452,38 @@ async def dispatch_real_agent(
 
     # ---- Cache write --------------------------------------------------
     if cache_key:
-        ticker = inputs.payload.get("ticker") or ""
-        earnings_id = (
-            inputs.payload.get("latest_earnings_id") or "no_earnings_seeded"
-        )
-        raw_flag = inputs.payload.get("manual_flag_id")
-        manual_flag_id = (
-            None if raw_flag in (None, "null", "") else str(raw_flag)
-        )
-        await backend.put(
-            cache_key=cache_key,
-            ticker=ticker,
-            earnings_id=earnings_id,
-            manual_flag_id=manual_flag_id,
-            prompt_version=template.prompt_version,
-            verdict_payload=result.verdict.structured,
-            stage_payload=result.verdict.stage_payload,
-            raw_text=result.verdict.raw_text,
-            llm_model=result.llm_response.model or template.llm_model,
-            input_tokens=result.llm_response.input_tokens,
-            output_tokens=result.llm_response.output_tokens,
-            case_id=case.case_id,
-        )
+        if agent_id == "e1_listed_fundamental_equity":
+            ticker = inputs.payload.get("ticker") or ""
+            earnings_id = (
+                inputs.payload.get("latest_earnings_id") or "no_earnings_seeded"
+            )
+            raw_flag = inputs.payload.get("manual_flag_id")
+            manual_flag_id = (
+                None if raw_flag in (None, "null", "") else str(raw_flag)
+            )
+            await backend.put(
+                cache_key=cache_key,
+                ticker=ticker,
+                earnings_id=earnings_id,
+                manual_flag_id=manual_flag_id,
+                prompt_version=template.prompt_version,
+                verdict_payload=result.verdict.structured,
+                stage_payload=result.verdict.stage_payload,
+                raw_text=result.verdict.raw_text,
+                llm_model=result.llm_response.model or template.llm_model,
+                input_tokens=result.llm_response.input_tokens,
+                output_tokens=result.llm_response.output_tokens,
+                case_id=case.case_id,
+            )
+        elif db is not None:
+            await _write_c8_cached_verdict(
+                db=db,
+                agent_id=agent_id,
+                cache_key=cache_key,
+                inputs=inputs,
+                result=result,
+                template=template,
+            )
 
     return RealDispatchOutput(
         agent_id=agent_id,
@@ -346,6 +495,96 @@ async def dispatch_real_agent(
         model=result.llm_response.model,
         prompt_version=template.prompt_version,
     )
+
+
+# ---------------------------------------------------------------------------
+# Cluster-8 cache helpers
+# ---------------------------------------------------------------------------
+
+
+async def _get_c8_cached_verdict(
+    *,
+    db: "AsyncSession | None",
+    agent_id: str,
+    cache_key: str,
+) -> "CacheLookupResult":
+    """Look up a cluster-8 cache table by agent_id + cache_key."""
+    if db is None:
+        return CacheLookupResult(hit=False)
+    cached = await c8repo.get_cached_verdict_c8(
+        db, agent_id=agent_id, cache_key=cache_key,
+    )
+    if cached is None:
+        return CacheLookupResult(hit=False)
+    return CacheLookupResult(
+        hit=True,
+        verdict_payload=cached.verdict_payload,
+        stage_payload=cached.stage_payload,
+        raw_text=cached.raw_text,
+        llm_model=cached.llm_model,
+        input_tokens=cached.input_tokens,
+        output_tokens=cached.output_tokens,
+        prompt_version=cached.prompt_version,
+    )
+
+
+async def _write_c8_cached_verdict(
+    *,
+    db: "AsyncSession",
+    agent_id: str,
+    cache_key: str,
+    inputs: "AgentInputs",
+    result: "DispatchResult",
+    template: "PromptTemplate",
+) -> None:
+    """Persist a cluster-8 verdict into the appropriate cache table."""
+    p = inputs.payload
+    firm_id: str = p.get("firm_id") or "default_firm"
+    common = {
+        "cache_key": cache_key,
+        "firm_id": firm_id,
+        "verdict_json": result.verdict.structured,
+        "stage_json": result.verdict.stage_payload,
+        "raw_text": result.verdict.raw_text,
+        "llm_model": result.llm_response.model or template.llm_model,
+        "prompt_version": template.prompt_version,
+        "input_tokens": result.llm_response.input_tokens,
+        "output_tokens": result.llm_response.output_tokens,
+    }
+    if agent_id == "e3_macro_view":
+        await c8repo.write_e3mv_verdict(
+            db,
+            macro_regime_id=p.get("macro_regime_id") or "",
+            latest_material_event_id=p.get("latest_material_event_id"),
+            **common,
+        )
+    elif agent_id == "e2_sector_view":
+        await c8repo.write_e2sv_verdict(
+            db,
+            sector_code=p.get("sector_code") or "",
+            macro_regime_id=p.get("macro_regime_id") or "",
+            sector_manual_flag_id=p.get("sector_manual_flag_id"),
+            **common,
+        )
+    elif agent_id == "e2_stock_in_sector":
+        await c8repo.write_e2sis_verdict(
+            db,
+            ticker=p.get("ticker") or "",
+            sector_code=p.get("sector_code") or "",
+            latest_earnings_id=p.get("latest_earnings_id"),
+            stock_manual_flag_id=p.get("stock_manual_flag_id"),
+            **common,
+        )
+    elif agent_id == "e7_mutual_fund":
+        await c8repo.write_e7_verdict(
+            db,
+            fund_id=p.get("fund_id") or "",
+            latest_quarterly_disclosure_id=p.get(
+                "latest_quarterly_disclosure_id"
+            ),
+            fund_manual_flag_id=p.get("fund_manual_flag_id"),
+            **common,
+        )
 
 
 # Hint to type checkers that LLMResponse is referenced indirectly via

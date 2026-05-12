@@ -214,6 +214,22 @@ async def invalidate_for_manual_flag(
     return result.rowcount or 0
 
 
+async def invalidate_all_for_ticker(
+    db: AsyncSession,
+    *,
+    ticker: str,
+) -> int:
+    """Drop ALL E1 cache rows for ``ticker`` regardless of flag state.
+
+    Used by the E3.NewsScanner push mechanism when a material news event
+    warrants full cache invalidation independent of the current flag.
+    """
+    stmt = delete(E1VerdictCache).where(E1VerdictCache.ticker == ticker)
+    result = await db.execute(stmt)
+    await db.flush()
+    return result.rowcount or 0
+
+
 async def evict_expired(
     db: AsyncSession,
     *,
@@ -282,6 +298,7 @@ __all__ = [
     "evict_expired",
     "evict_for_prompt_change",
     "get_cached_verdict",
+    "invalidate_all_for_ticker",
     "invalidate_for_manual_flag",
     "invalidate_for_ticker_earnings",
     "write_cached_verdict",

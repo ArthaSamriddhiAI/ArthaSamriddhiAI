@@ -45,6 +45,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from ulid import ULID
 
+from artha.api_v2.agents.cache import repository_cluster8 as c8repo
 from artha.api_v2.agents.cache.models_cluster8 import StockLevelManualFlag
 from artha.api_v2.agents.cache.repository import invalidate_for_manual_flag
 
@@ -182,6 +183,10 @@ async def create_manual_flag(
     invalidated = await invalidate_for_manual_flag(
         db, ticker=ticker, superseded_flag_id=superseded_id,
     )
+    # Also invalidate E2.StockInSector cache for this ticker (chunk 8.2 §2.1).
+    await c8repo.invalidate_e2sis_for_stock_flag(
+        db, ticker=ticker, superseded_flag_id=superseded_id,
+    )
 
     return ManualFlagMutation(
         ticker=ticker,
@@ -217,6 +222,9 @@ async def clear_manual_flag(
     await db.flush()
 
     invalidated = await invalidate_for_manual_flag(
+        db, ticker=ticker, superseded_flag_id=superseded_id,
+    )
+    await c8repo.invalidate_e2sis_for_stock_flag(
         db, ticker=ticker, superseded_flag_id=superseded_id,
     )
 
