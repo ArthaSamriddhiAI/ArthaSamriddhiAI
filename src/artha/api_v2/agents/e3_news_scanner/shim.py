@@ -14,6 +14,7 @@ from pydantic import ValidationError
 
 from artha.api_v2.agents.e3_news_scanner.schema import (
     E3NewsScannerOutput,
+    EntityType,
     MaterialityLevel,
 )
 from artha.api_v2.agents.llm_client import LLMResponse
@@ -145,7 +146,7 @@ class E3NewsScannerShim(AgentShim):
         verdict: ParsedVerdict,
         agent_inputs: AgentInputs,
     ) -> ValidationResult:
-        """Apply the 7 semantic validation rules from chunk 8.4 §8."""
+        """Apply the 9 semantic validation rules (chunks 8.4 §8, 9.4 §2)."""
         # Re-validate with by_alias because scan_period uses "from" alias.
         out = E3NewsScannerOutput.model_validate(verdict.structured)
 
@@ -204,7 +205,11 @@ class E3NewsScannerShim(AgentShim):
                 warrants_map[(pts.ticker, event.news_id)] = event.warrants_cache_invalidation
 
         # Rule 4: cache_invalidation_pushes consistency.
+        # Only applies to ticker-type pushes (non-ticker entities do not
+        # appear in per_ticker_signals).
         for push in out.cache_invalidation_pushes:
+            if push.entity_type != EntityType.TICKER:
+                continue  # non-ticker push — skip per_ticker_signals check
             key = (push.ticker, push.news_id)
             warrants = warrants_map.get(key, False)
             if not warrants:
@@ -254,11 +259,68 @@ class E3NewsScannerShim(AgentShim):
                     return ValidationResult(
                         success=False,
                         error_type="rule_7_empty_rationale",
-                        error_path=("per_ticker_signals", "events", "rationale"),
+                        error_path=(
+                            "per_ticker_signals", "events", "rationale",
+                        ),
                         error_message=(
                             f"event news_id={event.news_id!r} has empty rationale"
                         ),
                     )
+
+        # ------------------------------------------------------------------
+        # Rules 8–9: cluster 9 chunk 9.4 extensions.
+        # ------------------------------------------------------------------
+
+        # Rule 8: entity_id must be non-empty for non-ticker entity types;
+        # ticker must be non-empty for ticker-type pushes.
+        for push in out.cache_invalidation_pushes:
+            if push.entity_type == EntityType.TICKER:
+                if not push.ticker.strip():
+                    return ValidationResult(
+                        success=False,
+                        error_type="rule_8_ticker_missing_for_ticker_push",
+                        error_path=("cache_invalidation_pushes", "ticker"),
+                        error_message=(
+                            f"push news_id={push.news_id!r}: entity_type='ticker' "
+                            f"but ticker is empty"
+                        ),
+                    )
+            else:
+                if not push.entity_id.strip():
+                    return ValidationResult(
+                        success=False,
+                        error_type="rule_8_entity_id_empty",
+                        error_path=(
+                            "cache_invalidation_pushes", "entity_id",
+                        ),
+                        error_message=(
+                            f"push news_id={push.news_id!r}: entity_type="
+                            f"{push.entity_type.value!r} but entity_id is empty"
+                        ),
+                    )
+
+        # Rule 9: flag-set consistency with entity_type.
+        entity_flag_map = {
+            EntityType.TICKER: ("invalidates_e1", "invalidates_e2sis"),
+            EntityType.AIF: ("invalidates_e5fv",),
+            EntityType.DEAL: ("invalidates_e5dv",),
+        }
+        for push in out.cache_invalidation_pushes:
+            expected_flags = entity_flag_map.get(push.entity_type)
+            if expected_flags is None:
+                # EntityType.INVESTOR — no direct cache invalidation.
+                continue
+            if not any(getattr(push, f, False) for f in expected_flags):
+                return ValidationResult(
+                    success=False,
+                    error_type="rule_9_flag_set_inconsistency",
+                    error_path=("cache_invalidation_pushes",),
+                    error_message=(
+                        f"push news_id={push.news_id!r}: entity_type="
+                        f"{push.entity_type.value!r} requires at least one of "
+                        f"{expected_flags} to be True"
+                    ),
+                )
 
         return ValidationResult(success=True)
 

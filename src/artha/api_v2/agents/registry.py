@@ -16,6 +16,9 @@ from artha.api_v2.agents.e2_sector_view.shim import E2SectorViewShim
 from artha.api_v2.agents.e2_stock_in_sector.shim import E2StockInSectorShim
 from artha.api_v2.agents.e3_macro_view.shim import E3MacroViewShim
 from artha.api_v2.agents.e3_news_scanner.shim import E3NewsScannerShim
+from artha.api_v2.agents.e4_behavioural.shim import E4BehaviouralShim
+from artha.api_v2.agents.e5_deal_view.shim import E5DealViewShim
+from artha.api_v2.agents.e5_fund_view.shim import E5FundViewShim
 from artha.api_v2.agents.e7_mutual_fund.shim import E7MutualFundShim
 from artha.api_v2.agents.m0_pra.shim import M0PortfolioRiskAnalyticsShim
 from artha.api_v2.agents.shim import AgentShim
@@ -32,6 +35,10 @@ _SHIMS: dict[str, AgentShim] = {
     "e2_stock_in_sector": E2StockInSectorShim(),
     "e7_mutual_fund": E7MutualFundShim(),
     "e3_news_scanner": E3NewsScannerShim(),
+    # Cluster 9
+    "e5_fund_view": E5FundViewShim(),
+    "e5_deal_view": E5DealViewShim(),
+    "e4_behavioural": E4BehaviouralShim(),
 }
 
 

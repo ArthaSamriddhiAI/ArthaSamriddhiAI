@@ -1,8 +1,15 @@
-"""E3.NewsScanner output schema — cluster 8 chunk 8.4 §6.
+"""E3.NewsScanner output schema — cluster 8 chunk 8.4 §6 (v2.1 cluster 9 chunk 9.4).
 
-Pydantic models matching the spec JSON Schema.  Seven semantic validation
+Pydantic models matching the spec JSON Schema.  Nine semantic validation
 rules are applied by
 :class:`~artha.api_v2.agents.e3_news_scanner.shim.E3NewsScannerShim`.
+
+v2.1 additions (chunk 9.4 §1.2):
+- :class:`EntityType` enum generalises push targets beyond listed tickers.
+- :class:`CacheInvalidationPush` gains ``entity_type``, ``entity_id``,
+  ``invalidates_e5fv``, ``invalidates_e5dv`` fields (all with backward-
+  compatible defaults).  ``ticker`` is now optional (default ``""``) — it
+  is still required by Rule 9 when ``entity_type == "ticker"``.
 """
 
 from __future__ import annotations
@@ -10,6 +17,15 @@ from __future__ import annotations
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class EntityType(str, Enum):
+    """Entity type for cache-invalidation pushes (chunk 9.4 §1.2)."""
+
+    TICKER = "ticker"   # listed equity — default for backward compat
+    AIF = "aif"         # AIF registered with SEBI (E5.FundView)
+    DEAL = "deal"       # portfolio company / deal (E5.DealView)
+    INVESTOR = "investor"  # investor behavioural profile (E4)
 
 
 class NewsCategory(str, Enum):
@@ -72,12 +88,33 @@ class CaseLevelSignal(BaseModel):
 
 
 class CacheInvalidationPush(BaseModel):
+    """A single cache-invalidation push emitted by E3.NewsScanner.
+
+    v2.1 (chunk 9.4): ``entity_type`` + ``entity_id`` generalise the
+    push target beyond listed tickers.  All new fields carry backward-
+    compatible defaults so existing LLM output (without these fields)
+    continues to validate.
+    """
+
     model_config = ConfigDict(extra="forbid")
 
-    ticker: str = Field(min_length=1)
+    # v2.1: entity-agnostic identification.
+    entity_type: EntityType = Field(default=EntityType.TICKER)
+    entity_id: str = Field(default="")
+
+    # Legacy ticker field — still required (via Rule 9) when entity_type
+    # is "ticker".  Optional for non-ticker entity types.
+    ticker: str = Field(default="")
     news_id: str = Field(min_length=1)
-    invalidates_e1: bool
-    invalidates_e2sis: bool
+
+    # Listed-equity invalidation flags (apply when entity_type="ticker").
+    invalidates_e1: bool = Field(default=False)
+    invalidates_e2sis: bool = Field(default=False)
+
+    # Unlisted entity invalidation flags (cluster 9, chunk 9.4).
+    invalidates_e5fv: bool = Field(default=False)
+    invalidates_e5dv: bool = Field(default=False)
+
     reason: str = Field(min_length=1)
 
 
@@ -108,6 +145,7 @@ __all__ = [
     "CacheInvalidationPush",
     "CaseLevelSignal",
     "E3NewsScannerOutput",
+    "EntityType",
     "MaterialityLevel",
     "NewsCategory",
     "NewsEvent",

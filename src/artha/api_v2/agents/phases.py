@@ -1,4 +1,4 @@
-"""Phase-based dispatcher — cluster 8 chunk 8.5 §1.
+"""Phase-based dispatcher — cluster 8 chunk 8.5 §1; cluster 9 chunk 9.5.
 
 Four sequential phases with intra-phase parallelism, separated by
 synchronisation barriers:
@@ -6,8 +6,11 @@ synchronisation barriers:
   Phase 1 (sequential): E3.MacroView
   Phase 2 (parallel):   E2.SectorView × unique_sectors
                         E1 × tickers
+                        E5.FundView × aif_ids   (cluster 9)
+                        E4.Behavioural × investor_id  (cluster 9)
   Phase 3 (parallel):   E2.StockInSector × ticker_sector_pairs
                         E7.MutualFund × fund_ids
+                        E5.DealView × deal_ids  (cluster 9)
   Phase 4 (sequential): E3.NewsScanner
   Post-4 (non-blocking): E3.NewsScanner push → auto-flags + cache
                           invalidation
@@ -28,13 +31,18 @@ built :class:`AgentInputs` passed as ``agent_inputs_override``.  The
   ``evidence.e1_listed_fundamental_equity.{ticker}`` — E1 per ticker
   ``evidence.e2_stock_in_sector.{ticker}``  — E2.StockInSector per ticker
   ``evidence.e7_mutual_fund.{fund_id}``     — E7 per fund
+  ``evidence.e5_fund_view.{aif_id}``        — E5.FundView per AIF
+  ``evidence.e5_deal_view.{deal_id}``       — E5.DealView per deal
+  ``evidence.e4_behavioural.{investor_id}`` — E4 per investor
   ``evidence.e3_news_scanner``              — E3.NewsScanner inputs
 
 Phase-result key convention
 ---------------------------
   phase1: ``{"e3_macro_view": RealDispatchOutput}``
-  phase2: ``{"e1.{ticker}": ..., "e2sv.{sector_code}": ...}``
-  phase3: ``{"e2sis.{ticker}": ..., "e7.{fund_id}": ...}``
+  phase2: ``{"e1.{ticker}": ..., "e2sv.{sector_code}": ...,
+             "e5fv.{aif_id}": ..., "e4.{investor_id}": ...}``
+  phase3: ``{"e2sis.{ticker}": ..., "e7.{fund_id}": ...,
+             "e5dv.{deal_id}": ...}``
   phase4: ``{"e3_news_scanner": ...}``
 """
 
@@ -46,7 +54,9 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from artha.api_v2.agents import runtime as agent_runtime
+from artha.api_v2.agents.cache import deal_manual_flag as deal_flag_svc
 from artha.api_v2.agents.cache import fund_manual_flag as fund_flag_svc
+from artha.api_v2.agents.cache import investor_manual_flag as investor_flag_svc
 from artha.api_v2.agents.cache import manual_flag as stock_flag_svc
 from artha.api_v2.agents.cache import sector_manual_flag as sector_flag_svc
 from artha.api_v2.agents.e3_news_scanner.push import (
@@ -54,6 +64,7 @@ from artha.api_v2.agents.e3_news_scanner.push import (
     process_e3_news_scanner_pushes,
 )
 from artha.api_v2.agents.e3_news_scanner.schema import E3NewsScannerOutput
+from artha.api_v2.agents.e4_behavioural.shim import derive_window_id
 from artha.api_v2.agents.runtime import RealDispatchOutput
 from artha.api_v2.agents.shim import AgentInputs
 
@@ -91,6 +102,16 @@ class PhaseConfig:
     fund_ids: list[str]
     """E7 subjects (one call per fund)."""
 
+    # Cluster 9 additions (chunk 9.5 §1.1).
+    aif_ids: list[str] = field(default_factory=list)
+    """E5.FundView subjects — one call per AIF registration ID."""
+
+    deal_ids: list[str] = field(default_factory=list)
+    """E5.DealView subjects — one call per deal/portfolio company."""
+
+    investor_id: str | None = None
+    """E4.Behavioural subject — at most one per case (case.investor_id)."""
+
 
 @dataclass
 class PhaseResult:
@@ -119,6 +140,20 @@ class PhaseResult:
 
     def e7(self, fund_id: str) -> RealDispatchOutput | None:
         return self.phase3.get(f"e7.{fund_id}")
+
+    # Cluster 9 accessors (chunk 9.5 §1.1).
+
+    def e5fv(self, aif_id: str) -> RealDispatchOutput | None:
+        """E5.FundView output for ``aif_id`` (phase 2)."""
+        return self.phase2.get(f"e5fv.{aif_id}")
+
+    def e5dv(self, deal_id: str) -> RealDispatchOutput | None:
+        """E5.DealView output for ``deal_id`` (phase 3)."""
+        return self.phase3.get(f"e5dv.{deal_id}")
+
+    def e4(self, investor_id: str) -> RealDispatchOutput | None:
+        """E4.Behavioural output for ``investor_id`` (phase 2)."""
+        return self.phase2.get(f"e4.{investor_id}")
 
     @property
     def e3_news_scanner(self) -> RealDispatchOutput | None:
@@ -216,6 +251,29 @@ async def run_phases(
             "e1_listed_fundamental_equity",
         ))
 
+    # Cluster 9: E5.FundView per AIF (phase 2).
+    for aif_id in cfg.aif_ids:
+        phase2_coros.append((
+            f"e5fv.{aif_id}",
+            _build_e5fv_inputs(
+                case, seed_payload, aif_id=aif_id,
+                e3mv_stage=e3mv_stage, firm_id=firm_id, db=db,
+            ),
+            "e5_fund_view",
+        ))
+
+    # Cluster 9: E4.Behavioural for the case investor (phase 2).
+    if cfg.investor_id:
+        phase2_coros.append((
+            f"e4.{cfg.investor_id}",
+            _build_e4_inputs(
+                case, seed_payload,
+                investor_id=cfg.investor_id,
+                e3mv_stage=e3mv_stage, firm_id=firm_id, db=db,
+            ),
+            "e4_behavioural",
+        ))
+
     phase2_results = await _run_parallel_phase(
         case=case, phase_specs=phase2_coros,
         db=db, cache=cache, template=skill_template_override, phase_num=2,
@@ -248,6 +306,17 @@ async def run_phases(
                 firm_id=firm_id, db=db,
             ),
             "e7_mutual_fund",
+        ))
+
+    # Cluster 9: E5.DealView per deal (phase 3).
+    for deal_id in cfg.deal_ids:
+        phase3_coros.append((
+            f"e5dv.{deal_id}",
+            _build_e5dv_inputs(
+                case, seed_payload, deal_id=deal_id,
+                e3mv_stage=e3mv_stage, firm_id=firm_id, db=db,
+            ),
+            "e5_deal_view",
         ))
 
     phase3_results = await _run_parallel_phase(
@@ -322,11 +391,20 @@ def _build_phase_config(case: Case, seed_payload: dict[str, Any]) -> PhaseConfig
             (t, s) for t in tickers for s in unique_sectors
         ]
     fund_ids: list[str] = cfg_seed.get("fund_ids") or []
+    # Cluster 9 additions.
+    aif_ids: list[str] = cfg_seed.get("aif_ids") or []
+    deal_ids: list[str] = cfg_seed.get("deal_ids") or []
+    investor_id: str | None = cfg_seed.get("investor_id") or getattr(
+        case, "investor_id", None,
+    )
     return PhaseConfig(
         tickers=tickers,
         unique_sectors=unique_sectors,
         ticker_sector_pairs=ticker_sector_pairs,
         fund_ids=fund_ids,
+        aif_ids=aif_ids,
+        deal_ids=deal_ids,
+        investor_id=investor_id,
     )
 
 
@@ -511,6 +589,128 @@ async def _build_e7_inputs(
                 or "no_disclosure_seeded"
             ),
             "fund_manual_flag_id": flag_id or "null",
+            "e3_macro_view_output": e3mv_stage,
+            "firm_id": firm_id,
+        },
+    )
+
+
+async def _build_e5fv_inputs(
+    case: Case,
+    seed_payload: dict[str, Any],
+    *,
+    aif_id: str,
+    e3mv_stage: dict[str, Any],
+    firm_id: str,
+    db: AsyncSession | None,
+) -> AgentInputs:
+    """Build E5.FundView inputs for ``aif_id`` (cluster 9 chunk 9.2)."""
+    seed = (
+        seed_payload.get(f"evidence.e5_fund_view.{aif_id}")
+        or seed_payload.get("evidence.e5_fund_view")
+        or {}
+    )
+    flag_id: str | None = None
+    if db is not None:
+        flag_id = await fund_flag_svc.get_active_aif_flag_id(
+            db, firm_id=firm_id, aif_id=aif_id,
+        )
+    return AgentInputs(
+        case_id=case.case_id,
+        case_mode=case.case_mode,
+        case_intent=getattr(case, "case_intent", None),
+        payload={
+            "aif_id": aif_id,
+            "fund_name": seed.get("fund_name") or aif_id,
+            "current_manager_name": seed.get("current_manager_name"),
+            "latest_aif_disclosure_id": (
+                seed.get("latest_aif_disclosure_id") or "no_disclosure_seeded"
+            ),
+            "fund_manual_flag_id": flag_id or "null",
+            "aif_data": seed.get("aif_data") or {},
+            "e3_macro_view_output": e3mv_stage,
+            "firm_id": firm_id,
+        },
+    )
+
+
+async def _build_e5dv_inputs(
+    case: Case,
+    seed_payload: dict[str, Any],
+    *,
+    deal_id: str,
+    e3mv_stage: dict[str, Any],
+    firm_id: str,
+    db: AsyncSession | None,
+) -> AgentInputs:
+    """Build E5.DealView inputs for ``deal_id`` (cluster 9 chunk 9.2)."""
+    seed = (
+        seed_payload.get(f"evidence.e5_deal_view.{deal_id}")
+        or seed_payload.get("evidence.e5_deal_view")
+        or {}
+    )
+    flag_id: str | None = None
+    if db is not None:
+        flag_id = await deal_flag_svc.get_active_deal_flag_id(
+            db, firm_id=firm_id, deal_id=deal_id,
+        )
+    return AgentInputs(
+        case_id=case.case_id,
+        case_mode=case.case_mode,
+        case_intent=getattr(case, "case_intent", None),
+        payload={
+            "deal_id": deal_id,
+            "fund_or_firm_id": seed.get("fund_or_firm_id") or "unknown",
+            "latest_mca_filing_id": (
+                seed.get("latest_mca_filing_id") or "no_filing_seeded"
+            ),
+            "deal_manual_flag_id": flag_id or "null",
+            "deal_data": seed.get("deal_data") or {},
+            "e3_macro_view_output": e3mv_stage,
+            "firm_id": firm_id,
+        },
+    )
+
+
+async def _build_e4_inputs(
+    case: Case,
+    seed_payload: dict[str, Any],
+    *,
+    investor_id: str,
+    e3mv_stage: dict[str, Any],
+    firm_id: str,
+    db: AsyncSession | None,
+) -> AgentInputs:
+    """Build E4.Behavioural inputs for ``investor_id`` (cluster 9 chunk 9.3).
+
+    The ``window_id`` is derived from the current UTC time unless the seed
+    provides an override (useful for deterministic test behaviour).
+    """
+    seed = (
+        seed_payload.get(f"evidence.e4_behavioural.{investor_id}")
+        or seed_payload.get("evidence.e4_behavioural")
+        or {}
+    )
+    # Allow seed to override window_id for deterministic tests.
+    from datetime import datetime, timezone  # noqa: PLC0415
+
+    window_id: str = seed.get("window_id") or derive_window_id(
+        datetime.now(timezone.utc),
+    )
+    flag_id: str | None = None
+    if db is not None:
+        flag_id = await investor_flag_svc.get_active_investor_flag_id(
+            db, firm_id=firm_id, investor_id=investor_id,
+        )
+    return AgentInputs(
+        case_id=case.case_id,
+        case_mode=case.case_mode,
+        case_intent=getattr(case, "case_intent", None),
+        payload={
+            "investor_id": investor_id,
+            "window_id": window_id,
+            "behavioural_manual_flag_id": flag_id or "null",
+            "behavioural_data": seed.get("behavioural_data") or {},
             "e3_macro_view_output": e3mv_stage,
             "firm_id": firm_id,
         },
