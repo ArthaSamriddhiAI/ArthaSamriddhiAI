@@ -301,7 +301,17 @@ class QuarterlyDisclosureEvent(Base):
 
 
 class FundLevelManualFlag(Base):
-    """Per-fund manual flag for E7 cache invalidation (chunk 8.3 §6.1)."""
+    """Per-fund manual flag for E7 + E5.FundView cache invalidation.
+
+    Cluster 8 chunk 8.3 §6.1 introduced this table for E7 (mutual funds).
+    Cluster 9 chunk 9.2 §1.1 extends it with per-agent invalidation scope
+    columns so the same flag table covers both MF-tier (E7) and AIF-tier
+    (E5.FundView) agents, mirroring the stock_level_manual_flags pattern.
+
+    Column additions (chunk 9.2):
+    - ``invalidates_e7``   — default TRUE  (backward compat; existing E7 flags)
+    - ``invalidates_e5fv`` — default FALSE (AIFs use FALSE for E7; TRUE for E5.FundView)
+    """
 
     __tablename__ = "v2_fund_level_manual_flags"
 
@@ -315,6 +325,10 @@ class FundLevelManualFlag(Base):
     cleared_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    # Chunk 9.2: per-agent invalidation scope flags.
+    invalidates_e7: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    invalidates_e5fv: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     __table_args__ = (
         Index("ix_v2_flmf_firm_fund_active", "firm_id", "fund_id", "is_active"),
@@ -353,7 +367,22 @@ class E7VerdictCache(Base):
 
 
 class NewsEvent(Base):
-    """Per-ticker news event (chunk 8.4 §3.1)."""
+    """News event — extended in cluster 9 chunk 9.4 to cover unlisted entities.
+
+    Cluster 8 chunk 8.4 §3.1 introduced this table for per-ticker (listed
+    equity) news.  Cluster 9 chunk 9.4 §1.3 extends it with
+    ``entity_type`` / ``entity_id`` / ``source_path`` columns so that
+    the same table holds news for unlisted entities (AIFs, unlisted
+    companies, firm internal entities) in addition to listed tickers.
+
+    Column additions (chunk 9.4):
+    - ``entity_type`` — enum: ``ticker``, ``fund_id``, ``cin``,
+      ``internal_id``.  Default ``'ticker'`` preserves backward compat.
+    - ``entity_id`` — canonical ID for the entity_type (e.g. NSE symbol
+      for ``ticker``, SEBI AIF Reg ID for ``fund_id``, CIN for ``cin``).
+    - ``source_path`` — ingestion path: ``web_scrape``, ``firm_upload``,
+      ``mca_synthesis``, etc.
+    """
 
     __tablename__ = "v2_news_events"
 
@@ -368,9 +397,19 @@ class NewsEvent(Base):
     news_category: Mapped[str | None] = mapped_column(String(64), nullable=True)
     is_material_seed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
+    # Chunk 9.4 additions: multi-entity support.
+    entity_type: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="ticker",
+    )
+    entity_id: Mapped[str] = mapped_column(
+        String(64), nullable=False, default="",
+    )
+    source_path: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
     __table_args__ = (
         Index("ix_v2_news_published", "published_at"),
         Index("ix_v2_news_tickers_published", "associated_tickers", "published_at"),
+        Index("ix_v2_news_entity", "entity_type", "entity_id", "published_at"),
     )
 
 
